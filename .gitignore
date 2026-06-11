@@ -1,0 +1,55 @@
+# Dependencies
+node_modules/
+vendor/
+
+# Build output
+dist/
+build/
+bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE and editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Go
+go-service/tmp/
+*.test
+*.out
+coverage.txt
+
+# Node
+node-service/dist/
+node-service/.npm/
+node-service/npm-debug.log*
+node-service/yarn-debug.log*
+node-service/yarn-error.log*
+
+# Docker
+docker-compose.override.yml
+
+# OpenCode / Agent internal artifacts
+.atl/
+
+# Kubernetes secrets
+k8s/secrets.yaml
+k8s/*/secrets.yaml
+*.kubeconfig
+
+# Logs
+*.log
+logs/
