@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Asset Tracker is a demo microservices application demonstrating hexagonal architecture (Ports & Adapters), Docker containerization, resilient inter-service communication, and Kubernetes orchestration. It consists of two services:
+Asset Tracker is a demo microservices application demonstrating hexagonal architecture (Ports & Adapters), Docker containerization, event-driven communication with Kafka, and Kubernetes orchestration. It consists of two services:
 
 - **go-service** (port 8080): Device lifecycle management using Go 1.23+ and PostgreSQL
 - **node-service** (port 3000): Event logging using Node.js 22+ and MongoDB
@@ -10,31 +10,31 @@ Asset Tracker is a demo microservices application demonstrating hexagonal archit
 ## Architecture
 
 ```
-                  ┌──────────────┐
-                  │  go-service  │────► PostgreSQL
-                  │   :8080      │
-                  │              │────► node-service (HTTP)
-                  └──────────────┘        :3000
-                                           │
-                  ┌──────────────┐         │
-                  │ node-service │◄────────┘
-                  │   :3000      │────► MongoDB
-                  └──────────────┘
+                 ┌──────────────┐
+                 │  go-service  │────► PostgreSQL
+                 │   :8080      │
+                 │              │────► Kafka (producer)
+                 └──────────────┘      :9092
+                                        │
+                 ┌──────────────┐       │
+                 │ node-service │◄──────┘
+                 │   :3000      │────► MongoDB
+                 └──────────────┘      (consumer)
 ```
 
-- **Go service**: CRUD for devices (POST/GET /devices). On device creation, calls Node service to log a `device_created` event.
-- **Node service**: Event logging (POST /events). Stores events in MongoDB.
-- **Communication**: HTTP REST with exponential backoff retries (max 2 retries, 2s timeout), non-blocking on failure.
+- **Go service**: CRUD for devices (POST/GET /devices). On device creation, produces a `device.created` event to Kafka topic `device-events`.
+- **Node service**: Event logging. Consumes from `device-events` Kafka topic and stores events in MongoDB.
+- **Communication**: Event-driven via Apache Kafka (KRaft mode, single broker, no Zookeeper). Async produce (non-blocking) on the producer side. Consumer group support for scalability.
 - **Both services**: Hexagonal architecture, structured JSON logging, manual dependency injection.
 
 ## Phase Index
 
 | Phase | Description | Depends On | Status |
 |-------|-------------|------------|--------|
-| 0 | Docker Compose Base — all 4 containers healthy | None | 🔜 Planned |
+| 0 | Docker Compose Base — all 5 containers healthy | None | 🔜 Planned |
 | 1 | Go Hexagonal + PostgreSQL — device CRUD endpoints | Phase 0 | 🔜 Planned |
 | 2 | Node Hexagonal + MongoDB — event logging endpoint | Phase 0 | 🔜 Planned |
-| 3 | Resilient Inter-service Communication — retries, timeouts | Phases 1, 2 | 🔜 Planned |
+| 3 | Event-Driven Communication with Kafka — pub/sub, async produce | Phases 1, 2 | 🔜 Planned |
 | 4 | Observability — structured logging, health checks, metrics | Phases 1, 2 | 🔜 Planned |
 | 5 | Kubernetes Manifests — Deployments, Services, ConfigMaps | Phases 0–4 | 🔜 Planned |
 
