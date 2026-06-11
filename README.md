@@ -7,9 +7,9 @@
 | Phase | Description | Status | Completed |
 |-------|-------------|--------|-----------|
 | 0 | Docker Compose Base — 5 containers healthy | 🔜 Planned | — |
-| 1 | Go Hexagonal + PostgreSQL — device CRUD | 🔜 Planned | — |
+| 1 | Go Hexagonal + PostgreSQL — full device CRUD (5 endpoints) | 🔜 Planned | — |
 | 2 | Node Hexagonal + MongoDB — event logging | 🔜 Planned | — |
-| 3 | Event-Driven Communication with Kafka | 🔜 Planned | — |
+| 3 | Event-Driven Communication with Kafka — 3 event types (created/updated/deleted) | 🔜 Planned | — |
 | 4 | Observability — structured logging, health checks | 🔜 Planned | — |
 | 5 | Kubernetes Manifests | 🔜 Planned | — |
 
@@ -32,10 +32,10 @@ Two microservices built with **hexagonal architecture** (ports & adapters):
 
 | Service | Language | Port | Database | Responsibility |
 |---------|----------|------|----------|----------------|
-| `go-service` | Go 1.23+ | 8080 | PostgreSQL | Device CRUD (`POST/GET /devices`) + Kafka producer |
+| `go-service` | Go 1.23+ | 8080 | PostgreSQL | Full device CRUD (5 endpoints) + Kafka producer |
 | `node-service` | Node.js 22+ | 3000 | MongoDB | Event logging (`POST /events`) + Kafka consumer |
 
-Inter-service communication is **event-driven via Apache Kafka** in KRaft mode (no Zookeeper). The Go service produces `device.created` events to the `device-events` topic; the Node service consumes from it asynchronously.
+Inter-service communication is **event-driven via Apache Kafka** in KRaft mode (no Zookeeper). The Go service produces three event types — `device.created`, `device.updated`, `device.deleted` — to the `device-events` topic; the Node service consumes all three from it asynchronously.
 
 ### Key Architecture Decisions
 
@@ -91,5 +91,6 @@ cd go-service && go test ./...
 # Node.js service
 cd node-service && node --test
 ```
+
 
 
