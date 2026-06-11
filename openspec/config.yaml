@@ -1,0 +1,64 @@
+# openspec/config.yaml
+schema: spec-driven
+
+context: |
+  Project: asset-tracker — IT asset lifecycle tracking system.
+  Tech stack: Go 1.23+ (pgx, slog), Node.js 22+ (MongoDB driver, pino).
+  Architecture: Hexagonal (Ports & Adapters) in both services.
+  Testing: Go table-driven tests (go test ./...), Node.js native (node:test).
+  Containerization: Docker multi-stage builds.
+  Orchestration: Kubernetes (kind/minikube).
+  Git: GitHub private repo (samuellealdev/asset-tracker), conventional commits.
+  Artifact store: openspec (file-based artifacts in repo).
+
+rules:
+  proposal:
+    - Include rollback plan for risky changes
+  specs:
+    - Use Given/When/Then for scenarios
+    - Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY)
+  design:
+    - Include sequence diagrams for complex flows
+    - Document architecture decisions with rationale
+  tasks:
+    - Group by phase, use hierarchical numbering
+    - Keep tasks completable in one session
+  apply:
+    tdd: true
+    test_command_go: go test ./...
+    test_command_node: node --test
+    rules:
+      - Follow existing code patterns: hexagonal architecture per AGENTS.md
+  verify:
+    test_command_go: go test ./...
+    test_command_node: node --test
+    build_command_go: go build ./...
+    build_command_node: node --check
+    coverage_threshold: 70
+  archive:
+    - Warn before merging destructive deltas
+
+testing:
+  strict_tdd: true
+  runners:
+    go:
+      command: go test ./...
+      framework: Go testing (stdlib)
+      layers:
+        unit: true
+        integration: true
+        e2e: false
+      coverage: go test -cover ./...
+    node:
+      command: node --test
+      framework: node:test (native)
+      layers:
+        unit: true
+        integration: true
+        e2e: false
+      coverage: node --experimental-test-coverage
+  quality:
+    linter_go: go vet ./...
+    formatter_go: gofmt -l
+    linter_node: "(not configured)"
+    formatter_node: "(not configured)"
