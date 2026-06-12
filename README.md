@@ -10,7 +10,7 @@
 | 1 | Go Hexagonal + PostgreSQL — full device CRUD (5 endpoints) | ✅ Complete | 2026-06-12 |
 | 2 | Node Hexagonal + MongoDB — event logging | ✅ Complete | 2026-06-12 |
 | 3 | Event-Driven Communication with Kafka — 3 event types (created/updated/deleted) | ✅ Complete | 2026-06-12 |
-| 4 | Observability — structured logging, health checks | 🔜 Planned | — |
+| 4 | Observability — structured logging, health checks, metrics | ✅ Complete | 2026-06-12 |
 | 5 | Kubernetes Manifests | 🔜 Planned | — |
 
 ## Architecture
@@ -78,8 +78,11 @@ Inter-service communication is **event-driven via Apache Kafka** in KRaft mode (
 
 ```bash
 docker compose up -d
-curl localhost:8080/health  # → {"status":"ok"}
-curl localhost:3000/health  # → {"status":"ok"}
+curl localhost:8080/health        # → {"status":"ok","database":"connected"}
+curl localhost:8080/health/live   # → {"status":"ok"} (liveness)
+curl localhost:8080/health/ready  # → {"status":"ok","database":"connected"} (readiness)
+curl localhost:8080/metrics       # → {"requests_total":0,"errors_total":0}
+curl localhost:3000/health        # → {"status":"ok"}
 
 # Create a device
 curl -X POST localhost:8080/devices \
