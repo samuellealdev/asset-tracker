@@ -450,49 +450,5 @@ func TestDeviceHandler_HandleDelete(t *testing.T) {
 	})
 }
 
-// failWriter wraps an http.ResponseWriter and forces Write to fail.
-type failWriter struct {
-	http.ResponseWriter
-}
-
-func (f *failWriter) Write(b []byte) (int, error) {
-	return 0, errors.New("simulated write failure")
-}
-
-func TestDeviceHandler_Health(t *testing.T) {
-	t.Run("returns 200 with status ok", func(t *testing.T) {
-		handler := interfaces.NewDeviceHandler(&mockUseCases{})
-
-		req := httptest.NewRequest(http.MethodGet, "/health", nil)
-		w := httptest.NewRecorder()
-		handler.ServeHTTP(w, req)
-
-		if w.Code != http.StatusOK {
-			t.Errorf("expected status 200, got %d", w.Code)
-		}
-
-		var resp map[string]string
-		if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
-			t.Fatalf("failed to decode response: %v", err)
-		}
-		if resp["status"] != "ok" {
-			t.Errorf("expected status 'ok', got %q", resp["status"])
-		}
-	})
-
-	t.Run("logs error when JSON encoding fails", func(t *testing.T) {
-		handler := interfaces.NewDeviceHandler(&mockUseCases{})
-		fw := &failWriter{ResponseWriter: httptest.NewRecorder()}
-
-		req := httptest.NewRequest(http.MethodGet, "/health", nil)
-		handler.ServeHTTP(fw, req)
-
-		// The handler should not panic when encoding fails, and we
-		// just verify it doesn't crash — the error is logged, not returned.
-		if fw.ResponseWriter.(*httptest.ResponseRecorder).Code != http.StatusOK {
-			t.Errorf("expected status 200, got %d", fw.ResponseWriter.(*httptest.ResponseRecorder).Code)
-		}
-	})
-}
 
 

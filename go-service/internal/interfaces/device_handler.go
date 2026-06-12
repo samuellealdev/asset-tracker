@@ -37,7 +37,6 @@ func NewDeviceHandler(useCases DeviceUseCases) *DeviceHandler {
 	mux.HandleFunc("GET /devices/{id}", h.HandleGet)
 	mux.HandleFunc("PUT /devices/{id}", h.HandleUpdate)
 	mux.HandleFunc("DELETE /devices/{id}", h.HandleDelete)
-	mux.HandleFunc("GET /health", h.HandleHealth)
 	h.mux = mux
 	return h
 }
@@ -150,11 +149,6 @@ func (h *DeviceHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
-}
-
-// HandleHealth handles GET /health.
-func (h *DeviceHandler) HandleHealth(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
 func writeJSON(w http.ResponseWriter, status int, data interface{}) {

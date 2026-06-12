@@ -105,17 +105,31 @@ func main() {
 		updateUseCase,
 		deleteUseCase,
 	)
-	handler := interfaces.NewDeviceHandler(useCases)
+	deviceHandler := interfaces.NewDeviceHandler(useCases)
 
-	// --- Keep /health from Phase 0 ---
-	// The DeviceHandler already registers GET /health via its internal mux.
-	// We wrap the handler with an additional mux for any future top-level routes.
+	// --- Health handler (separate concern per SRP) ---
+	// GET /health (alias for /health/ready, backward compatible)
+	// GET /health/live (always 200, liveness probe)
+	// GET /health/ready (200 only if DB is reachable, readiness probe)
+	healthHandler := interfaces.NewHealthHandler(pool)
+
+	// --- Metrics handler (optional, in-memory counters) ---
+	metricsHandler := interfaces.NewMetricsHandler()
+
+	// --- Top-level mux ---
 	mux := http.NewServeMux()
-	mux.Handle("/", handler)
+	mux.Handle("GET /health", healthHandler)
+	mux.Handle("GET /health/live", healthHandler)
+	mux.Handle("GET /health/ready", healthHandler)
+	mux.Handle("GET /metrics", metricsHandler)
+	mux.Handle("/", deviceHandler)
+
+	// --- Wrap entire mux with logging middleware ---
+	wrappedMux := interfaces.LoggingMiddleware(mux)
 
 	server := &http.Server{
 		Addr:         ":" + port,
-		Handler:      mux,
+		Handler:      wrappedMux,
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  30 * time.Second,
