@@ -4,6 +4,9 @@ import { MongoClient } from 'mongodb';
 import { MongoEventRepository } from './infrastructure/mongo-event-repository.js';
 import { LogEventUseCase } from './application/log-event.js';
 import { EventHandler } from './interfaces/event-handler.js';
+import { HealthHandler } from './interfaces/health-handler.js';
+import { createLoggingMiddleware } from './interfaces/middleware.js';
+import { MetricsHandler } from './interfaces/metrics-handler.js';
 import { KafkaEventConsumer } from './infrastructure/kafka-event-consumer.js';
 
 const logger = pino({ level: process.env.LOG_LEVEL || 'info' });
@@ -24,6 +27,9 @@ async function main() {
   const eventRepository = new MongoEventRepository(mongoClient, MONGO_DB);
   const logEventUseCase = new LogEventUseCase(eventRepository);
   const eventHandler = new EventHandler(logEventUseCase);
+  const healthHandler = new HealthHandler(mongoClient);
+  const metricsHandler = new MetricsHandler();
+  const loggingMiddleware = createLoggingMiddleware(logger);
 
   // --- Kafka consumer ---
   /** @type {KafkaEventConsumer | undefined} */
@@ -51,36 +57,60 @@ async function main() {
   }
 
   const server = http.createServer((req, res) => {
-    // CORS headers for development
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader(
-      'Access-Control-Allow-Methods',
-      'GET, POST, OPTIONS',
-    );
-    res.setHeader(
-      'Access-Control-Allow-Headers',
-      'Content-Type',
-    );
+    metricsHandler.incrementRequest();
 
-    if (req.method === 'OPTIONS') {
-      res.writeHead(204);
-      res.end();
-      return;
-    }
+    res.on('finish', () => {
+      if (res.statusCode >= 400) {
+        metricsHandler.incrementError();
+      }
+    });
 
-    if (req.url === '/health' && req.method === 'GET') {
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ status: 'ok' }) + '\n');
-      return;
-    }
+    loggingMiddleware(req, res, () => {
+      // CORS headers for development
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader(
+        'Access-Control-Allow-Methods',
+        'GET, POST, OPTIONS',
+      );
+      res.setHeader(
+        'Access-Control-Allow-Headers',
+        'Content-Type',
+      );
 
-    if (req.url === '/events' && req.method === 'POST') {
-      eventHandler.handlePost(req, res);
-      return;
-    }
+      if (req.method === 'OPTIONS') {
+        res.writeHead(204);
+        res.end();
+        return;
+      }
 
-    res.writeHead(404, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'not found' }));
+      if (req.url === '/health' && req.method === 'GET') {
+        healthHandler.handleHealth(req, res);
+        return;
+      }
+
+      if (req.url === '/health/live' && req.method === 'GET') {
+        healthHandler.handleLive(req, res);
+        return;
+      }
+
+      if (req.url === '/health/ready' && req.method === 'GET') {
+        healthHandler.handleReady(req, res);
+        return;
+      }
+
+      if (req.url === '/metrics' && req.method === 'GET') {
+        metricsHandler.handleMetrics(req, res);
+        return;
+      }
+
+      if (req.url === '/events' && req.method === 'POST') {
+        eventHandler.handlePost(req, res);
+        return;
+      }
+
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'not found' }));
+    });
   });
 
   server.listen(PORT, () => {
