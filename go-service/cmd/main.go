@@ -83,9 +83,10 @@ func main() {
 	}
 
 	kafkaWriter := &kafka.Writer{
-		Addr:         kafka.TCP(broker),
-		Topic:        topic,
-		WriteTimeout: 5 * time.Second,
+		Addr:                   kafka.TCP(broker),
+		Topic:                  topic,
+		WriteTimeout:           5 * time.Second,
+		AllowAutoTopicCreation: true,
 	}
 	eventPublisher := infrastructure.NewKafkaEventPublisher(kafkaWriter)
 	slog.Info("kafka event publisher configured", "broker", broker, "topic", topic)
