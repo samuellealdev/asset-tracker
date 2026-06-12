@@ -56,7 +56,7 @@ Inter-service communication is **event-driven via Apache Kafka** in KRaft mode (
 | Component | Technology |
 |-----------|------------|
 | Go service | Go 1.23+, `slog`, `pgx`, `net/http`, `segmentio/kafka-go` |
-| Node.js service | Node.js 22+, `pino`, MongoDB native driver, `kafkajs` |
+| Node.js service | Node.js 22+, `pino`, MongoDB native driver, `@confluentinc/kafka-javascript` |
 | Databases | PostgreSQL 16, MongoDB 7 |
 | Message Broker | Apache Kafka 3.9.2 (KRaft mode, apache/kafka image) |
 | Containerization | Docker multi-stage builds, Docker Compose |
@@ -82,7 +82,10 @@ curl localhost:8080/health        # → {"status":"ok","database":"connected"}
 curl localhost:8080/health/live   # → {"status":"ok"} (liveness)
 curl localhost:8080/health/ready  # → {"status":"ok","database":"connected"} (readiness)
 curl localhost:8080/metrics       # → {"requests_total":0,"errors_total":0}
-curl localhost:3000/health        # → {"status":"ok"}
+curl localhost:3000/health        # → {"status":"ok","database":"connected"}
+curl localhost:3000/health/live   # → {"status":"ok"} (liveness)
+curl localhost:3000/health/ready  # → {"status":"ok","database":"connected"} (readiness)
+curl localhost:3000/metrics       # → {"requests_total":0,"errors_total":0}
 
 # Create a device
 curl -X POST localhost:8080/devices \
@@ -95,11 +98,11 @@ curl localhost:8080/devices
 # Log an event
 curl -X POST localhost:3000/events \
   -H 'Content-Type: application/json' \
-  -d '{"type":"device.created","deviceId":"550e8400-e29b-41d4-a716-446655440000"}'
+  -d '{"type":"device.created","deviceId":"550e8400-e29b-41d4-a716-446655440000","name":"laptop"}'
 
 # Verify Kafka events (after CRUD operations)
 docker compose exec kafka /opt/kafka/bin/kafka-console-consumer.sh \
-  --bootstrap-server localhost:9092 --topic device-events --from-beginning --max-messages 3
+  --bootstrap-server kafka:9092 --topic device-events --from-beginning --max-messages 3
 
 # Verify events in MongoDB
 docker compose exec mongo mongosh -u mongo -p changeme --authenticationDatabase admin \
