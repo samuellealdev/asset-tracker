@@ -15,12 +15,13 @@ export class LogEventUseCase {
    * @param {Object} params
    * @param {string} params.type - Event type
    * @param {string} params.deviceId - Device identifier
+   * @param {string} params.name - Device name
    * @param {string} [params.timestamp] - Optional ISO 8601 timestamp
    * @returns {Promise<import('../domain/event.js').Event>} The saved event
    * @throws {import('../domain/event.js').ValidationError} On invalid input
    */
-  async execute({ type, deviceId, timestamp }) {
-    const event = createEvent({ type, deviceId, timestamp });
+  async execute({ type, deviceId, name, timestamp }) {
+    const event = createEvent({ type, deviceId, name, timestamp });
     await this.repo.save(event);
     return event;
   }

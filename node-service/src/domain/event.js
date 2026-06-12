@@ -17,6 +17,7 @@ export class ValidationError extends Error {
  * @property {string} id - UUID v4
  * @property {string} type - Non-empty event type string
  * @property {string} deviceId - Non-empty device identifier
+ * @property {string} name - Device name (required, non-empty)
  * @property {string} timestamp - ISO 8601 string
  */
 
@@ -26,11 +27,12 @@ export class ValidationError extends Error {
  * @param {Object} params
  * @param {string} params.type - Event type (required, non-empty)
  * @param {string} params.deviceId - Device identifier (required, non-empty)
+ * @param {string} params.name - Device name (required, non-empty)
  * @param {string} [params.timestamp] - ISO 8601 timestamp (defaults to now)
  * @returns {Readonly<Event>} A frozen Event object
  * @throws {ValidationError} When required fields are missing or invalid
  */
-export function createEvent({ type, deviceId, timestamp } = {}) {
+export function createEvent({ type, deviceId, name, timestamp } = {}) {
   const errors = [];
 
   if (!type || typeof type !== 'string' || type.trim().length === 0) {
@@ -47,6 +49,10 @@ export function createEvent({ type, deviceId, timestamp } = {}) {
     errors.push('deviceId must be a valid UUID v4');
   }
 
+  if (!name || typeof name !== 'string' || name.trim().length === 0) {
+    errors.push('name is required and must be a non-empty string');
+  }
+
   if (errors.length > 0) {
     throw new ValidationError(errors.join('; '), errors);
   }
@@ -55,6 +61,7 @@ export function createEvent({ type, deviceId, timestamp } = {}) {
     id: crypto.randomUUID(),
     type,
     deviceId,
+    name,
     timestamp: timestamp || new Date().toISOString(),
   });
 }

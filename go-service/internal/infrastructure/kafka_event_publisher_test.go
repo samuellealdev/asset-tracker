@@ -26,6 +26,20 @@ func uniqueTopic(prefix string) string {
 	return fmt.Sprintf("%s-%d", prefix, time.Now().UnixNano())
 }
 
+// mustCreateTopic creates a Kafka topic with 1 partition and 1 replication factor
+// by connecting to the partition leader. This is more reliable than
+// AllowAutoTopicCreation on the writer.
+func mustCreateTopic(t *testing.T, broker, topic string) {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	conn, err := kafka.DialLeader(ctx, "tcp", broker, topic, 0)
+	if err != nil {
+		t.Fatalf("create topic %q: %v", topic, err)
+	}
+	conn.Close()
+}
+
 // mustReader creates a Kafka reader starting from the first available offset
 // on partition 0. The reader is cleaned up via t.Cleanup.
 func mustReader(t *testing.T, broker, topic string) *kafka.Reader {
@@ -50,12 +64,14 @@ func TestKafkaEventPublisher_PublishAllTypes(t *testing.T) {
 	topic := uniqueTopic("device-events-all")
 	deviceID := "550e8400-e29b-41d4-a716-446655440000"
 
+	// Create topic explicitly before publishing — AllowAutoTopicCreation is unreliable.
+	mustCreateTopic(t, broker, topic)
+
 	writer := &kafka.Writer{
-		Addr:                     kafka.TCP(broker),
-		Topic:                    topic,
-		Balancer:                 &kafka.LeastBytes{},
-		BatchTimeout:             50 * time.Millisecond,
-		AllowAutoTopicCreation:   true,
+		Addr:         kafka.TCP(broker),
+		Topic:        topic,
+		Balancer:     &kafka.LeastBytes{},
+		BatchTimeout: 50 * time.Millisecond,
 	}
 	t.Cleanup(func() { writer.Close() })
 

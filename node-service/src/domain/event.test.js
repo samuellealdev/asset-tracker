@@ -7,18 +7,24 @@ describe('Event entity', () => {
     const event = createEvent({
       type: 'device_created',
       deviceId: '550e8400-e29b-41d4-a716-446655440000',
+      name: 'laptop',
     });
 
     assert.ok(event.id);
     assert.strictEqual(event.type, 'device_created');
     assert.strictEqual(event.deviceId, '550e8400-e29b-41d4-a716-446655440000');
+    assert.strictEqual(event.name, 'laptop');
     assert.ok(event.timestamp);
     assert.match(event.timestamp, /^\d{4}-\d{2}-\d{2}T/);
   });
 
   it('throws ValidationError when type is missing', () => {
     assert.throws(
-      () => createEvent({ deviceId: '550e8400-e29b-41d4-a716-446655440000' }),
+      () =>
+        createEvent({
+          deviceId: '550e8400-e29b-41d4-a716-446655440000',
+          name: 'laptop',
+        }),
       (err) =>
         err instanceof ValidationError &&
         err.errors.includes('type is required and must be a non-empty string'),
@@ -27,7 +33,7 @@ describe('Event entity', () => {
 
   it('throws ValidationError when deviceId is missing', () => {
     assert.throws(
-      () => createEvent({ type: 'device_created' }),
+      () => createEvent({ type: 'device_created', name: 'laptop' }),
       (err) =>
         err instanceof ValidationError &&
         err.errors.includes(
@@ -38,7 +44,12 @@ describe('Event entity', () => {
 
   it('throws ValidationError when deviceId is not a valid UUID', () => {
     assert.throws(
-      () => createEvent({ type: 'device_created', deviceId: 'not-a-uuid' }),
+      () =>
+        createEvent({
+          type: 'device_created',
+          deviceId: 'not-a-uuid',
+          name: 'laptop',
+        }),
       (err) =>
         err instanceof ValidationError &&
         err.errors.includes('deviceId must be a valid UUID v4'),
@@ -50,15 +61,54 @@ describe('Event entity', () => {
     const event = createEvent({
       type: 'device_created',
       deviceId: '550e8400-e29b-41d4-a716-446655440000',
+      name: 'laptop',
       timestamp: customTimestamp,
     });
     assert.strictEqual(event.timestamp, customTimestamp);
+  });
+
+  it('creates a valid event with name', () => {
+    const event = createEvent({
+      type: 'device.created',
+      deviceId: '550e8400-e29b-41d4-a716-446655440000',
+      name: 'laptop-xyz',
+    });
+
+    assert.strictEqual(event.name, 'laptop-xyz');
+  });
+
+  it('throws ValidationError when name is missing', () => {
+    assert.throws(
+      () =>
+        createEvent({
+          type: 'device.created',
+          deviceId: '550e8400-e29b-41d4-a716-446655440000',
+        }),
+      (err) =>
+        err instanceof ValidationError &&
+        err.errors.includes('name is required and must be a non-empty string'),
+    );
+  });
+
+  it('throws ValidationError when name is empty', () => {
+    assert.throws(
+      () =>
+        createEvent({
+          type: 'device.created',
+          deviceId: '550e8400-e29b-41d4-a716-446655440000',
+          name: '   ',
+        }),
+      (err) =>
+        err instanceof ValidationError &&
+        err.errors.includes('name is required and must be a non-empty string'),
+    );
   });
 
   it('returns a frozen object', () => {
     const event = createEvent({
       type: 'device_created',
       deviceId: '550e8400-e29b-41d4-a716-446655440000',
+      name: 'laptop',
     });
     assert.ok(Object.isFrozen(event));
   });
@@ -67,6 +117,7 @@ describe('Event entity', () => {
     const event = createEvent({
       type: 'device_created',
       deviceId: '550e8400-e29b-41d4-a716-446655440000',
+      name: 'laptop',
     });
     assert.match(
       event.id,

@@ -11,11 +11,13 @@ describe('LogEventUseCase', () => {
     const event = await useCase.execute({
       type: 'device_created',
       deviceId: '550e8400-e29b-41d4-a716-446655440000',
+      name: 'laptop',
     });
 
     assert.ok(event.id);
     assert.strictEqual(event.type, 'device_created');
     assert.strictEqual(event.deviceId, '550e8400-e29b-41d4-a716-446655440000');
+    assert.strictEqual(event.name, 'laptop');
     assert.strictEqual(mockRepo.save.mock.callCount(), 1);
     assert.strictEqual(mockRepo.save.mock.calls[0].arguments[0], event);
   });
@@ -28,6 +30,7 @@ describe('LogEventUseCase', () => {
       () =>
         useCase.execute({
           deviceId: '550e8400-e29b-41d4-a716-446655440000',
+          name: 'laptop',
         }),
       ValidationError,
     );
@@ -39,7 +42,22 @@ describe('LogEventUseCase', () => {
     const useCase = new LogEventUseCase(mockRepo);
 
     await assert.rejects(
-      () => useCase.execute({ type: 'device_created' }),
+      () => useCase.execute({ type: 'device_created', name: 'laptop' }),
+      ValidationError,
+    );
+    assert.strictEqual(mockRepo.save.mock.callCount(), 0);
+  });
+
+  it('throws ValidationError when name is missing', async () => {
+    const mockRepo = { save: mock.fn() };
+    const useCase = new LogEventUseCase(mockRepo);
+
+    await assert.rejects(
+      () =>
+        useCase.execute({
+          type: 'device_created',
+          deviceId: '550e8400-e29b-41d4-a716-446655440000',
+        }),
       ValidationError,
     );
     assert.strictEqual(mockRepo.save.mock.callCount(), 0);
@@ -55,6 +73,7 @@ describe('LogEventUseCase', () => {
         useCase.execute({
           type: 'device_created',
           deviceId: '550e8400-e29b-41d4-a716-446655440000',
+          name: 'laptop',
         }),
       dbError,
     );
