@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: asset-tracker-config
+  namespace: asset-tracker
+data:
+  GO_PORT: "8080"
+  NODE_PORT: "3000"
+  KAFKA_BROKER: "kafka-service:9092"
+  KAFKA_TOPIC: "device-events"
+  POSTGRES_DB: "asset_tracker"
+  MONGO_DB: "asset_tracker"
