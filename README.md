@@ -6,7 +6,7 @@
 
 | Phase | Description | Status | Completed |
 |-------|-------------|--------|-----------|
-| 0 | Docker Compose Base — 5 containers healthy | 🔜 Planned | — |
+| 0 | Docker Compose Base — 5 containers healthy | ✅ Complete | 2026-06-12 |
 | 1 | Go Hexagonal + PostgreSQL — full device CRUD (5 endpoints) | 🔜 Planned | — |
 | 2 | Node Hexagonal + MongoDB — event logging | 🔜 Planned | — |
 | 3 | Event-Driven Communication with Kafka — 3 event types (created/updated/deleted) | 🔜 Planned | — |

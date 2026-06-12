@@ -1,0 +1,9 @@
+.env
+*.log
+.git
+.gitignore
+Dockerfile
+.dockerignore
+__tests__/
+*.md
+npm-debug.log*
