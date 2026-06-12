@@ -58,7 +58,7 @@ Inter-service communication is **event-driven via Apache Kafka** in KRaft mode (
 | Go service | Go 1.23+, `slog`, `pgx`, `net/http`, `segmentio/kafka-go` |
 | Node.js service | Node.js 22+, `pino`, MongoDB native driver, `kafkajs` |
 | Databases | PostgreSQL 16, MongoDB 7 |
-| Message Broker | Apache Kafka 3.7 (KRaft mode, bitnami/kafka image) |
+| Message Broker | Apache Kafka 3.9.2 (KRaft mode, apache/kafka image) |
 | Containerization | Docker multi-stage builds, Docker Compose |
 | Orchestration | Kubernetes (Kind for local dev) |
 
