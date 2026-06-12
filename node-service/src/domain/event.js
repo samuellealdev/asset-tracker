@@ -43,6 +43,8 @@ export function createEvent({ type, deviceId, timestamp } = {}) {
     deviceId.trim().length === 0
   ) {
     errors.push('deviceId is required and must be a non-empty string');
+  } else if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(deviceId)) {
+    errors.push('deviceId must be a valid UUID v4');
   }
 
   if (errors.length > 0) {

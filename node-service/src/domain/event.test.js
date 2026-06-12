@@ -36,6 +36,15 @@ describe('Event entity', () => {
     );
   });
 
+  it('throws ValidationError when deviceId is not a valid UUID', () => {
+    assert.throws(
+      () => createEvent({ type: 'device_created', deviceId: 'not-a-uuid' }),
+      (err) =>
+        err instanceof ValidationError &&
+        err.errors.includes('deviceId must be a valid UUID v4'),
+    );
+  });
+
   it('uses custom timestamp when provided', () => {
     const customTimestamp = '2025-01-01T00:00:00.000Z';
     const event = createEvent({
