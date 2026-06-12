@@ -1,12 +1,17 @@
 package main
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/samuellealdev/asset-tracker/go-service/internal/application"
+	"github.com/samuellealdev/asset-tracker/go-service/internal/infrastructure"
+	"github.com/samuellealdev/asset-tracker/go-service/internal/interfaces"
 )
 
 func main() {
@@ -39,17 +44,64 @@ func main() {
 		port = "8080"
 	}
 
+	dsn := os.Getenv("POSTGRES_DSN")
+	if dsn == "" {
+		slog.Error("POSTGRES_DSN environment variable is required")
+		os.Exit(1)
+	}
+
+	// --- Database connection ---
+	ctx := context.Background()
+	pool, err := pgxpool.New(ctx, dsn)
+	if err != nil {
+		slog.Error("failed to create database pool", "error", err)
+		os.Exit(1)
+	}
+	defer pool.Close()
+
+	// --- Run migrations ---
+	if err := infrastructure.RunMigrations(ctx, pool); err != nil {
+		slog.Error("failed to run migrations", "error", err)
+		os.Exit(1)
+	}
+	slog.Info("database migrations completed")
+
+	// --- Infrastructure ---
+	deviceRepo := infrastructure.NewPostgresDeviceRepository(pool)
+
+	// --- Application (use cases) ---
+	createUseCase := application.NewCreateDeviceUseCase(deviceRepo)
+	listUseCase := application.NewListDevicesUseCase(deviceRepo)
+	getUseCase := application.NewGetDeviceUseCase(deviceRepo)
+	updateUseCase := application.NewUpdateDeviceUseCase(deviceRepo)
+	deleteUseCase := application.NewDeleteDeviceUseCase(deviceRepo)
+
+	// --- Interfaces (HTTP handler) ---
+	useCases := interfaces.NewDeviceUseCases(
+		createUseCase,
+		listUseCase,
+		getUseCase,
+		updateUseCase,
+		deleteUseCase,
+	)
+	handler := interfaces.NewDeviceHandler(useCases)
+
+	// --- Keep /health from Phase 0 ---
+	// The DeviceHandler already registers GET /health via its internal mux.
+	// We wrap the handler with an additional mux for any future top-level routes.
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		if err := json.NewEncoder(w).Encode(map[string]string{"status": "ok"}); err != nil {
-			slog.Error("failed to encode response", "error", err)
-		}
-	})
+	mux.Handle("/", handler)
 
 	slog.Info("starting server", "port", port)
-	if err := http.ListenAndServe(":"+port, mux); err != nil {
+	server := &http.Server{
+		Addr:         ":" + port,
+		Handler:      mux,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  30 * time.Second,
+	}
+
+	if err := server.ListenAndServe(); err != nil {
 		slog.Error("server failed", "error", err)
 		os.Exit(1)
 	}
