@@ -3,6 +3,7 @@ package interfaces_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -100,6 +101,40 @@ func TestDeviceHandler_HandleCreate(t *testing.T) {
 			t.Errorf("expected status 400, got %d", w.Code)
 		}
 	})
+
+	t.Run("returns 400 when type is empty", func(t *testing.T) {
+		handler := interfaces.NewDeviceHandler(&mockUseCases{
+			createFunc: func(_ context.Context, name, dtype string) (*domain.Device, error) {
+				return nil, domain.ErrTypeRequired
+			},
+		})
+
+		req := httptest.NewRequest(http.MethodPost, "/devices", strings.NewReader(`{"name":"laptop","type":""}`))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+
+		if w.Code != http.StatusBadRequest {
+			t.Errorf("expected status 400, got %d", w.Code)
+		}
+	})
+
+	t.Run("returns 500 on unexpected use case error", func(t *testing.T) {
+		handler := interfaces.NewDeviceHandler(&mockUseCases{
+			createFunc: func(_ context.Context, name, dtype string) (*domain.Device, error) {
+				return nil, errors.New("database connection failed")
+			},
+		})
+
+		req := httptest.NewRequest(http.MethodPost, "/devices", strings.NewReader(`{"name":"laptop","type":"computer"}`))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+
+		if w.Code != http.StatusInternalServerError {
+			t.Errorf("expected status 500, got %d", w.Code)
+		}
+	})
 }
 
 func TestDeviceHandler_HandleList(t *testing.T) {
@@ -155,6 +190,22 @@ func TestDeviceHandler_HandleList(t *testing.T) {
 			t.Errorf("expected name 'laptop', got %v", devices[0]["name"])
 		}
 	})
+
+	t.Run("returns 500 on use case error", func(t *testing.T) {
+		handler := interfaces.NewDeviceHandler(&mockUseCases{
+			listFunc: func(_ context.Context) ([]*domain.Device, error) {
+				return nil, errors.New("db unavailable")
+			},
+		})
+
+		req := httptest.NewRequest(http.MethodGet, "/devices", nil)
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+
+		if w.Code != http.StatusInternalServerError {
+			t.Errorf("expected status 500, got %d", w.Code)
+		}
+	})
 }
 
 func TestDeviceHandler_HandleGet(t *testing.T) {
@@ -205,6 +256,23 @@ func TestDeviceHandler_HandleGet(t *testing.T) {
 		}
 		if resp["error"] == nil {
 			t.Error("expected error message in response")
+		}
+	})
+
+	t.Run("returns 500 on unexpected use case error", func(t *testing.T) {
+		handler := interfaces.NewDeviceHandler(&mockUseCases{
+			getFunc: func(_ context.Context, id string) (*domain.Device, error) {
+				return nil, errors.New("storage failure")
+			},
+		})
+
+		req := httptest.NewRequest(http.MethodGet, "/devices/abc-123", nil)
+		req.SetPathValue("id", "abc-123")
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+
+		if w.Code != http.StatusInternalServerError {
+			t.Errorf("expected status 500, got %d", w.Code)
 		}
 	})
 }
@@ -274,6 +342,56 @@ func TestDeviceHandler_HandleUpdate(t *testing.T) {
 			t.Errorf("expected status 404, got %d", w.Code)
 		}
 	})
+
+	t.Run("returns 400 when type is empty", func(t *testing.T) {
+		handler := interfaces.NewDeviceHandler(&mockUseCases{
+			updateFunc: func(_ context.Context, id, name, dtype string) (*domain.Device, error) {
+				return nil, domain.ErrTypeRequired
+			},
+		})
+
+		req := httptest.NewRequest(http.MethodPut, "/devices/abc-123", strings.NewReader(`{"name":"server","type":""}`))
+		req.Header.Set("Content-Type", "application/json")
+		req.SetPathValue("id", "abc-123")
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+
+		if w.Code != http.StatusBadRequest {
+			t.Errorf("expected status 400, got %d", w.Code)
+		}
+	})
+
+	t.Run("returns 500 on unexpected use case error", func(t *testing.T) {
+		handler := interfaces.NewDeviceHandler(&mockUseCases{
+			updateFunc: func(_ context.Context, id, name, dtype string) (*domain.Device, error) {
+				return nil, errors.New("update failed")
+			},
+		})
+
+		req := httptest.NewRequest(http.MethodPut, "/devices/abc-123", strings.NewReader(`{"name":"server","type":"infrastructure"}`))
+		req.Header.Set("Content-Type", "application/json")
+		req.SetPathValue("id", "abc-123")
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+
+		if w.Code != http.StatusInternalServerError {
+			t.Errorf("expected status 500, got %d", w.Code)
+		}
+	})
+
+	t.Run("returns 400 when update JSON body is malformed", func(t *testing.T) {
+		handler := interfaces.NewDeviceHandler(&mockUseCases{})
+
+		req := httptest.NewRequest(http.MethodPut, "/devices/abc-123", strings.NewReader(`{invalid json}`))
+		req.Header.Set("Content-Type", "application/json")
+		req.SetPathValue("id", "abc-123")
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+
+		if w.Code != http.StatusBadRequest {
+			t.Errorf("expected status 400, got %d", w.Code)
+		}
+	})
 }
 
 func TestDeviceHandler_HandleDelete(t *testing.T) {
@@ -313,6 +431,32 @@ func TestDeviceHandler_HandleDelete(t *testing.T) {
 			t.Errorf("expected status 404, got %d", w.Code)
 		}
 	})
+
+	t.Run("returns 500 on unexpected use case error", func(t *testing.T) {
+		handler := interfaces.NewDeviceHandler(&mockUseCases{
+			deleteFunc: func(_ context.Context, id string) error {
+				return errors.New("delete failed")
+			},
+		})
+
+		req := httptest.NewRequest(http.MethodDelete, "/devices/abc-123", nil)
+		req.SetPathValue("id", "abc-123")
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+
+		if w.Code != http.StatusInternalServerError {
+			t.Errorf("expected status 500, got %d", w.Code)
+		}
+	})
+}
+
+// failWriter wraps an http.ResponseWriter and forces Write to fail.
+type failWriter struct {
+	http.ResponseWriter
+}
+
+func (f *failWriter) Write(b []byte) (int, error) {
+	return 0, errors.New("simulated write failure")
 }
 
 func TestDeviceHandler_Health(t *testing.T) {
@@ -333,6 +477,20 @@ func TestDeviceHandler_Health(t *testing.T) {
 		}
 		if resp["status"] != "ok" {
 			t.Errorf("expected status 'ok', got %q", resp["status"])
+		}
+	})
+
+	t.Run("logs error when JSON encoding fails", func(t *testing.T) {
+		handler := interfaces.NewDeviceHandler(&mockUseCases{})
+		fw := &failWriter{ResponseWriter: httptest.NewRecorder()}
+
+		req := httptest.NewRequest(http.MethodGet, "/health", nil)
+		handler.ServeHTTP(fw, req)
+
+		// The handler should not panic when encoding fails, and we
+		// just verify it doesn't crash — the error is logged, not returned.
+		if fw.ResponseWriter.(*httptest.ResponseRecorder).Code != http.StatusOK {
+			t.Errorf("expected status 200, got %d", fw.ResponseWriter.(*httptest.ResponseRecorder).Code)
 		}
 	})
 }

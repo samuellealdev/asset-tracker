@@ -9,17 +9,19 @@ Establish the containerized development environment with all five services — P
 - Docker Compose v3.8+ file defining five services on a shared bridge network named `app-network`.
 - PostgreSQL 16 with persistent volume, exposed on port 5432, healthcheck via `pg_isready`.
 - MongoDB 7 with persistent volume, exposed on port 27017, healthcheck via `mongosh --eval "db.adminCommand('ping')"`.
-- **Kafka** (bitnami/kafka:3.7 image) in KRaft mode (no Zookeeper) on port 9092. Environment variables for KRaft:
-  - `KAFKA_CFG_PROCESS_ROLES=broker,controller`
-  - `KAFKA_CFG_NODE_ID=1`
-  - `KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka:9093`
-  - `KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093`
-  - `KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092`
-  - `KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT`
-  - `KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER`
-  - `KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR=1`
-  - `KAFKA_KRAFT_CLUSTER_ID=MkU3OEVBNTcwNTJENDM2Qk` (static, for deterministic startup)
-- Kafka healthcheck via `/opt/bitnami/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list` (returns exit code 0 when Kafka is ready).
+- **Kafka** (apache/kafka:3.9.2 image) in KRaft mode (no Zookeeper) on port 9092. Environment variables for KRaft:
+  - `KAFKA_PROCESS_ROLES=broker,controller`
+  - `KAFKA_NODE_ID=1`
+  - `KAFKA_CONTROLLER_QUORUM_VOTERS=1@kafka:9093`
+  - `KAFKA_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093`
+  - `KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092`
+  - `KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT`
+  - `KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER`
+  - `KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1`
+  - `CLUSTER_ID=MkU3OEVBNTcwNTJENDM2Qk` (static, for deterministic startup)
+- Kafka healthcheck via `/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list` (returns exit code 0 when Kafka is ready).
+
+> **Migration note from bitnami/kafka to apache/kafka**: The `apache/kafka` image uses different environment variable names (no `CFG_` prefix), renames `KAFKA_KRAFT_CLUSTER_ID` to `CLUSTER_ID`, changes binary paths from `/opt/bitnami/kafka/bin/` to `/opt/kafka/bin/`, and uses `/var/lib/kafka/data` as the data volume instead of `/bitnami/kafka`.
 - go-service: minimal Go HTTP server on port 8080 with a single `GET /health` endpoint returning HTTP 200 and `{"status":"ok"}`. Multi-stage Dockerfile (build stage + distroless runtime).
 - node-service: minimal Node.js HTTP server on port 3000 with a single `GET /health` endpoint returning HTTP 200 and `{"status":"ok"}`. Multi-stage Dockerfile (build/deps stage + slim runtime).
 - All containers MUST have healthchecks. Compose `depends_on` with `condition: service_healthy` for go-service (depends on postgres, kafka) and node-service (depends on mongo, kafka).
@@ -47,7 +49,7 @@ None — all files are new creations.
 - [ ] `docker compose ps` shows all 5 services as `healthy` within 90 seconds.
 - [ ] `curl -s http://localhost:8080/health` returns `{"status":"ok"}` with HTTP 200.
 - [ ] `curl -s http://localhost:3000/health` returns `{"status":"ok"}` with HTTP 200.
-- [ ] `docker compose exec kafka /opt/bitnami/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list` executes successfully (returns exit 0, output may be empty).
+- [ ] `docker compose exec kafka /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list` executes successfully (returns exit 0, output may be empty).
 - [ ] `docker compose down -v` stops all services and removes volumes cleanly.
 - [ ] `docker compose build` succeeds with no warnings from multi-stage builds.
 - [ ] PostgreSQL is reachable at `localhost:5432` with credentials from env vars.
@@ -63,8 +65,8 @@ None — all files are new creations.
 - Healthcheck intervals MUST be reasonable: interval=10s, timeout=5s, retries=5, start_period=15s. For Kafka, use start_period=30s (KRaft initialization takes longer).
 - The `app-network` bridge network MUST be explicitly named and used by all services.
 - No external orchestration tools — pure Docker Compose only.
-- Kafka MUST run in KRaft mode (no Zookeeper container). Use bitnami/kafka image with `KAFKA_CFG_PROCESS_ROLES=broker,controller`.
-- Kafka MUST use a static `KAFKA_KRAFT_CLUSTER_ID` to ensure deterministic startup behavior.
+- Kafka MUST run in KRaft mode (no Zookeeper container). Use apache/kafka image with `KAFKA_PROCESS_ROLES=broker,controller`.
+- Kafka MUST use a static `CLUSTER_ID` to ensure deterministic startup behavior.
 
 ## Notes
 
@@ -74,5 +76,5 @@ None — all files are new creations.
 - MongoDB 7 healthcheck uses `mongosh` (not the deprecated `mongo` shell).
 - PostgreSQL healthcheck uses `pg_isready -U ${POSTGRES_USER:-postgres}`.
 - Kafka KRaft mode eliminates the Zookeeper dependency. A single node acts as both broker and controller.
-- The bitnami/kafka image includes `kafka-topics.sh` at `/opt/bitnami/kafka/bin/` — use this for healthchecks and topic management.
+- The apache/kafka image includes `kafka-topics.sh` at `/opt/kafka/bin/` — use this for healthchecks and topic management.
 - This phase establishes the development environment — all later phases run inside these containers.
