@@ -23,6 +23,7 @@ After completing each development phase, update `README.md` incrementally:
 1. Add a **Phase Summary** section at the top of the README with the current phase status table.
 2. Document the **architecture decisions** made during that phase.
 3. Do NOT erase previous phase documentation — the README grows incrementally.
+4. After updating the phase status, review ALL other README sections (Quick Start, Architecture, Running Tests) and update any that reference now-completed phases or stale information.
 
 The README serves as the living project journal. It should answer: what we built, why we built it that way, and how to run it.
 
