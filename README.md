@@ -11,7 +11,7 @@
 | 2 | Node Hexagonal + MongoDB — event logging | ✅ Complete | 2026-06-12 |
 | 3 | Event-Driven Communication with Kafka — 3 event types (created/updated/deleted) | ✅ Complete | 2026-06-12 |
 | 4 | Observability — structured logging, health checks, metrics | ✅ Complete | 2026-06-12 |
-| 5 | Kubernetes Manifests | 🔜 Planned | — |
+| 5 | Kubernetes Manifests | ✅ Complete | 2026-06-12 |
 
 ## Architecture
 
