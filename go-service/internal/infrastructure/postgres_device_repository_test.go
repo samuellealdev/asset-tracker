@@ -73,6 +73,11 @@ func TestPostgresDeviceRepository_FindAll(t *testing.T) {
 		t.Fatalf("failed to run migration: %v", err)
 	}
 
+	// Ensure clean state — other tests may have left data
+	if _, err := pool.Exec(ctx, "DELETE FROM devices"); err != nil {
+		t.Fatalf("failed to clean devices table: %v", err)
+	}
+
 	repo := infrastructure.NewPostgresDeviceRepository(pool)
 
 	t.Run("returns empty list when no devices", func(t *testing.T) {

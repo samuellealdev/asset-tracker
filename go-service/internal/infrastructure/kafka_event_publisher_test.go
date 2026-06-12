@@ -51,10 +51,11 @@ func TestKafkaEventPublisher_PublishAllTypes(t *testing.T) {
 	deviceID := "550e8400-e29b-41d4-a716-446655440000"
 
 	writer := &kafka.Writer{
-		Addr:     kafka.TCP(broker),
-		Topic:    topic,
-		Balancer: &kafka.LeastBytes{},
-		BatchTimeout: 50 * time.Millisecond,
+		Addr:                     kafka.TCP(broker),
+		Topic:                    topic,
+		Balancer:                 &kafka.LeastBytes{},
+		BatchTimeout:             50 * time.Millisecond,
+		AllowAutoTopicCreation:   true,
 	}
 	t.Cleanup(func() { writer.Close() })
 
