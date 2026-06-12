@@ -9,7 +9,7 @@
 | 0 | Docker Compose Base — 5 containers healthy | ✅ Complete | 2026-06-12 |
 | 1 | Go Hexagonal + PostgreSQL — full device CRUD (5 endpoints) | ✅ Complete | 2026-06-12 |
 | 2 | Node Hexagonal + MongoDB — event logging | ✅ Complete | 2026-06-12 |
-| 3 | Event-Driven Communication with Kafka — 3 event types (created/updated/deleted) | 🔜 Planned | — |
+| 3 | Event-Driven Communication with Kafka — 3 event types (created/updated/deleted) | ✅ Complete | 2026-06-12 |
 | 4 | Observability — structured logging, health checks | 🔜 Planned | — |
 | 5 | Kubernetes Manifests | 🔜 Planned | — |
 
@@ -93,6 +93,14 @@ curl localhost:8080/devices
 curl -X POST localhost:3000/events \
   -H 'Content-Type: application/json' \
   -d '{"type":"device.created","deviceId":"550e8400-e29b-41d4-a716-446655440000"}'
+
+# Verify Kafka events (after CRUD operations)
+docker compose exec kafka /opt/kafka/bin/kafka-console-consumer.sh \
+  --bootstrap-server localhost:9092 --topic device-events --from-beginning --max-messages 3
+
+# Verify events in MongoDB
+docker compose exec mongo mongosh -u mongo -p changeme --authenticationDatabase admin \
+  --eval "use asset_tracker; db.events.find().pretty()"
 ```
 
 ## Running Tests

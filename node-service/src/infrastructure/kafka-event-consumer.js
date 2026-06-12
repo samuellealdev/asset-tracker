@@ -10,7 +10,7 @@ const VALID_EVENT_TYPES = new Set([
 
 /**
  * @typedef {Object} KafkaEventConsumerOptions
- * @property {import('kafkajs').Kafka} kafka - Kafka client instance
+ * @property {import('@confluentinc/kafka-javascript').KafkaJS.Kafka} kafka - Kafka client instance (kafkajs-compatible)
  * @property {string} topic - Topic to consume from
  * @property {string} groupId - Consumer group ID
  * @property {import('../application/log-event.js').LogEventUseCase} logEventUseCase - Use case to handle events
@@ -46,11 +46,10 @@ export class KafkaEventConsumer {
    */
   async start() {
     try {
-      this.consumer = this.kafka.consumer({ groupId: this.groupId });
+      this.consumer = this.kafka.consumer({ kafkaJS: { groupId: this.groupId, fromBeginning: false } });
       await this.consumer.connect();
       await this.consumer.subscribe({
         topic: this.topic,
-        fromBeginning: false,
       });
       await this.consumer.run({
         eachMessage: async ({ message }) => {
@@ -87,7 +86,7 @@ export class KafkaEventConsumer {
    * Handle a single Kafka message: parse, validate, and persist.
    * Malformed messages are skipped with a warning — the consumer never crashes.
    *
-   * @param {import('kafkajs').KafkaMessage} message
+   * @param {{ value: Buffer }} message
    * @private
    */
   async #handleMessage(message) {

@@ -31,10 +31,10 @@ async function main() {
 
   if (KAFKA_BROKER) {
     try {
-      const { Kafka } = await import('kafkajs');
-      const kafka = new Kafka({
-        clientId: 'asset-tracker-node',
-        brokers: [KAFKA_BROKER],
+      const { KafkaJS } = await import('@confluentinc/kafka-javascript');
+      const kafka = new KafkaJS.Kafka({
+        'bootstrap.servers': KAFKA_BROKER,
+        kafkaJS: { clientId: 'asset-tracker-node' },
       });
       kafkaConsumer = new KafkaEventConsumer({
         kafka,

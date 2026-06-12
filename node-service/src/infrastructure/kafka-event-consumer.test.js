@@ -274,7 +274,7 @@ describe('KafkaEventConsumer', () => {
     assert.strictEqual(mockKafkaConsumer.disconnect.mock.callCount(), 1);
   });
 
-  it('handles kafkajs connection errors gracefully', async () => {
+  it('handles connection errors gracefully', async () => {
     const failingConsumerMock = {
       connect: mock.fn(async () => {
         throw new Error('Connection refused');

@@ -40,7 +40,8 @@ func (uc *CreateDeviceUseCase) Execute(ctx context.Context, name, deviceType str
 				slog.Error("panic in event publisher", "deviceId", device.ID, "recover", r)
 			}
 		}()
-		if err := uc.eventPublisher.PublishDeviceCreated(ctx, device.ID, device.Name, device.CreatedAt); err != nil {
+		// Use context.Background() so Kafka write survives HTTP response lifecycle.
+		if err := uc.eventPublisher.PublishDeviceCreated(context.Background(), device.ID, device.Name, device.CreatedAt); err != nil {
 			slog.Error("failed to publish device.created", "deviceId", device.ID, "error", err)
 		}
 	}()

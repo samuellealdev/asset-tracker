@@ -38,7 +38,8 @@ func (uc *DeleteDeviceUseCase) Execute(ctx context.Context, id string) error {
 				slog.Error("panic in event publisher", "deviceId", id, "recover", r)
 			}
 		}()
-		if err := uc.eventPublisher.PublishDeviceDeleted(ctx, id, device.Name, device.CreatedAt); err != nil {
+		// Use context.Background() so Kafka write survives HTTP response lifecycle.
+		if err := uc.eventPublisher.PublishDeviceDeleted(context.Background(), id, device.Name, device.CreatedAt); err != nil {
 			slog.Error("failed to publish device.deleted", "deviceId", id, "error", err)
 		}
 	}()

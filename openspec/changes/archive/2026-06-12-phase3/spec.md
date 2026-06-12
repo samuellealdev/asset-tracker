@@ -12,7 +12,7 @@ Implement Kafka-based pub/sub communication between the Go service (producer) an
   - `PublishDeviceUpdated(ctx context.Context, deviceID, deviceName string, timestamp time.Time) error`
   - `PublishDeviceDeleted(ctx context.Context, deviceID, deviceName string, timestamp time.Time) error`
   Parameters provide all fields for the event schema.
-- **Kafka Consumer (Node service)**: Infrastructure adapter `KafkaEventConsumer` consuming from `device-events` topic. Uses `@confluentinc/kafka-javascript` library (librdkafka binding, fully compatible with Kafka 3.9.x). Stores consumed events as documents in MongoDB `events` collection. MUST handle all three event types (`device.created`, `device.updated`, `device.deleted`).
+- **Kafka Consumer (Node service)**: Infrastructure adapter `KafkaEventConsumer` consuming from `device-events` topic. Uses `kafkajs` library (most popular, pure JS). Stores consumed events as documents in MongoDB `events` collection. MUST handle all three event types (`device.created`, `device.updated`, `device.deleted`).
 - **EventConsumer port**: Interface in the application layer with method `startConsuming()` that begins the consumer loop and calls `handleEvent(event)` for each received message.
 - **Event Schema**: JSON payload published to `device-events` topic. Uniform schema across all three event types:
   ```json
@@ -28,10 +28,10 @@ Implement Kafka-based pub/sub communication between the Go service (producer) an
   - `name`: Device name (string, MUST be present). For `device.deleted`, this is the device name BEFORE deletion.
   - `timestamp`: ISO 8601 UTC timestamp of when the event was produced (string, MUST be present).
   - All four fields are mandatory for ALL event types. Consumer SHALL validate the schema and log warnings for malformed messages (skip, do NOT crash).
-- **Async produce (non-blocking)**: Use cases MUST call their respective `EventPublisher` method in a goroutine. The use case returns its result (created/updated device or nil for delete) and does NOT wait for Kafka acknowledgment. Errors are logged via `slog.Error` and never returned to the caller. The goroutine MUST use `context.Background()` instead of the HTTP request context (`ctx`) so the Kafka write survives the HTTP response lifecycle — otherwise ~57% of events fail because the HTTP context is cancelled as soon as the response is sent. Repository operations (inside the use case, before the goroutine) MUST continue to use the original `ctx` so they respect HTTP cancellation. Applies to:
-  - `CreateDeviceUseCase` → calls `PublishDeviceCreated` in goroutine with `context.Background()`
-  - `UpdateDeviceUseCase` → calls `PublishDeviceUpdated` in goroutine with `context.Background()`
-  - `DeleteDeviceUseCase` → calls `PublishDeviceDeleted` in goroutine with `context.Background()`
+- **Async produce (non-blocking)**: Use cases MUST call their respective `EventPublisher` method in a goroutine. The use case returns its result (created/updated device or nil for delete) and does NOT wait for Kafka acknowledgment. Errors are logged via `slog.Error` and never returned to the caller. Applies to:
+  - `CreateDeviceUseCase` → calls `PublishDeviceCreated` in goroutine
+  - `UpdateDeviceUseCase` → calls `PublishDeviceUpdated` in goroutine
+  - `DeleteDeviceUseCase` → calls `PublishDeviceDeleted` in goroutine
 - **Consumer group**: Node service consumer MUST use a consumer group ID (`asset-tracker-node`) so multiple replicas can share consumption load. Each event is processed at-least-once.
 - **Panic recovery**: The goroutine for producing MUST recover from panics to prevent crashing the HTTP handler. The consumer loop MUST also recover from panics on individual message processing.
 - **Kafka configuration**: All Kafka settings (broker address, topic name, consumer group) MUST be read from environment variables with sensible defaults:
@@ -45,8 +45,8 @@ Implement Kafka-based pub/sub communication between the Go service (producer) an
 - `go-service/internal/infrastructure/kafka_event_publisher.go` — `KafkaEventPublisher` struct implementing `EventPublisher`. Uses `segmentio/kafka-go` writer. JSON marshaling of event schema. Constructor accepts broker address and topic. WriteTimeout 5s. Three public methods corresponding to the interface, each serializing the event with the correct `type` field.
 - `go-service/internal/infrastructure/kafka_event_publisher_test.go` — Tests for: successful produce for each event type, JSON schema correctness per type, error handling when broker unreachable, context cancellation. Use a real Kafka broker (via Docker test container) or a mock `kafka-go` writer interface.
 - `node-service/internal/application/event_consumer.js` — `EventConsumer` abstract class/interface defining `startConsuming()` and `handleEvent(event)` with JSDoc types
-- `node-service/internal/infrastructure/kafka_event_consumer.js` — `KafkaEventConsumer` class extending `EventConsumer`. Uses `@confluentinc/kafka-javascript.Kafka` client with consumer group. Connects on startup, subscribes to topic, runs consumer loop. Validates event schema (all 3 type values accepted) before storing. Calls MongoDB adapter to insert into `events` collection. Graceful shutdown on SIGTERM/SIGINT.
-- `node-service/internal/infrastructure/kafka_event_consumer.test.js` — Tests for: successful consume and store for all 3 event types, schema validation (missing fields, wrong types, unknown `type` value), consumer group behavior. Use a mock `@confluentinc/kafka-javascript` consumer or a test Kafka container.
+- `node-service/internal/infrastructure/kafka_event_consumer.js` — `KafkaEventConsumer` class extending `EventConsumer`. Uses `kafkajs.Kafka` client with consumer group. Connects on startup, subscribes to topic, runs consumer loop. Validates event schema (all 3 type values accepted) before storing. Calls MongoDB adapter to insert into `events` collection. Graceful shutdown on SIGTERM/SIGINT.
+- `node-service/internal/infrastructure/kafka_event_consumer.test.js` — Tests for: successful consume and store for all 3 event types, schema validation (missing fields, wrong types, unknown `type` value), consumer group behavior. Use a mock `kafkajs` consumer or a test Kafka container.
 
 ## Files to Modify
 
@@ -62,7 +62,7 @@ Implement Kafka-based pub/sub communication between the Go service (producer) an
 - `node-service/internal/domain/event.js` — Add or update Event entity/value object to include all four schema fields (`type`, `deviceId`, `name`, `timestamp`) with validation that accepts all three `type` values
 - `node-service/internal/infrastructure/mongo_event_repository.js` — Ensure `save(event)` accepts the event schema fields and stores as a MongoDB document in `events` collection. Works for all 3 event types.
 - `node-service/index.js` — Initialize `KafkaEventConsumer`, call `startConsuming()`, handle graceful shutdown on SIGTERM/SIGINT
-- `node-service/package.json` — Add `"@confluentinc/kafka-javascript": "^1.0.0"` dependency
+- `node-service/package.json` — Add `"kafkajs": "^2.2.4"` dependency
 
 ## Acceptance Criteria
 
@@ -87,7 +87,7 @@ Implement Kafka-based pub/sub communication between the Go service (producer) an
 - The goroutine for event publishing MUST recover from panics to prevent crashing the HTTP handler. This applies to ALL three use cases that publish events.
 - The Node service consumer loop MUST recover from panics on individual message processing — one malformed message MUST NOT crash the consumer.
 - Go producer MUST use `segmentio/kafka-go` (no CGO dependency — compatible with `distroless/static` runtime image).
-- Node consumer MUST use `@confluentinc/kafka-javascript` (librdkafka binding, compatible with Kafka 3.9.x).
+- Node consumer MUST use `kafkajs` (pure JavaScript, no native addons needed).
 - All Kafka configuration MUST be via environment variables (`KAFKA_BROKER`, `KAFKA_TOPIC`, `KAFKA_CONSUMER_GROUP`) with sensible defaults.
 - The `KafkaEventPublisher` constructor MUST accept broker address and topic (not hardcoded).
 - The `KafkaEventConsumer` constructor MUST accept broker address, topic, and consumer group ID (not hardcoded).
@@ -103,7 +103,7 @@ Implement Kafka-based pub/sub communication between the Go service (producer) an
 - The `EventPublisher` interface belongs in the application layer (outbound port), while `KafkaEventPublisher` is an infrastructure adapter.
 - The `EventConsumer` interface belongs in the application layer (inbound port), while `KafkaEventConsumer` is an infrastructure adapter.
 - For Go tests, create a `KafkaWriter` interface to enable mocking: `segmentio/kafka-go.Writer` does not expose an interface natively. Wrap it or use a test Kafka container.
-- For Node tests, use `node:test` with `mock` module to mock the `@confluentinc/kafka-javascript` consumer. Alternatively, use a testcontainers-based Kafka for integration tests.
+- For Node tests, use `node:test` with `mock` module to mock the `kafkajs` consumer. Alternatively, use a testcontainers-based Kafka for integration tests.
 - Use `slog.With("deviceID", deviceID)` to attach context to produce log entries.
 - The consumer group ID `asset-tracker-node` ensures that when multiple Node replicas run (Phase 5), they share the partition load without duplicate processing.
 - Kafka KRaft mode: the bitnami/kafka image handles the combined broker+controller role. No Zookeeper is needed.
