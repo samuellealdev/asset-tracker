@@ -143,13 +143,17 @@ kubectl port-forward svc/node-service 3000:3000 -n asset-tracker
 
 The Ingress resource (`k8s/ingress.yaml`) routes external HTTP traffic to the application services:
 
-| Path | Backend Service |
-|------|----------------|
-| `/devices` | go-service:8080 |
-| `/events` | node-service:3000 |
-| `/health` | node-service:3000 |
-| `/metrics` | node-service:3000 |
+| Path | Backend Service | Notes |
+|------|----------------|-------|
+| `/devices` | go-service:8080 | Device CRUD |
+| `/events` | node-service:3000 | Event logging |
+| `/go/health` | go-service:8080 | → rewritten to `/health` |
+| `/go/metrics` | go-service:8080 | → rewritten to `/metrics` |
+| `/node/health` | node-service:3000 | → rewritten to `/health` |
+| `/node/metrics` | node-service:3000 | → rewritten to `/metrics` |
 
+The `/go/*` and `/node/*` prefixes use nginx `rewrite-target` to strip the prefix before forwarding.
+Both services' health and metrics endpoints are now accessible via Ingress.
 ### Install nginx-ingress on Kind
 
 Kind does not ship with an Ingress Controller. Install nginx-ingress:
@@ -173,10 +177,6 @@ kubectl wait --namespace ingress-nginx \
 kubectl apply -f k8s/ingress.yaml
 ```
 
-### Ingress Health Routing Limitation
-
-> The `/health` path routes to node-service:3000 only. Go service health probes (`/health/live`, `/health/ready`) are **not** accessible via Ingress — they remain reachable via `kubectl port-forward svc/go-service 8080:8080` or direct pod IPs. Kubernetes liveness/readiness probes use the pod IP directly, so this does not affect cluster operations.
-
 ### Test via Ingress
 
 With port-forwarding to the nginx-ingress controller (Kind exposes it on `localhost:80` by default):
@@ -191,8 +191,12 @@ curl http://localhost:8081/devices
 # Test events endpoint
 curl http://localhost:8081/events
 
-# Test health endpoint
-curl http://localhost:8081/health
+# Test health and metrics (both services)
+curl http://localhost:8081/go/health
+curl http://localhost:8081/go/health/live
+curl http://localhost:8081/go/metrics
+curl http://localhost:8081/node/health
+curl http://localhost:8081/node/metrics
 ```
 
 ---
