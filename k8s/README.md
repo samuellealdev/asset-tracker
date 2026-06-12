@@ -38,15 +38,15 @@ Build the service images before applying manifests:
 
 ```bash
 # From the repository root
-docker build -t go-service:local ./go-service
-docker build -t node-service:local ./node-service
+docker build -t asset-tracker-go-service:latest ./go-service
+docker build -t asset-tracker-node-service:latest ./node-service
 ```
 
 Load images into Kind (skip for Minikube if using `minikube docker-env`):
 
 ```bash
-kind load docker-image go-service:local --name asset-tracker
-kind load docker-image node-service:local --name asset-tracker
+kind load docker-image asset-tracker-go-service:latest --name asset-tracker
+kind load docker-image asset-tracker-node-service:latest --name asset-tracker
 ```
 
 ---
@@ -72,9 +72,16 @@ kubectl wait --for=condition=ready pod -l app=postgres -n asset-tracker --timeou
 kubectl wait --for=condition=ready pod -l app=mongo -n asset-tracker --timeout=120s
 kubectl wait --for=condition=ready pod -l app=kafka -n asset-tracker --timeout=120s
 
-# 5. (Future) Application services
-# kubectl apply -f k8s/go-service/
-# kubectl apply -f k8s/node-service/
+# 5. Application services
+kubectl apply -f k8s/go-service-deployment.yaml
+kubectl apply -f k8s/node-service-deployment.yaml
+
+# 6. Verify application pods are ready
+kubectl wait --for=condition=ready pod -l app=go-service -n asset-tracker --timeout=120s
+kubectl wait --for=condition=ready pod -l app=node-service -n asset-tracker --timeout=120s
+
+# 7. (Optional) Ingress — requires nginx-ingress installed first (see Ingress Setup below)
+# kubectl apply -f k8s/ingress.yaml
 ```
 
 Or apply everything at once (may cause transient errors as pods start):
@@ -132,6 +139,64 @@ kubectl port-forward svc/node-service 3000:3000 -n asset-tracker
 
 ---
 
+## Ingress Setup (Optional)
+
+The Ingress resource (`k8s/ingress.yaml`) routes external HTTP traffic to the application services:
+
+| Path | Backend Service |
+|------|----------------|
+| `/devices` | go-service:8080 |
+| `/events` | node-service:3000 |
+| `/health` | node-service:3000 |
+| `/metrics` | node-service:3000 |
+
+### Install nginx-ingress on Kind
+
+Kind does not ship with an Ingress Controller. Install nginx-ingress:
+
+```bash
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
+```
+
+Wait for the controller to be ready:
+
+```bash
+kubectl wait --namespace ingress-nginx \
+  --for=condition=ready pod \
+  --selector=app.kubernetes.io/component=controller \
+  --timeout=120s
+```
+
+### Apply the Ingress
+
+```bash
+kubectl apply -f k8s/ingress.yaml
+```
+
+### Ingress Health Routing Limitation
+
+> The `/health` path routes to node-service:3000 only. Go service health probes (`/health/live`, `/health/ready`) are **not** accessible via Ingress — they remain reachable via `kubectl port-forward svc/go-service 8080:8080` or direct pod IPs. Kubernetes liveness/readiness probes use the pod IP directly, so this does not affect cluster operations.
+
+### Test via Ingress
+
+With port-forwarding to the nginx-ingress controller (Kind exposes it on `localhost:80` by default):
+
+```bash
+# Port-forward nginx-ingress (run in a separate terminal)
+kubectl port-forward -n ingress-nginx svc/ingress-nginx-controller 8081:80
+
+# Test device endpoint
+curl http://localhost:8081/devices
+
+# Test events endpoint
+curl http://localhost:8081/events
+
+# Test health endpoint
+curl http://localhost:8081/health
+```
+
+---
+
 ## E2E Smoke Test
 
 After all services are running:
@@ -178,6 +243,8 @@ kubectl exec -n asset-tracker deploy/mongo -- \
 kubectl describe pod -l app=postgres -n asset-tracker | grep -A5 -i probe
 kubectl describe pod -l app=mongo -n asset-tracker | grep -A5 -i probe
 kubectl describe pod -l app=kafka -n asset-tracker | grep -A5 -i probe
+kubectl describe pod -l app=go-service -n asset-tracker | grep -A5 -i probe
+kubectl describe pod -l app=node-service -n asset-tracker | grep -A5 -i probe
 ```
 
 ---

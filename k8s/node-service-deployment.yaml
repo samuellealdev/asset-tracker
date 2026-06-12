@@ -1,0 +1,86 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: node-service
+  namespace: asset-tracker
+  labels:
+    app: node-service
+    component: api
+    tier: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: node-service
+  template:
+    metadata:
+      labels:
+        app: node-service
+    spec:
+      containers:
+        - name: node-service
+          image: asset-tracker-node-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000
+          env:
+            - name: PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: asset-tracker-config
+                  key: NODE_PORT
+            - name: MONGO_URI
+              valueFrom:
+                secretKeyRef:
+                  name: asset-tracker-secret
+                  key: MONGO_URI
+            - name: KAFKA_BROKER
+              valueFrom:
+                configMapKeyRef:
+                  name: asset-tracker-config
+                  key: KAFKA_BROKER
+            - name: KAFKA_TOPIC
+              valueFrom:
+                configMapKeyRef:
+                  name: asset-tracker-config
+                  key: KAFKA_TOPIC
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 3000
+            initialDelaySeconds: 3
+            periodSeconds: 5
+            timeoutSeconds: 3
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: node-service
+  namespace: asset-tracker
+  labels:
+    app: node-service
+spec:
+  type: ClusterIP
+  selector:
+    app: node-service
+  ports:
+    - port: 3000
+      targetPort: 3000
+      protocol: TCP
+      name: http
