@@ -74,12 +74,20 @@ Inter-service communication is **event-driven via Apache Kafka** in KRaft mode (
 | `nodejs-best-practices` | Node.js patterns, async, security |
 | `kubernetes-manifests` | K8s manifests with probes, resources |
 
-## Quick Start (after Phase 0)
+## Quick Start
 
 ```bash
 docker compose up -d
 curl localhost:8080/health  # → {"status":"ok"}
 curl localhost:3000/health  # → {"status":"ok"}
+
+# Create a device
+curl -X POST localhost:8080/devices \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"laptop","type":"computer"}'
+
+# List all devices
+curl localhost:8080/devices
 ```
 
 ## Running Tests
