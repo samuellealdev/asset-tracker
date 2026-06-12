@@ -6,9 +6,12 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/segmentio/kafka-go"
 	"github.com/samuellealdev/asset-tracker/go-service/internal/application"
 	"github.com/samuellealdev/asset-tracker/go-service/internal/infrastructure"
 	"github.com/samuellealdev/asset-tracker/go-service/internal/interfaces"
@@ -69,12 +72,30 @@ func main() {
 	// --- Infrastructure ---
 	deviceRepo := infrastructure.NewPostgresDeviceRepository(pool)
 
+	// --- Kafka Event Publisher ---
+	broker := os.Getenv("KAFKA_BROKER")
+	if broker == "" {
+		broker = "kafka:9092"
+	}
+	topic := os.Getenv("KAFKA_TOPIC")
+	if topic == "" {
+		topic = "device-events"
+	}
+
+	kafkaWriter := &kafka.Writer{
+		Addr:         kafka.TCP(broker),
+		Topic:        topic,
+		WriteTimeout: 5 * time.Second,
+	}
+	eventPublisher := infrastructure.NewKafkaEventPublisher(kafkaWriter)
+	slog.Info("kafka event publisher configured", "broker", broker, "topic", topic)
+
 	// --- Application (use cases) ---
-	createUseCase := application.NewCreateDeviceUseCase(deviceRepo)
+	createUseCase := application.NewCreateDeviceUseCase(deviceRepo, eventPublisher)
 	listUseCase := application.NewListDevicesUseCase(deviceRepo)
 	getUseCase := application.NewGetDeviceUseCase(deviceRepo)
-	updateUseCase := application.NewUpdateDeviceUseCase(deviceRepo)
-	deleteUseCase := application.NewDeleteDeviceUseCase(deviceRepo)
+	updateUseCase := application.NewUpdateDeviceUseCase(deviceRepo, eventPublisher)
+	deleteUseCase := application.NewDeleteDeviceUseCase(deviceRepo, eventPublisher)
 
 	// --- Interfaces (HTTP handler) ---
 	useCases := interfaces.NewDeviceUseCases(
@@ -92,7 +113,6 @@ func main() {
 	mux := http.NewServeMux()
 	mux.Handle("/", handler)
 
-	slog.Info("starting server", "port", port)
 	server := &http.Server{
 		Addr:         ":" + port,
 		Handler:      mux,
@@ -101,8 +121,30 @@ func main() {
 		IdleTimeout:  30 * time.Second,
 	}
 
-	if err := server.ListenAndServe(); err != nil {
-		slog.Error("server failed", "error", err)
-		os.Exit(1)
+	// --- Graceful shutdown ---
+	go func() {
+		slog.Info("starting server", "port", port)
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			slog.Error("server failed", "error", err)
+			os.Exit(1)
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+	slog.Info("shutting down server...")
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		slog.Error("server forced to shutdown", "error", err)
 	}
+
+	if err := eventPublisher.Close(); err != nil {
+		slog.Error("failed to close Kafka writer", "error", err)
+	}
+
+	slog.Info("server stopped")
 }

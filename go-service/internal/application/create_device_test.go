@@ -35,7 +35,7 @@ func (m *mockDeviceRepository) Delete(ctx context.Context, id string) error {
 }
 
 func TestCreateDeviceUseCase_Execute(t *testing.T) {
-	t.Run("creates device successfully", func(t *testing.T) {
+	t.Run("creates device and publishes event", func(t *testing.T) {
 		var saved *domain.Device
 		repo := &mockDeviceRepository{
 			saveFunc: func(_ context.Context, d *domain.Device) error {
@@ -43,7 +43,9 @@ func TestCreateDeviceUseCase_Execute(t *testing.T) {
 				return nil
 			},
 		}
-		uc := application.NewCreateDeviceUseCase(repo)
+		pub := &mockEventPublisher{}
+		pub.wg.Add(1)
+		uc := application.NewCreateDeviceUseCase(repo, pub)
 
 		device, err := uc.Execute(context.Background(), "laptop", "computer")
 		if err != nil {
@@ -67,29 +69,76 @@ func TestCreateDeviceUseCase_Execute(t *testing.T) {
 		if saved.ID != device.ID {
 			t.Error("saved device should match returned device")
 		}
+
+		pub.wg.Wait()
+		if pub.CreatedCallCount() != 1 {
+			t.Errorf("expected 1 PublishDeviceCreated call, got %d", pub.CreatedCallCount())
+		}
+		lastID, lastName, _, ok := pub.LastCreatedCall()
+		if !ok {
+			t.Fatal("expected at least one created call")
+		}
+		if lastID != device.ID {
+			t.Errorf("expected device ID %q, got %q", device.ID, lastID)
+		}
+		if lastName != "laptop" {
+			t.Errorf("expected name 'laptop', got %q", lastName)
+		}
 	})
 
-	t.Run("returns error when name is empty", func(t *testing.T) {
+	t.Run("publishes event even when publisher returns error", func(t *testing.T) {
+		repo := &mockDeviceRepository{
+			saveFunc: func(_ context.Context, d *domain.Device) error {
+				return nil
+			},
+		}
+		pub := &mockEventPublisher{returnErr: errors.New("kafka down")}
+		pub.wg.Add(1)
+		uc := application.NewCreateDeviceUseCase(repo, pub)
+
+		device, err := uc.Execute(context.Background(), "laptop", "computer")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if device == nil {
+			t.Fatal("expected non-nil device")
+		}
+
+		pub.wg.Wait()
+		if pub.CreatedCallCount() != 1 {
+			t.Errorf("expected 1 publish call even on error, got %d", pub.CreatedCallCount())
+		}
+	})
+
+	t.Run("does not publish event when name is empty", func(t *testing.T) {
 		repo := &mockDeviceRepository{}
-		uc := application.NewCreateDeviceUseCase(repo)
+		pub := &mockEventPublisher{}
+		uc := application.NewCreateDeviceUseCase(repo, pub)
 
 		_, err := uc.Execute(context.Background(), "", "computer")
 		if err == nil {
 			t.Fatal("expected error, got nil")
 		}
+		if pub.TotalCalls() != 0 {
+			t.Error("expected no publish calls when creation fails")
+		}
 	})
 
-	t.Run("returns error when repository save fails", func(t *testing.T) {
+	t.Run("does not publish event when repository save fails", func(t *testing.T) {
 		repo := &mockDeviceRepository{
 			saveFunc: func(_ context.Context, d *domain.Device) error {
 				return errors.New("db connection failed")
 			},
 		}
-		uc := application.NewCreateDeviceUseCase(repo)
+		pub := &mockEventPublisher{}
+		uc := application.NewCreateDeviceUseCase(repo, pub)
 
 		_, err := uc.Execute(context.Background(), "laptop", "computer")
 		if err == nil {
 			t.Fatal("expected error, got nil")
+		}
+		if pub.TotalCalls() != 0 {
+			t.Error("expected no publish calls when save fails")
 		}
 	})
 }

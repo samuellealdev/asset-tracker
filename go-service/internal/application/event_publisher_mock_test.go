@@ -15,32 +15,39 @@ type publishCall struct {
 
 // mockEventPublisher records EventPublisher calls for test assertions.
 // Return an error by setting returnErr before calling the publish methods.
+// Set wg.Add(n) before calling a use case that is expected to publish,
+// then call wg.Wait() after the use case returns to synchronize with the
+// async goroutine.
 type mockEventPublisher struct {
 	mu           sync.Mutex
 	returnErr    error
 	createdCalls []publishCall
 	updatedCalls []publishCall
 	deletedCalls []publishCall
+	wg           sync.WaitGroup
 }
 
 func (m *mockEventPublisher) PublishDeviceCreated(_ context.Context, deviceID, deviceName string, timestamp time.Time) error {
 	m.mu.Lock()
-	defer m.mu.Unlock()
 	m.createdCalls = append(m.createdCalls, publishCall{DeviceID: deviceID, DeviceName: deviceName, Timestamp: timestamp})
+	m.mu.Unlock()
+	m.wg.Done()
 	return m.returnErr
 }
 
 func (m *mockEventPublisher) PublishDeviceUpdated(_ context.Context, deviceID, deviceName string, timestamp time.Time) error {
 	m.mu.Lock()
-	defer m.mu.Unlock()
 	m.updatedCalls = append(m.updatedCalls, publishCall{DeviceID: deviceID, DeviceName: deviceName, Timestamp: timestamp})
+	m.mu.Unlock()
+	m.wg.Done()
 	return m.returnErr
 }
 
 func (m *mockEventPublisher) PublishDeviceDeleted(_ context.Context, deviceID, deviceName string, timestamp time.Time) error {
 	m.mu.Lock()
-	defer m.mu.Unlock()
 	m.deletedCalls = append(m.deletedCalls, publishCall{DeviceID: deviceID, DeviceName: deviceName, Timestamp: timestamp})
+	m.mu.Unlock()
+	m.wg.Done()
 	return m.returnErr
 }
 

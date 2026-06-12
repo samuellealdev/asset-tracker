@@ -3,10 +3,18 @@ package interfaces
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/samuellealdev/asset-tracker/go-service/internal/application"
 	"github.com/samuellealdev/asset-tracker/go-service/internal/domain"
 )
+
+// noopEventPublisher satisfies EventPublisher without doing anything.
+type noopEventPublisher struct{}
+
+func (n *noopEventPublisher) PublishDeviceCreated(_ context.Context, _, _ string, _ time.Time) error { return nil }
+func (n *noopEventPublisher) PublishDeviceUpdated(_ context.Context, _, _ string, _ time.Time) error { return nil }
+func (n *noopEventPublisher) PublishDeviceDeleted(_ context.Context, _, _ string, _ time.Time) error { return nil }
 
 // mockRepo is a simple in-memory repository for testing the concrete use case wiring.
 type mockRepo struct {
@@ -47,12 +55,13 @@ func TestDeviceUseCasesWiring(t *testing.T) {
 		deleteFunc: func(_ context.Context, id string) error { return nil },
 	}
 
+	noopPub := &noopEventPublisher{}
 	uc := NewDeviceUseCases(
-		application.NewCreateDeviceUseCase(repo),
+		application.NewCreateDeviceUseCase(repo, noopPub),
 		application.NewListDevicesUseCase(repo),
 		application.NewGetDeviceUseCase(repo),
-		application.NewUpdateDeviceUseCase(repo),
-		application.NewDeleteDeviceUseCase(repo),
+		application.NewUpdateDeviceUseCase(repo, noopPub),
+		application.NewDeleteDeviceUseCase(repo, noopPub),
 	)
 
 	t.Run("Create delegates to use case", func(t *testing.T) {
