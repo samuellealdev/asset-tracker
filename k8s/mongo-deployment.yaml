@@ -53,8 +53,14 @@ spec:
               command:
                 - mongosh
                 - --quiet
+                - -u
+                - mongo
+                - -p
+                - changeme
+                - --authenticationDatabase
+                - admin
                 - --eval
-                - "db.adminCommand('ping')"
+                - db.adminCommand('ping')
             initialDelaySeconds: 15
             periodSeconds: 10
             timeoutSeconds: 5
@@ -64,10 +70,17 @@ spec:
               command:
                 - mongosh
                 - --quiet
+                - -u
+                - mongo
+                - -p
+                - changeme
+                - --authenticationDatabase
+                - admin
                 - --eval
-                - "db.adminCommand('ping')"
-            initialDelaySeconds: 5
+                - db.adminCommand('ping')
+            initialDelaySeconds: 10
             periodSeconds: 5
+            timeoutSeconds: 5
           resources:
             requests:
               cpu: 200m

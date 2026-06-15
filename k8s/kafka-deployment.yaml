@@ -37,6 +37,10 @@ spec:
             - containerPort: 9092
             - containerPort: 9093
           env:
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
             - name: KAFKA_PROCESS_ROLES
               value: "broker,controller"
             - name: KAFKA_NODE_ID
@@ -46,7 +50,7 @@ spec:
             - name: KAFKA_LISTENERS
               value: "PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093"
             - name: KAFKA_ADVERTISED_LISTENERS
-              value: "PLAINTEXT://kafka-service:9092"
+              value: "PLAINTEXT://$(POD_IP):9092"
             - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
               value: "PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT"
             - name: KAFKA_CONTROLLER_LISTENER_NAMES
@@ -62,21 +66,6 @@ spec:
           volumeMounts:
             - name: kafka-data
               mountPath: /var/lib/kafka/data
-          lifecycle:
-            postStart:
-              exec:
-                command:
-                  - /bin/sh
-                  - -c
-                  - |
-                    sleep 10 && \
-                    /opt/kafka/bin/kafka-topics.sh \
-                      --create \
-                      --topic device-events \
-                      --partitions 1 \
-                      --replication-factor 1 \
-                      --if-not-exists \
-                      --bootstrap-server localhost:9092
           livenessProbe:
             exec:
               command:
@@ -84,10 +73,10 @@ spec:
                 - --bootstrap-server
                 - localhost:9092
                 - --list
-            initialDelaySeconds: 30
+            initialDelaySeconds: 90
             periodSeconds: 15
             timeoutSeconds: 5
-            failureThreshold: 5
+            failureThreshold: 10
           readinessProbe:
             exec:
               command:
@@ -95,9 +84,10 @@ spec:
                 - --bootstrap-server
                 - localhost:9092
                 - --list
-            initialDelaySeconds: 10
+            initialDelaySeconds: 60
             periodSeconds: 5
             timeoutSeconds: 5
+            failureThreshold: 10
           resources:
             requests:
               cpu: 300m
