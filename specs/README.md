@@ -23,7 +23,7 @@ Asset Tracker is a demo microservices application demonstrating hexagonal archit
 ```
 
 - **Go service**: Full CRUD for devices (`POST /devices`, `GET /devices`, `GET /devices/:id`, `PUT /devices/:id`, `DELETE /devices/:id`). On create, update, and delete, produces `device.created`, `device.updated`, and `device.deleted` events to Kafka topic `device-events`.
-- **Node service**: Event logging. Consumes from `device-events` Kafka topic and stores events in MongoDB.
+- **Node service**: Event logging and querying. Consumes system events from `device-events` Kafka topic. Provides `POST /events` for manual business events and `GET /events?deviceId=...` for querying a device's event history. All events stored in MongoDB.
 - **Communication**: Event-driven via Apache Kafka (KRaft mode, single broker, no Zookeeper). Async produce (non-blocking) on the producer side. Consumer group support for scalability.
 - **Both services**: Hexagonal architecture, structured JSON logging, manual dependency injection.
 
@@ -37,7 +37,7 @@ Asset Tracker is a demo microservices application demonstrating hexagonal archit
 | 3 | Event-Driven Communication with Kafka — pub/sub with 3 event types | Phases 1, 2 | ✅ Complete |
 | 4 | Observability — structured logging, health checks, metrics | Phases 1, 2 | ✅ Complete |
 | 5 | Kubernetes Manifests — Deployments, Services, ConfigMaps, Ingress | Phases 0–4 | ✅ Complete |
-| 6 | Business Events — manual event tracking with GET /events | Phases 1, 2 | 🔜 Planned |
+| 6 | Business Events — manual event tracking with `GET /events?deviceId=...` | Phases 1, 2 | 🔜 Planned |
 
 ## How to Use
 
