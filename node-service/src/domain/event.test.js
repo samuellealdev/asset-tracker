@@ -124,4 +124,41 @@ describe('Event entity', () => {
       /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
     );
   });
+
+  it('creates event with actor and description when provided', () => {
+    const event = createEvent({
+      type: 'device.delivered',
+      deviceId: '550e8400-e29b-41d4-a716-446655440000',
+      name: 'laptop',
+      actor: 'samuel.leal',
+      description: 'Entregado al trabajador',
+    });
+
+    assert.strictEqual(event.actor, 'samuel.leal');
+    assert.strictEqual(event.description, 'Entregado al trabajador');
+  });
+
+  it('sets actor and description to null when omitted', () => {
+    const event = createEvent({
+      type: 'device.created',
+      deviceId: '550e8400-e29b-41d4-a716-446655440000',
+      name: 'laptop',
+    });
+
+    assert.strictEqual(event.actor, null);
+    assert.strictEqual(event.description, null);
+  });
+
+  it('includes actor and description keys in frozen object when omitted', () => {
+    const event = createEvent({
+      type: 'device.created',
+      deviceId: '550e8400-e29b-41d4-a716-446655440000',
+      name: 'laptop',
+    });
+
+    assert.ok(Object.hasOwn(event, 'actor'));
+    assert.ok(Object.hasOwn(event, 'description'));
+    assert.strictEqual(event.actor, null);
+    assert.strictEqual(event.description, null);
+  });
 });

@@ -8,4 +8,7 @@
  * @property {(event: import('./event.js').Event) => Promise<void>} save
  *   Persist an event. Returns a Promise that resolves when the event is stored.
  *   Rejects with an error if persistence fails.
+ * @property {(deviceId: string) => Promise<import('./event.js').Event[]>} findByDeviceId
+ *   Find all events for a device, ordered by timestamp descending.
+ *   Returns an empty array if no events exist. Rejects with an error if the query fails.
  */

@@ -63,6 +63,23 @@ describe('LogEventUseCase', () => {
     assert.strictEqual(mockRepo.save.mock.callCount(), 0);
   });
 
+  it('passes actor and description through to the saved event', async () => {
+    const mockRepo = { save: mock.fn(() => Promise.resolve()) };
+    const useCase = new LogEventUseCase(mockRepo);
+
+    const event = await useCase.execute({
+      type: 'device.delivered',
+      deviceId: '550e8400-e29b-41d4-a716-446655440000',
+      name: 'laptop',
+      actor: 'samuel.leal',
+      description: 'Entregado al trabajador',
+    });
+
+    assert.strictEqual(event.actor, 'samuel.leal');
+    assert.strictEqual(event.description, 'Entregado al trabajador');
+    assert.strictEqual(mockRepo.save.mock.callCount(), 1);
+  });
+
   it('propagates repository save failure', async () => {
     const dbError = new Error('DB connection failed');
     const mockRepo = { save: mock.fn(() => Promise.reject(dbError)) };

@@ -19,6 +19,8 @@ export class ValidationError extends Error {
  * @property {string} deviceId - Non-empty device identifier
  * @property {string} name - Device name (required, non-empty)
  * @property {string} timestamp - ISO 8601 string
+ * @property {string|null} actor - Who performed the action (optional)
+ * @property {string|null} description - Free-text explanation (optional)
  */
 
 /**
@@ -29,10 +31,12 @@ export class ValidationError extends Error {
  * @param {string} params.deviceId - Device identifier (required, non-empty)
  * @param {string} params.name - Device name (required, non-empty)
  * @param {string} [params.timestamp] - ISO 8601 timestamp (defaults to now)
+ * @param {string} [params.actor] - Who performed the action (optional, defaults to null)
+ * @param {string} [params.description] - Free-text description (optional, defaults to null)
  * @returns {Readonly<Event>} A frozen Event object
  * @throws {ValidationError} When required fields are missing or invalid
  */
-export function createEvent({ type, deviceId, name, timestamp } = {}) {
+export function createEvent({ type, deviceId, name, timestamp, actor = null, description = null } = {}) {
   const errors = [];
 
   if (!type || typeof type !== 'string' || type.trim().length === 0) {
@@ -63,5 +67,7 @@ export function createEvent({ type, deviceId, name, timestamp } = {}) {
     deviceId,
     name,
     timestamp: timestamp || new Date().toISOString(),
+    actor,
+    description,
   });
 }

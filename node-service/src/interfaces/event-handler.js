@@ -5,15 +5,18 @@ const logger = pino({ level: process.env.LOG_LEVEL || 'info' });
 
 /**
  * HTTP handler for event-related endpoints.
- * Receives a LogEventUseCase via constructor (manual DI).
+ * Receives use cases via constructor (manual DI).
  */
 export class EventHandler {
   /**
    * @param {import('../application/log-event.js').LogEventUseCase} logEventUseCase
+   * @param {import('../application/list-events.js').ListEventsUseCase} listEventsUseCase
    */
-  constructor(logEventUseCase) {
+  constructor(logEventUseCase, listEventsUseCase) {
     /** @private */
-    this.useCase = logEventUseCase;
+    this.logEventUseCase = logEventUseCase;
+    /** @private */
+    this.listEventsUseCase = listEventsUseCase;
   }
 
   /**
@@ -35,7 +38,7 @@ export class EventHandler {
     }
 
     try {
-      const event = await this.useCase.execute(body);
+      const event = await this.logEventUseCase.execute(body);
       res.writeHead(201, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(event));
       logger.info({ eventId: event.id }, 'event created');
@@ -47,6 +50,39 @@ export class EventHandler {
       }
 
       logger.error({ err }, 'unexpected error handling POST /events');
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'internal server error' }));
+    }
+  }
+
+  /**
+   * Handle GET /events — query events by deviceId.
+   *
+   * @param {import('node:http').IncomingMessage} req
+   * @param {import('node:http').ServerResponse} res
+   */
+  async handleGet(req, res) {
+    const url = new URL(req.url, 'http://localhost');
+    const deviceId = url.searchParams.get('deviceId');
+
+    if (!deviceId) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'deviceId is required' }));
+      return;
+    }
+
+    try {
+      const events = await this.listEventsUseCase.execute(deviceId);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(events));
+    } catch (err) {
+      if (err instanceof ValidationError) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: err.message }));
+        return;
+      }
+
+      logger.error({ err }, 'unexpected error handling GET /events');
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'internal server error' }));
     }

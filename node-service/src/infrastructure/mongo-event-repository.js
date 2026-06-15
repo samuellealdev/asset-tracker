@@ -29,4 +29,27 @@ export class MongoEventRepository {
     // but MongoDB's driver mutates documents to add _id.
     return this.collection.insertOne({ ...event });
   }
+
+  /**
+   * Find all events for a device, ordered by timestamp descending.
+   *
+   * @param {string} deviceId
+   * @returns {Promise<import('../domain/event.js').Event[]>}
+   */
+  async findByDeviceId(deviceId) {
+    const docs = await this.collection
+      .find({ deviceId })
+      .sort({ timestamp: -1 })
+      .toArray();
+
+    return docs.map((doc) => ({
+      id: doc.id,
+      type: doc.type,
+      deviceId: doc.deviceId,
+      name: doc.name,
+      timestamp: doc.timestamp,
+      actor: doc.actor ?? null,
+      description: doc.description ?? null,
+    }));
+  }
 }

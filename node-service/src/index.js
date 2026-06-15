@@ -3,6 +3,7 @@ import pino from 'pino';
 import { MongoClient } from 'mongodb';
 import { MongoEventRepository } from './infrastructure/mongo-event-repository.js';
 import { LogEventUseCase } from './application/log-event.js';
+import { ListEventsUseCase } from './application/list-events.js';
 import { EventHandler } from './interfaces/event-handler.js';
 import { HealthHandler } from './interfaces/health-handler.js';
 import { createLoggingMiddleware } from './interfaces/middleware.js';
@@ -26,7 +27,8 @@ async function main() {
 
   const eventRepository = new MongoEventRepository(mongoClient, MONGO_DB);
   const logEventUseCase = new LogEventUseCase(eventRepository);
-  const eventHandler = new EventHandler(logEventUseCase);
+  const listEventsUseCase = new ListEventsUseCase(eventRepository);
+  const eventHandler = new EventHandler(logEventUseCase, listEventsUseCase);
   const healthHandler = new HealthHandler(mongoClient);
   const metricsHandler = new MetricsHandler();
   const loggingMiddleware = createLoggingMiddleware(logger);
@@ -100,6 +102,12 @@ async function main() {
 
       if (req.url === '/metrics' && req.method === 'GET') {
         metricsHandler.handleMetrics(req, res);
+        return;
+      }
+
+      const url = new URL(req.url, 'http://localhost');
+      if (url.pathname === '/events' && req.method === 'GET') {
+        eventHandler.handleGet(req, res);
         return;
       }
 
