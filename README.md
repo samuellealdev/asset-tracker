@@ -12,7 +12,7 @@
 | 3 | Event-Driven Communication with Kafka — 3 event types (created/updated/deleted) | ✅ Complete | 2026-06-12 |
 | 4 | Observability — structured logging, health checks, metrics | ✅ Complete | 2026-06-12 |
 | 5 | Kubernetes Manifests | ✅ Complete | 2026-06-12 |
-| 6 | Business Events — manual event tracking with GET /events | 🔜 Planned | — |
+| 6 | Business Events — manual event tracking with GET /events | ✅ Complete | 2026-06-15 |
 
 ## Architecture
 
