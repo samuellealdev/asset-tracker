@@ -13,7 +13,7 @@ Project-level agent instructions. Complements the global `~/.config/opencode/AGE
 This project follows the SDD workflow defined in the Gentle AI orchestrator. Key rules:
 
 - Every change goes through: `proposal → specs → design → tasks → apply → verify → archive`.
-- Use `engram` as the primary artifact store. Use `openspec` when the user explicitly requests file-based artifacts.
+- All SDD artifacts (design, tasks, verify-report, archive-report) MUST be persisted to BOTH Engram AND the filesystem (`openspec/changes/archive/`). Never save to only one — Engram is session memory, filesystem is the permanent record.
 - Session preflight (pace, artifact store, PR strategy, review budget) must be completed before ANY SDD command.
 
 ### README Update Protocol
