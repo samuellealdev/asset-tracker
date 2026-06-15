@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: asset_tracker
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: changeme
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      mongo:
+        image: mongo:7
+        env:
+          MONGO_INITDB_ROOT_USERNAME: mongo
+          MONGO_INITDB_ROOT_PASSWORD: changeme
+        ports:
+          - 27017:27017
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Go tests
+        working-directory: go-service
+        env:
+          POSTGRES_DSN: postgres://postgres:changeme@localhost:5432/asset_tracker?sslmode=disable
+        run: go test ./... -v -race -count=1
+
+      - name: Node.js tests
+        working-directory: node-service
+        env:
+          MONGO_URI: mongodb://mongo:changeme@localhost:27017/asset_tracker?authSource=admin
+        run: |
+          npm ci
+          node --test
