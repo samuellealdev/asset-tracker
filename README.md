@@ -120,5 +120,7 @@ cd go-service && go test ./...
 cd node-service && node --test
 ```
 
+Tests run automatically on every push via [GitHub Actions](.github/workflows/ci.yml).
+
 
 
