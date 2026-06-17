@@ -22,3 +22,7 @@ Kafka pub/sub between Go and Node services. EventPublisher port + KafkaEventPubl
 ## SDD Cycle
 
 Fully planned, implemented, verified, and archived.
+
+## Post-Archive Improvement (2026-06-17)
+
+- **EventConsumer interface**: Added `node-service/src/application/event-consumer.js` — formal contract for inbound event adapters. `KafkaEventConsumer` now extends `EventConsumer`. Resolves spec gap where the interface was specified but never created.
