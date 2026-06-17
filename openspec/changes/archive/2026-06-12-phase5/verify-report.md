@@ -5,6 +5,8 @@
 **Mode**: Standard
 **Date**: 2026-06-12
 
+> **Post-Archive Update (2026-06-17)**: The `postStart` hook for topic creation was replaced with a dedicated Kubernetes Job (`kafka-create-topics-job.yaml`). The Job runs after Kafka is ready and before app services start, following K8s best practices. All deployment verifications below remain valid; the Job resolves the "manual topic creation" warning noted in the original report.
+
 ## Completeness
 
 | Metric | Value |
@@ -37,7 +39,7 @@ ok  github.com/samuellealdev/asset-tracker/go-service/internal/interfaces      0
 
 ## YAML Syntax Validation
 
-All 9 YAML files in `k8s/` parse correctly via `yaml.safe_load_all`:
+All 10 YAML files in `k8s/` parse correctly via `yaml.safe_load_all`:
 
 | File | Documents | Status |
 |------|-----------|--------|
@@ -47,6 +49,7 @@ All 9 YAML files in `k8s/` parse correctly via `yaml.safe_load_all`:
 | `k8s/postgres-deployment.yaml` | 3 (PVC + Deployment + Service) | ✅ Valid |
 | `k8s/mongo-deployment.yaml` | 3 (PVC + Deployment + Service) | ✅ Valid |
 | `k8s/kafka-deployment.yaml` | 3 (PVC + Deployment + Service) | ✅ Valid |
+| `k8s/kafka-create-topics-job.yaml` | 1 (Job) | ✅ Valid (post-archive) |
 | `k8s/go-service-deployment.yaml` | 2 (Deployment + Service) | ✅ Valid |
 | `k8s/node-service-deployment.yaml` | 2 (Deployment + Service) | ✅ Valid |
 | `k8s/ingress.yaml` | 1 | ✅ Valid |
@@ -54,7 +57,7 @@ All 9 YAML files in `k8s/` parse correctly via `yaml.safe_load_all`:
 ## Verification Checks
 
 ### 1. YAML Syntax — ✅ PASS
-All 9 YAML files syntactically valid (validated via Python `yaml.safe_load_all`).
+All 10 YAML files syntactically valid (validated via Python `yaml.safe_load_all`).
 
 ### 2. Health Probes — ✅ PASS
 - **go-service**: liveness `httpGet /health/live`, readiness `httpGet /health/ready` ✅
@@ -84,8 +87,8 @@ Secret uses `POSTGRES_DSN` and `MONGO_URI` instead of spec's `POSTGRES_USER`, `P
 ### 6. Kafka Image — ✅ PASS
 Image: `apache/kafka:3.9.2`. Deviation from spec (`bitnami/kafka:3.7`) — matches verify instruction requirements. Env var naming uses `KAFKA_` prefix (apache convention) instead of `KAFKA_CFG_` (bitnami convention).
 
-### 7. Kafka postStart Creates Topic — ✅ PASS
-postStart lifecycle hook creates `device-events` topic with `--if-not-exists` flag using `/opt/kafka/bin/kafka-topics.sh`.
+### 7. Kafka Job Creates Topic — ✅ PASS
+Kubernetes Job (`kafka-create-topics-job.yaml`) creates `device-events` topic. Post-archive: replaced postStart hook with dedicated Job.
 
 ### 8. README Completeness — ✅ PASS
 281-line README includes:

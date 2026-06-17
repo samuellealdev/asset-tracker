@@ -11,8 +11,8 @@ Deploy the full Asset Tracker stack to Kubernetes (Kind/Minikube) using plain YA
 | Manifest layout | `k8s/{base,databases,go-service,node-service}/` | Groups by concern; `kubectl apply -f k8s/<dir>/` applies a subsystem atomically |
 | Connection strings | `POSTGRES_DSN` and `MONGO_URI` as Secret keys (base64) | Services consume full DSNs, not individual host/user/password vars; avoids code changes |
 | Image pull policy | `IfNotPresent` | Locally loaded images (Kind `load docker-image`) — no registry dependency |
-| Kafka image | `bitnami/kafka:3.7` with `KAFKA_CFG_*` env prefix | Spec requirement; differs from docker-compose (`apache/kafka:3.9.2` with `KAFKA_*` prefix) |
-| Kafka topic creation | Manual `kubectl exec` + `kafka-topics.sh --create` | Spec notes are authoritative; Go service has `AllowAutoTopicCreation:true` as fallback |
+| Kafka image | `bitnami/kafka:3.7` with `KAFKA_CFG_*` prefix | **RESOLVED**: Docker Hub retired bitnami images; migrated to `apache/kafka:3.9.2` with `KAFKA_*` prefix. Binary path: `/opt/kafka/bin/`. |
+| Kafka topic creation | Manual `kubectl exec` + `postStart` hook | Kubernetes Job (runs once, waits for Kafka) | **Job (final)** | Production-grade: topics guaranteed before app start. No race conditions, no manual steps. `ttlSecondsAfterFinished` auto-cleans completed pods. |
 | PVC strategy | Deployments with PVCs, default StorageClass | Satisfies spec constraint; StatefulSets not required for demo scope |
 | Kafka health probe | `kafka-topics.sh --bootstrap-server localhost:9092 --list` | Lightweight; validates broker is serving requests |
 
@@ -28,7 +28,7 @@ Deploy the full Asset Tracker stack to Kubernetes (Kind/Minikube) using plain YA
                                     (ClusterIP)
 ```
 
-Kafka topic `device-events` created once via `kubectl exec` before application services start. Node consumer connects after Kafka liveness probe passes. Go producer auto-creates the topic as fallback (`AllowAutoTopicCreation:true`).
+Kafka topic `device-events` created automatically by a dedicated Kubernetes Job (`kafka-create-topics-job.yaml`) that runs after the Kafka broker is ready and before application services start. The Job waits for the broker, creates the topic with `--if-not-exists`, and exits cleanly. Go service has `AllowAutoTopicCreation:true` as fallback.
 
 ## File Changes
 
@@ -48,6 +48,7 @@ Kafka topic `device-events` created once via `kubectl exec` before application s
 | `k8s/node-service/deployment.yaml` | Create | 2 replicas, same probe pattern + resource profile, Kafka consumer group env |
 | `k8s/node-service/service.yaml` | Create | ClusterIP Service (port 3000) |
 | `k8s/ingress.yaml` | Create (optional) | Ingress with path routing `/devices`→go, `/health`→node; requires nginx-ingress on Kind |
+| `k8s/kafka-create-topics-job.yaml` | Create | **Post-design addition.** Job that waits for Kafka, then creates `device-events` topic. Runs after DBs, before apps. `ttlSecondsAfterFinished: 60`. |
 | `k8s/README.md` | Create | Step-by-step: kind cluster, image build+load, apply, topic creation, verification |
 
 ## Interfaces / Contracts
@@ -96,7 +97,7 @@ No migration required — Phase 5 is net-new infrastructure. Rollback: `kubectl 
 | Risk | Severity | Mitigation |
 |------|----------|------------|
 | **ENV mismatch**: Spec defines individual vars (`POSTGRES_HOST`) but services consume connection strings (`POSTGRES_DSN`). ConfigMap must supply what services actually read. | Medium | Secret stores `POSTGRES_DSN`/`MONGO_URI` directly; ConfigMap holds additional non-sensitive vars. No code change needed. |
-| **Ingress health routing**: Both services expose `/health`. Spec routes `/health` to node-service only; go-service health unreachable via Ingress. | Low | Acceptable for demo. Document limitation in README. |
+| **Ingress health routing**: Both services expose `/health`. Spec routes `/health` to node-service only; go-service health unreachable via Ingress. | Low | Resolved: two Ingress resources with `/go/*` and `/node/*` path rewrites make both services' health/metrics endpoints reachable. |
 | **Kafka image drift**: Docker Compose (`apache/kafka:3.9.2`) vs K8s (`bitnami/kafka:3.7`). Different env var prefixes, binary paths. | Low | Follow spec precisely. Binary path: `/opt/bitnami/kafka/bin/`. No runtime impact since services communicate via standard Kafka protocol. |
 | **PVC data loss**: Default reclaim policy `Delete` means PVC deletion removes data. | Low | Acceptable for demo. README documents `kubectl delete pvc` behavior. |
-| **Kafka topic race**: Manual topic creation required before services start. Go service auto-creates as fallback but may cause momentary errors. | Low | README documents topic creation as first post-deploy step; Go service `AllowAutoTopicCreation:true` handles race gracefully. |
+| **Kafka topic race**: Manual topic creation required before services start. Go service auto-creates as fallback but may cause momentary errors. | Low | Resolved post-design: replaced with Kubernetes Job (`kafka-create-topics-job.yaml`) that creates the topic after Kafka is ready but before app services start. |

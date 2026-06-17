@@ -28,7 +28,8 @@
 
 - [x] 2.1 `k8s/postgres-deployment.yaml` — PVC + Deployment + Service
 - [x] 2.2 `k8s/mongo-deployment.yaml` — PVC + Deployment + Service
-- [x] 2.3 `k8s/kafka-deployment.yaml` — PVC + Deployment (KRaft) + Service, postStart topic creation
+- [x] 2.3 `k8s/kafka-deployment.yaml` — PVC + Deployment (KRaft) + Service
+- [x] 2.4 `k8s/kafka-create-topics-job.yaml` — Job that waits for Kafka, creates device-events topic (post-archive)
 
 ## Phase 3: Application Services ✅
 

@@ -98,7 +98,9 @@ kubectl apply -f k8s/
 
 ## Kafka Topic Creation
 
-The `device-events` topic is auto-created via a `postStart` lifecycle hook on the Kafka container. You can also create it manually if needed:
+The `device-events` topic is created automatically by a dedicated Kubernetes Job (`kafka-create-topics-job.yaml`) that runs after Kafka is ready but before application services start. The Job waits for the broker, creates the topic with `--if-not-exists`, and exits. No manual intervention needed.
+
+For troubleshooting, you can also create it manually:
 
 ```bash
 kubectl exec -n asset-tracker deploy/kafka -- \
@@ -285,5 +287,5 @@ minikube delete
 | Pod `Init:CrashLoopBackOff` | Missing images not loaded into cluster | Run `kind load docker-image ...` first |
 | Kafka pod not ready | Insufficient resources (memory) | Increase Docker memory limit, or reduce Kafka resource requests |
 | `pg_isready` fails | PostgreSQL still initializing | Wait, or increase `initialDelaySeconds` |
-| Topic already exists error | Topic created twice | Use `--if-not-exists` flag (already included in lifecycle hook) |
+| Topic already exists error | Topic created twice | Use `--if-not-exists` flag (already included in the Job command) |
 | ImagePullBackOff | Image not found | Ensure images are built and loaded into the cluster |

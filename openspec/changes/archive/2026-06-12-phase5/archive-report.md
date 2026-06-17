@@ -11,10 +11,11 @@
 
 ## What was built
 
-10 Kubernetes manifests for the full Asset Tracker stack:
+10 YAML manifests + README for the full Asset Tracker stack:
 - namespace, ConfigMap, Secret
 - PostgreSQL, MongoDB, Kafka (KRaft) with PVCs, Deployments, and Services
 - Go and Node service Deployments with liveness/readiness probes and resource limits
+- Kafka topic creation Job (runs once, waits for broker, creates device-events topic)
 - Ingress with nginx routing (/go/* and /node/* prefixed health/metrics)
 - k8s/README.md with Kind/Minikube setup and smoke test instructions
 
@@ -25,9 +26,15 @@
 3. Kafka image: apache/kafka:3.9.2 (not bitnami, for Docker Hub compatibility)
 4. Flat k8s/ directory (not subdirectories)
 
+## Post-Archive Improvements (2026-06-17)
+
+- **Kafka topic creation**: Replaced postStart hook with a dedicated Kubernetes Job (`kafka-create-topics-job.yaml`). The Job waits for Kafka to be ready, creates the topic, and exits. This follows K8s best practices: infrastructure (topics) before application. The design's "Kafka topic race" risk is now resolved.
+- **MongoDB probes**: Added authentication credentials to liveness/readiness probes for correct health checking.
+- **Kafka probes**: Adjusted initialDelaySeconds and failureThreshold for stable startup on resource-constrained environments.
+- **Kafka advertised listener**: Changed from Service DNS to POD_IP (via downward API) to avoid K8s service loopback issues with KRaft single-node.
+
 ## Key Features
 
-- postStart lifecycle hook auto-creates device-events topic on Kafka startup
 - All Deployments have liveness + readiness probes with /health/live and /health/ready
 - All containers have resource requests and limits
 - Ingress exposes both services' health and metrics endpoints
