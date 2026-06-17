@@ -72,15 +72,19 @@ kubectl wait --for=condition=ready pod -l app=postgres -n asset-tracker --timeou
 kubectl wait --for=condition=ready pod -l app=mongo -n asset-tracker --timeout=120s
 kubectl wait --for=condition=ready pod -l app=kafka -n asset-tracker --timeout=120s
 
-# 5. Application services
+# 5. Create Kafka topics (runs once, waits for Kafka to be ready)
+kubectl apply -f k8s/kafka-create-topics-job.yaml
+kubectl wait --for=condition=complete job/kafka-create-topics -n asset-tracker --timeout=120s
+
+# 6. Application services
 kubectl apply -f k8s/go-service-deployment.yaml
 kubectl apply -f k8s/node-service-deployment.yaml
 
-# 6. Verify application pods are ready
+# 7. Verify application pods are ready
 kubectl wait --for=condition=ready pod -l app=go-service -n asset-tracker --timeout=120s
 kubectl wait --for=condition=ready pod -l app=node-service -n asset-tracker --timeout=120s
 
-# 7. (Optional) Ingress — requires nginx-ingress installed first (see Ingress Setup below)
+# 8. (Optional) Ingress — requires nginx-ingress installed first (see Ingress Setup below)
 # kubectl apply -f k8s/ingress.yaml
 ```
 
