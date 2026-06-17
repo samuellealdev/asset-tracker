@@ -1,9 +1,9 @@
-# Verification Report — Phase 0: Docker Compose Base (FINAL AUDIT)
+# Verification Report — Phase 0: Docker Compose Base (DEFINITIVE FINAL AUDIT)
 
 **Change**: Phase 0 — Docker Compose Base
 **Version**: specs/phase0.md
 **Mode**: Standard
-**Date**: 2026-06-17 (exhaustive final audit of archived change)
+**Date**: 2026-06-17 (definitive final audit — fresh build+tests executed)
 **Auditor**: deepseek-v4-pro
 
 ## Purpose
@@ -250,3 +250,22 @@ The previous verify-report (2026-06-17, re-audit) was checked for accuracy again
 Additionally, Phase 0 application service files have accumulated massive scope creep from Phases 1-4 (187-line Go main.go with full hex architecture, 146-line Node server with Kafka/MongoDB integration, 50+ internal files that should not exist at Phase 0). The infrastructure base (docker-compose.yml, network, volumes, multi-stage Dockerfiles, depends_on ordering, health check intervals) is **solid and correct** — all 10 design decisions are faithfully implemented.
 
 **Bottom line**: 8/10 acceptance criteria pass clean. The 2 failures are the /health JSON response format on both application services, caused by Phase 1+ readiness-check logic leaking into what should be minimal Phase 0 endpoints.
+
+---
+
+## Definitive Final Audit (2026-06-17 — Fresh Evidence)
+
+All claims re-verified with live execution:
+
+| Evidence | Command | Result |
+|----------|---------|--------|
+| Compose config valid | `docker compose config --quiet` | ✅ exit 0 |
+| Build dry-run | `docker compose build --dry-run` | ✅ both images built, exit 0 |
+| Go tests | `go test ./...` (go-service) | ✅ 5/5 packages pass |
+| Node tests | `node --test` (node-service) | ✅ 62 pass / 0 fail / 1 skipped (Mongo repo) |
+| Go scope-creep files | `find go-service/internal -type f \| wc -l` | 31 files (Phase 0 expects 0) |
+| Node scope-creep files | `find node-service/src -type f \| wc -l` | 21 files (Phase 0 expects 0) |
+| Go health handler | `health_handler.go:66-68` | `HandleHealth` aliases `HandleReady` → returns `{"database":"connected","status":"ok"}` |
+| Node health handler | `health-handler.js:58-60` | `handleHealth` aliases `handleReady` → returns `{"status":"ok","database":"connected"}` |
+
+Both CRITICAL issues confirmed at source level. Verdict unchanged: **FAIL**.
