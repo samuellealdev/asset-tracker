@@ -13,16 +13,7 @@ export class EventConsumer {
    * Must be idempotent — calling it multiple times should not create duplicate consumers.
    * @returns {Promise<void>}
    */
-  async startConsuming() {
-    throw new Error('EventConsumer.startConsuming() must be implemented by subclass');
-  }
-
-  /**
-   * Handle a single event received from the external source.
-   * @param {import('../domain/event.js').Event} event — The domain event to process
-   * @returns {Promise<void>}
-   */
-  async handleEvent(event) {
-    throw new Error('EventConsumer.handleEvent() must be implemented by subclass');
+  async start() {
+    throw new Error('EventConsumer.start() must be implemented by subclass');
   }
 }

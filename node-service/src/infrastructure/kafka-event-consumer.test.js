@@ -52,7 +52,7 @@ describe('KafkaEventConsumer', () => {
       logEventUseCase: mockLogEventUseCase,
     });
 
-    await consumer.startConsuming();
+    await consumer.start();
 
     assert.strictEqual(mockKafkaConsumer.connect.mock.callCount(), 1);
     assert.strictEqual(mockKafkaConsumer.subscribe.mock.callCount(), 1);
@@ -71,7 +71,7 @@ describe('KafkaEventConsumer', () => {
       logEventUseCase: mockLogEventUseCase,
     });
 
-    await consumer.startConsuming();
+    await consumer.start();
 
     // Capture the eachMessage handler and invoke it
     const eachMessage = mockConsumerRun.mock.calls[0].arguments[0].eachMessage;
@@ -107,7 +107,7 @@ describe('KafkaEventConsumer', () => {
       logEventUseCase: mockLogEventUseCase,
     });
 
-    await consumer.startConsuming();
+    await consumer.start();
 
     const eachMessage = mockConsumerRun.mock.calls[0].arguments[0].eachMessage;
     await eachMessage({
@@ -137,7 +137,7 @@ describe('KafkaEventConsumer', () => {
       logEventUseCase: mockLogEventUseCase,
     });
 
-    await consumer.startConsuming();
+    await consumer.start();
 
     const eachMessage = mockConsumerRun.mock.calls[0].arguments[0].eachMessage;
     await eachMessage({
@@ -167,7 +167,7 @@ describe('KafkaEventConsumer', () => {
       logEventUseCase: mockLogEventUseCase,
     });
 
-    await consumer.startConsuming();
+    await consumer.start();
 
     const eachMessage = mockConsumerRun.mock.calls[0].arguments[0].eachMessage;
     await eachMessage({
@@ -187,7 +187,7 @@ describe('KafkaEventConsumer', () => {
       logEventUseCase: mockLogEventUseCase,
     });
 
-    await consumer.startConsuming();
+    await consumer.start();
 
     const eachMessage = mockConsumerRun.mock.calls[0].arguments[0].eachMessage;
     await eachMessage({
@@ -214,7 +214,7 @@ describe('KafkaEventConsumer', () => {
       logEventUseCase: mockLogEventUseCase,
     });
 
-    await consumer.startConsuming();
+    await consumer.start();
 
     const eachMessage = mockConsumerRun.mock.calls[0].arguments[0].eachMessage;
     await eachMessage({
@@ -241,7 +241,7 @@ describe('KafkaEventConsumer', () => {
       logEventUseCase: mockLogEventUseCase,
     });
 
-    await consumer.startConsuming();
+    await consumer.start();
 
     const eachMessage = mockConsumerRun.mock.calls[0].arguments[0].eachMessage;
     await eachMessage({
@@ -268,7 +268,7 @@ describe('KafkaEventConsumer', () => {
       logEventUseCase: mockLogEventUseCase,
     });
 
-    await consumer.startConsuming();
+    await consumer.start();
     await consumer.stop();
 
     assert.strictEqual(mockKafkaConsumer.disconnect.mock.callCount(), 1);
@@ -295,7 +295,7 @@ describe('KafkaEventConsumer', () => {
     });
 
     // Should not throw — the error is caught and logged
-    await assert.doesNotReject(() => consumer.startConsuming());
+    await assert.doesNotReject(() => consumer.start());
   });
 
   it('recovers from per-message errors and continues consuming', async () => {
@@ -306,7 +306,7 @@ describe('KafkaEventConsumer', () => {
       logEventUseCase: mockLogEventUseCase,
     });
 
-    await consumer.startConsuming();
+    await consumer.start();
     const eachMessage = mockConsumerRun.mock.calls[0].arguments[0].eachMessage;
 
     // First message throws (invalid JSON) — should be caught
