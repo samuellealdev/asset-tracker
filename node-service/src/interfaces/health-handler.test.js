@@ -70,8 +70,28 @@ describe('HealthHandler', () => {
 
     assert.strictEqual(res.statusCode, 503);
     const body = JSON.parse(res.end.mock.calls[0].arguments[0]);
-    assert.strictEqual(body.status, 'error');
-    assert.strictEqual(body.database, 'unreachable');
+    assert.strictEqual(body.status, 'degraded');
+    assert.strictEqual(body.database, 'disconnected');
+  });
+
+  it('handleReady returns 503 when DB ping times out', async () => {
+    const mongoClient = {
+      db: mock.fn(() => ({
+        admin: mock.fn(() => ({
+          ping: mock.fn(() => new Promise(() => {})), // never resolves
+        })),
+      })),
+    };
+    const handler = new HealthHandler(mongoClient);
+    const req = {};
+    const res = createMockRes();
+
+    await handler.handleReady(req, res);
+
+    assert.strictEqual(res.statusCode, 503);
+    const body = JSON.parse(res.end.mock.calls[0].arguments[0]);
+    assert.strictEqual(body.status, 'degraded');
+    assert.strictEqual(body.database, 'disconnected');
   });
 
   it('handleHealth acts as alias for handleReady (200 when DB is up)', async () => {
@@ -112,7 +132,7 @@ describe('HealthHandler', () => {
 
     assert.strictEqual(res.statusCode, 503);
     const body = JSON.parse(res.end.mock.calls[0].arguments[0]);
-    assert.strictEqual(body.status, 'error');
-    assert.strictEqual(body.database, 'unreachable');
+    assert.strictEqual(body.status, 'degraded');
+    assert.strictEqual(body.database, 'disconnected');
   });
 });

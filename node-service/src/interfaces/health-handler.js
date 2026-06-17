@@ -33,13 +33,17 @@ export class HealthHandler {
    */
   async handleReady(_req, res) {
     try {
-      await this.mongoClient.db().admin().ping();
+      const pingPromise = this.mongoClient.db().admin().ping();
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('database timeout')), 500),
+      );
+      await Promise.race([pingPromise, timeoutPromise]);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ status: 'ok', database: 'connected' }) + '\n');
     } catch {
       res.writeHead(503, { 'Content-Type': 'application/json' });
       res.end(
-        JSON.stringify({ status: 'error', database: 'unreachable' }) + '\n',
+        JSON.stringify({ status: 'degraded', database: 'disconnected' }) + '\n',
       );
     }
   }

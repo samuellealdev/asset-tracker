@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -37,8 +38,9 @@ func main() {
 	}
 
 	// Server mode — structured JSON logging via log/slog
+	logLevel := parseLogLevel(os.Getenv("LOG_LEVEL"))
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-		Level: slog.LevelInfo,
+		Level: logLevel,
 	}))
 	slog.SetDefault(logger)
 
@@ -162,4 +164,24 @@ func main() {
 	}
 
 	slog.Info("server stopped")
+}
+
+// parseLogLevel parses a LOG_LEVEL string into a slog.Level.
+// Supported values: "debug", "info", "warn", "error" (case-insensitive).
+// Returns slog.LevelInfo for empty or unrecognized values.
+func parseLogLevel(level string) slog.Level {
+	switch strings.ToLower(level) {
+	case "":
+		return slog.LevelInfo
+	case "debug":
+		return slog.LevelDebug
+	case "info":
+		return slog.LevelInfo
+	case "warn":
+		return slog.LevelWarn
+	case "error":
+		return slog.LevelError
+	default:
+		return slog.LevelInfo
+	}
 }
