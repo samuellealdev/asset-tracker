@@ -1,4 +1,5 @@
 import pino from 'pino';
+import { EventConsumer } from '../application/event-consumer.js';
 
 const logger = pino({ level: process.env.LOG_LEVEL || 'info' });
 
@@ -20,13 +21,14 @@ const VALID_EVENT_TYPES = new Set([
  * Infrastructure adapter that consumes device lifecycle events from Kafka
  * and delegates them to the LogEventUseCase for persistence.
  *
- * Implements the inbound EventConsumer port (informal — uses duck typing).
+ * @extends EventConsumer
  */
-export class KafkaEventConsumer {
+export class KafkaEventConsumer extends EventConsumer {
   /**
    * @param {KafkaEventConsumerOptions} options
    */
   constructor({ kafka, topic, groupId, logEventUseCase }) {
+    super();
     /** @private */
     this.kafka = kafka;
     /** @private */
