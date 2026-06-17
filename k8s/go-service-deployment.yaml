@@ -40,6 +40,11 @@ spec:
                 configMapKeyRef:
                   name: asset-tracker-config
                   key: KAFKA_BROKER
+            - name: KAFKA_TOPIC
+              valueFrom:
+                configMapKeyRef:
+                  name: asset-tracker-config
+                  key: KAFKA_TOPIC
           livenessProbe:
             httpGet:
               path: /health/live
