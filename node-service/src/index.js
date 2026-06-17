@@ -50,7 +50,7 @@ async function main() {
         groupId: KAFKA_CONSUMER_GROUP,
         logEventUseCase,
       });
-      await kafkaConsumer.start();
+      await kafkaConsumer.startConsuming();
     } catch (err) {
       logger.warn({ err }, 'failed to initialize kafka consumer — continuing without it');
     }

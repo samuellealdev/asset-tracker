@@ -46,7 +46,7 @@ export class KafkaEventConsumer extends EventConsumer {
    * Connects, subscribes, and begins the consumer loop.
    * Errors during startup are caught and logged — does NOT crash the process.
    */
-  async start() {
+  async startConsuming() {
     try {
       this.consumer = this.kafka.consumer({ kafkaJS: { groupId: this.groupId, fromBeginning: false } });
       await this.consumer.connect();
