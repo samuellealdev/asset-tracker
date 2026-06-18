@@ -34,7 +34,7 @@ Two microservices built with **hexagonal architecture** (ports & adapters):
 
 | Service | Language | Port | Database | Responsibility |
 |---------|----------|------|----------|----------------|
-| `go-service` | Go 1.23+ | 8080 | PostgreSQL | Full device CRUD (5 endpoints) + Kafka producer |
+| `go-service` | Go 1.23+ | 8080 | PostgreSQL | Full device CRUD (5 endpoints) + JWT auth + Kafka producer |
 | `node-service` | Node.js 22+ | 3000 | MongoDB | Event logging (`POST /events`) + Kafka consumer |
 
 Inter-service communication is **event-driven via Apache Kafka** in KRaft mode (no Zookeeper). The Go service produces three event types — `device.created`, `device.updated`, `device.deleted` — to the `device-events` topic; the Node service consumes all three from it asynchronously.
@@ -53,12 +53,13 @@ Inter-service communication is **event-driven via Apache Kafka** in KRaft mode (
 | **Native test runners** | `go test` (table-driven) + `node:test` — no test frameworks needed |
 | **TDD mandatory** for business logic | Red → green → refactor for all domain + application layers |
 | **12-Factor App** configuration | All config via environment variables; `.env` only for local dev |
+| **JWT Bearer token authentication** | POST/PUT/DELETE /devices protected; GET /devices, /health/* public; `golang-jwt/jwt/v5` library; credentials via env vars (demo scope) |
 
 ## Tech Stack
 
 | Component | Technology |
 |-----------|------------|
-| Go service | Go 1.23+, `slog`, `pgx`, `net/http`, `segmentio/kafka-go` |
+| Go service | Go 1.23+, `slog`, `pgx`, `net/http`, `segmentio/kafka-go`, `golang-jwt/jwt/v5` |
 | Node.js service | Node.js 22+, `pino`, MongoDB native driver, `@confluentinc/kafka-javascript` |
 | Databases | PostgreSQL 16, MongoDB 7 |
 | Message Broker | Apache Kafka 3.9.2 (KRaft mode, apache/kafka image) |
@@ -90,7 +91,7 @@ curl localhost:3000/health/live   # → {"status":"ok"} (liveness)
 curl localhost:3000/health/ready  # → {"status":"ok","database":"connected"} (readiness)
 curl localhost:3000/metrics       # → {"requests_total":0,"errors_total":0}
 
-# Login and get a JWT token
+# Login and get a JWT token (POST/PUT/DELETE /devices require JWT; GET is public)
 curl -X POST localhost:8080/auth/login \
   -H 'Content-Type: application/json' \
   -d '{"username":"admin","password":"admin"}'
