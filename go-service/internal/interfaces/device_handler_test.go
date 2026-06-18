@@ -46,7 +46,7 @@ func TestDeviceHandler_HandleCreate(t *testing.T) {
 			createFunc: func(_ context.Context, name, dtype string) (*domain.Device, error) {
 				return &domain.Device{ID: "abc-123", Name: name, Type: dtype, CreatedAt: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)}, nil
 			},
-		})
+		}, nil)
 
 		req := httptest.NewRequest(http.MethodPost, "/devices", strings.NewReader(`{"name":"laptop","type":"computer"}`))
 		req.Header.Set("Content-Type", "application/json")
@@ -77,7 +77,7 @@ func TestDeviceHandler_HandleCreate(t *testing.T) {
 			createFunc: func(_ context.Context, name, dtype string) (*domain.Device, error) {
 				return nil, domain.ErrNameRequired
 			},
-		})
+		}, nil)
 
 		req := httptest.NewRequest(http.MethodPost, "/devices", strings.NewReader(`{"name":"","type":"computer"}`))
 		req.Header.Set("Content-Type", "application/json")
@@ -90,7 +90,7 @@ func TestDeviceHandler_HandleCreate(t *testing.T) {
 	})
 
 	t.Run("returns 400 when JSON body is malformed", func(t *testing.T) {
-		handler := interfaces.NewDeviceHandler(&mockUseCases{})
+		handler := interfaces.NewDeviceHandler(&mockUseCases{}, nil)
 
 		req := httptest.NewRequest(http.MethodPost, "/devices", strings.NewReader(`{invalid json}`))
 		req.Header.Set("Content-Type", "application/json")
@@ -107,7 +107,7 @@ func TestDeviceHandler_HandleCreate(t *testing.T) {
 			createFunc: func(_ context.Context, name, dtype string) (*domain.Device, error) {
 				return nil, domain.ErrTypeRequired
 			},
-		})
+		}, nil)
 
 		req := httptest.NewRequest(http.MethodPost, "/devices", strings.NewReader(`{"name":"laptop","type":""}`))
 		req.Header.Set("Content-Type", "application/json")
@@ -124,7 +124,7 @@ func TestDeviceHandler_HandleCreate(t *testing.T) {
 			createFunc: func(_ context.Context, name, dtype string) (*domain.Device, error) {
 				return nil, errors.New("database connection failed")
 			},
-		})
+		}, nil)
 
 		req := httptest.NewRequest(http.MethodPost, "/devices", strings.NewReader(`{"name":"laptop","type":"computer"}`))
 		req.Header.Set("Content-Type", "application/json")
@@ -143,7 +143,7 @@ func TestDeviceHandler_HandleList(t *testing.T) {
 			listFunc: func(_ context.Context) ([]*domain.Device, error) {
 				return []*domain.Device{}, nil
 			},
-		})
+		}, nil)
 
 		req := httptest.NewRequest(http.MethodGet, "/devices", nil)
 		w := httptest.NewRecorder()
@@ -169,7 +169,7 @@ func TestDeviceHandler_HandleList(t *testing.T) {
 					{ID: "1", Name: "laptop", Type: "computer"},
 				}, nil
 			},
-		})
+		}, nil)
 
 		req := httptest.NewRequest(http.MethodGet, "/devices", nil)
 		w := httptest.NewRecorder()
@@ -196,7 +196,7 @@ func TestDeviceHandler_HandleList(t *testing.T) {
 			listFunc: func(_ context.Context) ([]*domain.Device, error) {
 				return nil, errors.New("db unavailable")
 			},
-		})
+		}, nil)
 
 		req := httptest.NewRequest(http.MethodGet, "/devices", nil)
 		w := httptest.NewRecorder()
@@ -214,7 +214,7 @@ func TestDeviceHandler_HandleGet(t *testing.T) {
 			getFunc: func(_ context.Context, id string) (*domain.Device, error) {
 				return &domain.Device{ID: id, Name: "laptop", Type: "computer"}, nil
 			},
-		})
+		}, nil)
 
 		req := httptest.NewRequest(http.MethodGet, "/devices/abc-123", nil)
 		req.SetPathValue("id", "abc-123")
@@ -239,7 +239,7 @@ func TestDeviceHandler_HandleGet(t *testing.T) {
 			getFunc: func(_ context.Context, id string) (*domain.Device, error) {
 				return nil, application.ErrNotFound
 			},
-		})
+		}, nil)
 
 		req := httptest.NewRequest(http.MethodGet, "/devices/nonexistent", nil)
 		req.SetPathValue("id", "nonexistent")
@@ -264,7 +264,7 @@ func TestDeviceHandler_HandleGet(t *testing.T) {
 			getFunc: func(_ context.Context, id string) (*domain.Device, error) {
 				return nil, errors.New("storage failure")
 			},
-		})
+		}, nil)
 
 		req := httptest.NewRequest(http.MethodGet, "/devices/abc-123", nil)
 		req.SetPathValue("id", "abc-123")
@@ -283,7 +283,7 @@ func TestDeviceHandler_HandleUpdate(t *testing.T) {
 			updateFunc: func(_ context.Context, id, name, dtype string) (*domain.Device, error) {
 				return &domain.Device{ID: id, Name: name, Type: dtype}, nil
 			},
-		})
+		}, nil)
 
 		req := httptest.NewRequest(http.MethodPut, "/devices/abc-123", strings.NewReader(`{"name":"server","type":"infrastructure"}`))
 		req.Header.Set("Content-Type", "application/json")
@@ -312,7 +312,7 @@ func TestDeviceHandler_HandleUpdate(t *testing.T) {
 			updateFunc: func(_ context.Context, id, name, dtype string) (*domain.Device, error) {
 				return nil, domain.ErrNameRequired
 			},
-		})
+		}, nil)
 
 		req := httptest.NewRequest(http.MethodPut, "/devices/abc-123", strings.NewReader(`{"name":"","type":"server"}`))
 		req.Header.Set("Content-Type", "application/json")
@@ -330,7 +330,7 @@ func TestDeviceHandler_HandleUpdate(t *testing.T) {
 			updateFunc: func(_ context.Context, id, name, dtype string) (*domain.Device, error) {
 				return nil, application.ErrNotFound
 			},
-		})
+		}, nil)
 
 		req := httptest.NewRequest(http.MethodPut, "/devices/nonexistent", strings.NewReader(`{"name":"x","type":"y"}`))
 		req.Header.Set("Content-Type", "application/json")
@@ -348,7 +348,7 @@ func TestDeviceHandler_HandleUpdate(t *testing.T) {
 			updateFunc: func(_ context.Context, id, name, dtype string) (*domain.Device, error) {
 				return nil, domain.ErrTypeRequired
 			},
-		})
+		}, nil)
 
 		req := httptest.NewRequest(http.MethodPut, "/devices/abc-123", strings.NewReader(`{"name":"server","type":""}`))
 		req.Header.Set("Content-Type", "application/json")
@@ -366,7 +366,7 @@ func TestDeviceHandler_HandleUpdate(t *testing.T) {
 			updateFunc: func(_ context.Context, id, name, dtype string) (*domain.Device, error) {
 				return nil, errors.New("update failed")
 			},
-		})
+		}, nil)
 
 		req := httptest.NewRequest(http.MethodPut, "/devices/abc-123", strings.NewReader(`{"name":"server","type":"infrastructure"}`))
 		req.Header.Set("Content-Type", "application/json")
@@ -380,7 +380,7 @@ func TestDeviceHandler_HandleUpdate(t *testing.T) {
 	})
 
 	t.Run("returns 400 when update JSON body is malformed", func(t *testing.T) {
-		handler := interfaces.NewDeviceHandler(&mockUseCases{})
+		handler := interfaces.NewDeviceHandler(&mockUseCases{}, nil)
 
 		req := httptest.NewRequest(http.MethodPut, "/devices/abc-123", strings.NewReader(`{invalid json}`))
 		req.Header.Set("Content-Type", "application/json")
@@ -400,7 +400,7 @@ func TestDeviceHandler_HandleDelete(t *testing.T) {
 			deleteFunc: func(_ context.Context, id string) error {
 				return nil
 			},
-		})
+		}, nil)
 
 		req := httptest.NewRequest(http.MethodDelete, "/devices/abc-123", nil)
 		req.SetPathValue("id", "abc-123")
@@ -420,7 +420,7 @@ func TestDeviceHandler_HandleDelete(t *testing.T) {
 			deleteFunc: func(_ context.Context, id string) error {
 				return application.ErrNotFound
 			},
-		})
+		}, nil)
 
 		req := httptest.NewRequest(http.MethodDelete, "/devices/nonexistent", nil)
 		req.SetPathValue("id", "nonexistent")
@@ -437,7 +437,7 @@ func TestDeviceHandler_HandleDelete(t *testing.T) {
 			deleteFunc: func(_ context.Context, id string) error {
 				return errors.New("delete failed")
 			},
-		})
+		}, nil)
 
 		req := httptest.NewRequest(http.MethodDelete, "/devices/abc-123", nil)
 		req.SetPathValue("id", "abc-123")
@@ -450,5 +450,86 @@ func TestDeviceHandler_HandleDelete(t *testing.T) {
 	})
 }
 
+func TestDeviceHandler_Auth(t *testing.T) {
+	secret := []byte("test-secret")
+	authMiddleware := interfaces.NewAuthMiddleware(secret)
 
+	t.Run("POST without auth returns 401", func(t *testing.T) {
+		handler := interfaces.NewDeviceHandler(&mockUseCases{}, authMiddleware)
+
+		req := httptest.NewRequest(http.MethodPost, "/devices", strings.NewReader(`{"name":"test","type":"test"}`))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+
+		if w.Code != http.StatusUnauthorized {
+			t.Errorf("expected status 401, got %d", w.Code)
+		}
+	})
+
+	t.Run("POST with valid token returns 201", func(t *testing.T) {
+		handler := interfaces.NewDeviceHandler(&mockUseCases{
+			createFunc: func(_ context.Context, name, dtype string) (*domain.Device, error) {
+				return &domain.Device{ID: "abc-123", Name: name, Type: dtype, CreatedAt: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)}, nil
+			},
+		}, authMiddleware)
+
+		token := generateToken(t, secret, "admin", time.Now().Add(1*time.Hour))
+		req := httptest.NewRequest(http.MethodPost, "/devices", strings.NewReader(`{"name":"laptop","type":"computer"}`))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer "+token)
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+
+		if w.Code != http.StatusCreated {
+			t.Errorf("expected status 201, got %d", w.Code)
+		}
+	})
+
+	t.Run("DELETE without auth returns 401", func(t *testing.T) {
+		handler := interfaces.NewDeviceHandler(&mockUseCases{}, authMiddleware)
+
+		req := httptest.NewRequest(http.MethodDelete, "/devices/abc-123", nil)
+		req.SetPathValue("id", "abc-123")
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+
+		if w.Code != http.StatusUnauthorized {
+			t.Errorf("expected status 401, got %d", w.Code)
+		}
+	})
+
+	t.Run("GET /devices remains public without auth", func(t *testing.T) {
+		handler := interfaces.NewDeviceHandler(&mockUseCases{
+			listFunc: func(_ context.Context) ([]*domain.Device, error) {
+				return []*domain.Device{}, nil
+			},
+		}, authMiddleware)
+
+		req := httptest.NewRequest(http.MethodGet, "/devices", nil)
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Errorf("expected status 200, got %d", w.Code)
+		}
+	})
+
+	t.Run("GET /devices/{id} remains public without auth", func(t *testing.T) {
+		handler := interfaces.NewDeviceHandler(&mockUseCases{
+			getFunc: func(_ context.Context, id string) (*domain.Device, error) {
+				return &domain.Device{ID: id, Name: "test", Type: "test"}, nil
+			},
+		}, authMiddleware)
+
+		req := httptest.NewRequest(http.MethodGet, "/devices/abc-123", nil)
+		req.SetPathValue("id", "abc-123")
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Errorf("expected status 200, got %d", w.Code)
+		}
+	})
+}
 

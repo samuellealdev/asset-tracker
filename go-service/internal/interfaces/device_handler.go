@@ -24,21 +24,38 @@ type DeviceUseCases interface {
 // DeviceHandler handles HTTP requests for device CRUD operations.
 // It uses Go 1.22+ stdlib routing — no third-party router.
 type DeviceHandler struct {
-	useCases DeviceUseCases
-	mux      *http.ServeMux
+	useCases       DeviceUseCases
+	mux            *http.ServeMux
+	authMiddleware func(http.Handler) http.Handler
 }
 
 // NewDeviceHandler creates a new DeviceHandler and registers all routes.
-func NewDeviceHandler(useCases DeviceUseCases) *DeviceHandler {
-	h := &DeviceHandler{useCases: useCases}
+// If authMiddleware is non-nil, it wraps POST/PUT/DELETE routes for protection.
+// GET routes remain public regardless of authMiddleware.
+func NewDeviceHandler(useCases DeviceUseCases, authMiddleware func(http.Handler) http.Handler) *DeviceHandler {
+	h := &DeviceHandler{useCases: useCases, authMiddleware: authMiddleware}
 	mux := http.NewServeMux()
-	mux.HandleFunc("POST /devices", h.HandleCreate)
+
+	// Protected write endpoints — wrapped with auth middleware if provided
+	h.registerWithAuth(mux, "POST /devices", h.HandleCreate)
+	h.registerWithAuth(mux, "PUT /devices/{id}", h.HandleUpdate)
+	h.registerWithAuth(mux, "DELETE /devices/{id}", h.HandleDelete)
+
+	// Public read endpoints — always accessible
 	mux.HandleFunc("GET /devices", h.HandleList)
 	mux.HandleFunc("GET /devices/{id}", h.HandleGet)
-	mux.HandleFunc("PUT /devices/{id}", h.HandleUpdate)
-	mux.HandleFunc("DELETE /devices/{id}", h.HandleDelete)
+
 	h.mux = mux
 	return h
+}
+
+// registerWithAuth registers a handler, optionally wrapping it with auth middleware.
+func (h *DeviceHandler) registerWithAuth(mux *http.ServeMux, pattern string, handler http.HandlerFunc) {
+	if h.authMiddleware != nil {
+		mux.Handle(pattern, h.authMiddleware(handler))
+	} else {
+		mux.HandleFunc(pattern, handler)
+	}
 }
 
 // ServeHTTP delegates to the internal mux for routing.

@@ -100,6 +100,30 @@ func main() {
 	updateUseCase := application.NewUpdateDeviceUseCase(deviceRepo, eventPublisher)
 	deleteUseCase := application.NewDeleteDeviceUseCase(deviceRepo, eventPublisher)
 
+	// --- Auth configuration ---
+	authUsername := os.Getenv("AUTH_USERNAME")
+	if authUsername == "" {
+		authUsername = "admin"
+	}
+	authPassword := os.Getenv("AUTH_PASSWORD")
+	if authPassword == "" {
+		authPassword = "admin"
+	}
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		slog.Error("JWT_SECRET environment variable is required")
+		os.Exit(1)
+	}
+	jwtExpirationStr := os.Getenv("JWT_EXPIRATION")
+	if jwtExpirationStr == "" {
+		jwtExpirationStr = "1h"
+	}
+	jwtExpiration, err := time.ParseDuration(jwtExpirationStr)
+	if err != nil {
+		slog.Error("invalid JWT_EXPIRATION duration", "error", err)
+		os.Exit(1)
+	}
+
 	// --- Interfaces (HTTP handler) ---
 	useCases := interfaces.NewDeviceUseCases(
 		createUseCase,
@@ -108,7 +132,9 @@ func main() {
 		updateUseCase,
 		deleteUseCase,
 	)
-	deviceHandler := interfaces.NewDeviceHandler(useCases)
+	authHandler := interfaces.NewAuthHandler(authUsername, authPassword, []byte(jwtSecret), jwtExpiration)
+	authMiddleware := interfaces.NewAuthMiddleware([]byte(jwtSecret))
+	deviceHandler := interfaces.NewDeviceHandler(useCases, authMiddleware)
 
 	// --- Health handler (separate concern per SRP) ---
 	// GET /health (alias for /health/ready, backward compatible)
@@ -121,6 +147,7 @@ func main() {
 
 	// --- Top-level mux ---
 	mux := http.NewServeMux()
+	mux.HandleFunc("POST /auth/login", authHandler.HandleLogin)
 	mux.Handle("GET /health", healthHandler)
 	mux.Handle("GET /health/live", healthHandler)
 	mux.Handle("GET /health/ready", healthHandler)

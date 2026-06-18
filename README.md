@@ -13,6 +13,7 @@
 | 4 | Observability — structured logging, health checks, metrics | ✅ Complete | 2026-06-12 |
 | 5 | Kubernetes Manifests | ✅ Complete | 2026-06-12 |
 | 6 | Business Events — manual event tracking with GET /events | ✅ Complete | 2026-06-15 |
+| 7 | JWT Authentication — login endpoint, auth middleware, protected write endpoints | ✅ Complete | 2026-06-18 |
 
 ## Architecture
 
@@ -48,6 +49,7 @@ Inter-service communication is **event-driven via Apache Kafka** in KRaft mode (
 | **`slog`** for Go logging | Standard library, zero dependencies, structured JSON natively |
 | **`pino`** for Node.js logging | Fastest Node.js logger, ideal for microservices |
 | **`pgx`** for PostgreSQL driver | Most idiomatic and performant Go PostgreSQL driver |
+| **`golang-jwt/jwt/v5`** for JWT | Maintained fork of the standard Go JWT library; HMAC-SHA256 signing |
 | **Native test runners** | `go test` (table-driven) + `node:test` — no test frameworks needed |
 | **TDD mandatory** for business logic | Red → green → refactor for all domain + application layers |
 | **12-Factor App** configuration | All config via environment variables; `.env` only for local dev |
@@ -88,9 +90,16 @@ curl localhost:3000/health/live   # → {"status":"ok"} (liveness)
 curl localhost:3000/health/ready  # → {"status":"ok","database":"connected"} (readiness)
 curl localhost:3000/metrics       # → {"requests_total":0,"errors_total":0}
 
-# Create a device
+# Login and get a JWT token
+curl -X POST localhost:8080/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"admin","password":"admin"}'
+
+# Create a device (authenticated)
+TOKEN="<token-from-login>"
 curl -X POST localhost:8080/devices \
   -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $TOKEN" \
   -d '{"name":"laptop","type":"computer"}'
 
 # List all devices
