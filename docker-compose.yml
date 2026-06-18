@@ -82,6 +82,10 @@ services:
       POSTGRES_DSN: ${POSTGRES_DSN}
       KAFKA_BROKER: kafka:9092
       KAFKA_TOPIC: device-events
+      JWT_SECRET: ${JWT_SECRET:-change-me-to-a-random-string}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-1h}
+      AUTH_USERNAME: ${AUTH_USERNAME:-admin}
+      AUTH_PASSWORD: ${AUTH_PASSWORD:-admin}
     depends_on:
       postgres:
         condition: service_healthy
