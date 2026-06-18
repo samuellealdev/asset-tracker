@@ -37,7 +37,8 @@ Asset Tracker is a demo microservices application demonstrating hexagonal archit
 | 3 | Event-Driven Communication with Kafka — pub/sub with 3 event types | Phases 1, 2 | ✅ Complete |
 | 4 | Observability — structured logging, health checks, metrics | Phases 1, 2 | ✅ Complete |
 | 5 | Kubernetes Manifests — Deployments, Services, ConfigMaps, Ingress | Phases 0–4 | ✅ Complete |
-| 6 | Business Events — manual event tracking with `GET /events?deviceId=...` | Phases 1, 2 | 🔜 Planned |
+| 6 | Business Events — manual event tracking with `GET /events?deviceId=...` | Phases 1, 2 | ✅ Complete |
+| 7 | JWT Authentication — login endpoint, auth middleware, protected write endpoints | Phases 1, 4 | ✅ Complete |
 
 ## How to Use
 
