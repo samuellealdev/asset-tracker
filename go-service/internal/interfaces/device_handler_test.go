@@ -499,7 +499,7 @@ func TestDeviceHandler_Auth(t *testing.T) {
 		}
 	})
 
-	t.Run("GET /devices remains public without auth", func(t *testing.T) {
+	t.Run("GET /devices requires auth", func(t *testing.T) {
 		handler := interfaces.NewDeviceHandler(&mockUseCases{
 			listFunc: func(_ context.Context) ([]*domain.Device, error) {
 				return []*domain.Device{}, nil
@@ -510,12 +510,12 @@ func TestDeviceHandler_Auth(t *testing.T) {
 		w := httptest.NewRecorder()
 		handler.ServeHTTP(w, req)
 
-		if w.Code != http.StatusOK {
-			t.Errorf("expected status 200, got %d", w.Code)
+		if w.Code != http.StatusUnauthorized {
+			t.Errorf("expected status 401, got %d", w.Code)
 		}
 	})
 
-	t.Run("GET /devices/{id} remains public without auth", func(t *testing.T) {
+	t.Run("GET /devices/{id} requires auth", func(t *testing.T) {
 		handler := interfaces.NewDeviceHandler(&mockUseCases{
 			getFunc: func(_ context.Context, id string) (*domain.Device, error) {
 				return &domain.Device{ID: id, Name: "test", Type: "test"}, nil
@@ -527,8 +527,8 @@ func TestDeviceHandler_Auth(t *testing.T) {
 		w := httptest.NewRecorder()
 		handler.ServeHTTP(w, req)
 
-		if w.Code != http.StatusOK {
-			t.Errorf("expected status 200, got %d", w.Code)
+		if w.Code != http.StatusUnauthorized {
+			t.Errorf("expected status 401, got %d", w.Code)
 		}
 	})
 }

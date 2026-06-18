@@ -30,20 +30,19 @@ type DeviceHandler struct {
 }
 
 // NewDeviceHandler creates a new DeviceHandler and registers all routes.
-// If authMiddleware is non-nil, it wraps POST/PUT/DELETE routes for protection.
-// GET routes remain public regardless of authMiddleware.
+// If authMiddleware is non-nil, it wraps all routes for protection.
 func NewDeviceHandler(useCases DeviceUseCases, authMiddleware func(http.Handler) http.Handler) *DeviceHandler {
 	h := &DeviceHandler{useCases: useCases, authMiddleware: authMiddleware}
 	mux := http.NewServeMux()
 
-	// Protected write endpoints — wrapped with auth middleware if provided
+	// Write endpoints — wrapped with auth middleware if provided
 	h.registerWithAuth(mux, "POST /devices", h.HandleCreate)
 	h.registerWithAuth(mux, "PUT /devices/{id}", h.HandleUpdate)
 	h.registerWithAuth(mux, "DELETE /devices/{id}", h.HandleDelete)
 
-	// Public read endpoints — always accessible
-	mux.HandleFunc("GET /devices", h.HandleList)
-	mux.HandleFunc("GET /devices/{id}", h.HandleGet)
+	// Read endpoints — also wrapped with auth middleware if provided
+	h.registerWithAuth(mux, "GET /devices", h.HandleList)
+	h.registerWithAuth(mux, "GET /devices/{id}", h.HandleGet)
 
 	h.mux = mux
 	return h
