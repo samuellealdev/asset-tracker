@@ -17,8 +17,8 @@
 
 | File | Change |
 |------|--------|
-| `go-service/internal/interfaces/device_handler.go` | `NewDeviceHandler` accepts `authMiddleware func(http.Handler) http.Handler`; wraps POST/PUT/DELETE routes, GET routes public |
-| `go-service/internal/interfaces/device_handler_test.go` | All 20 existing calls updated (`nil` second arg); 5 new auth subtests added (POST 401, POST 201, DELETE 401, GET public, GET/{id} public) |
+| `go-service/internal/interfaces/device_handler.go` | `NewDeviceHandler` accepts `authMiddleware func(http.Handler) http.Handler`; wraps all device routes with authMiddleware |
+| `go-service/internal/interfaces/device_handler_test.go` | All 20 existing calls updated (`nil` second arg); 5 new auth subtests added (POST 401, POST 201, DELETE 401, GET 401, GET/{id} 401) |
 | `go-service/cmd/main.go` | Reads `AUTH_USERNAME`, `AUTH_PASSWORD`, `JWT_SECRET`, `JWT_EXPIRATION` env vars; constructs `AuthHandler` + `AuthMiddleware`; registers `POST /auth/login`; passes middleware to `NewDeviceHandler` |
 | `go-service/go.mod` | Added `github.com/golang-jwt/jwt/v5 v5.3.1` (direct dependency) |
 | `.env.example` | Added `AUTH_USERNAME=admin`, `AUTH_PASSWORD=admin` |
@@ -47,5 +47,5 @@ ok  github.com/samuellealdev/asset-tracker/go-service/internal/interfaces	0.016s
 5. ✅ POST /auth/login wrong password → 401 (tested in auth_handler_test.go)
 6. ✅ POST /devices with valid token → 201 (tested in device_handler_test.go)
 7. ✅ DELETE /devices without auth → 401 (tested in device_handler_test.go)
-8. ✅ GET /devices remains public (tested in device_handler_test.go)
+8. ✅ GET /devices requires auth — returns 401 without token
 9. ✅ `docker compose up --build` — TBD (requires full environment)

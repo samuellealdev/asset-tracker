@@ -2,15 +2,15 @@
 
 ## Objective
 
-Add JSON Web Token (JWT) authentication to the Go service. Protect write endpoints (`POST`, `PUT`, `DELETE /devices`) behind a JWT middleware while keeping read endpoints (`GET /devices`, `/health`, `/metrics`) public. Introduce a `POST /auth/login` endpoint that validates credentials and returns a signed JWT token.
+Add JSON Web Token (JWT) authentication to the Go service. Protect ALL device endpoints (`POST`, `GET`, `PUT`, `DELETE /devices`) behind a JWT middleware while keeping infrastructure endpoints (`/health`, `/health/live`, `/health/ready`, `/metrics`) public. Introduce a `POST /auth/login` endpoint that validates credentials and returns a signed JWT token.
 
 ## Technical Requirements
 
 - **Login endpoint**: `POST /auth/login` accepts `{"username": "...", "password": "..."}`. On valid credentials, returns HTTP 200 with `{"token": "<jwt>"}`. On invalid credentials, returns HTTP 401 with `{"error": "invalid credentials"}`.
 - **JWT token**: Signed with HMAC-SHA256 using `JWT_SECRET` environment variable. Payload contains `sub` (username) and `exp` (expiration timestamp). Default expiration: 1 hour (configurable via `JWT_EXPIRATION` env var).
 - **Auth middleware**: Extracts and validates the JWT from the `Authorization: Bearer <token>` header. On valid token, injects username into request context and calls next handler. On missing/invalid/expired token, returns HTTP 401 with `{"error": "..."}`.
-- **Protected endpoints**: `POST /devices`, `PUT /devices/:id`, `DELETE /devices/:id` MUST require a valid JWT. The middleware MUST be applied only to these routes.
-- **Public endpoints**: `GET /devices`, `GET /devices/:id`, `/health`, `/health/live`, `/health/ready`, `/metrics` remain public.
+- **Protected endpoints**: `POST /devices`, `GET /devices`, `GET /devices/:id`, `PUT /devices/:id`, `DELETE /devices/:id` MUST require a valid JWT.
+- **Public endpoints**: `/health`, `/health/live`, `/health/ready`, `/metrics` remain public.
 - **Credentials storage**: For this demo, credentials are stored as environment variables: `AUTH_USERNAME` and `AUTH_PASSWORD`. No database table for users. This keeps the scope minimal.
 - **Testing**: Unit tests for login handler (valid, invalid, missing fields). Unit tests for middleware (valid token, expired token, missing header, malformed header). Integration test: unauthenticated POST /devices → 401, authenticated → 201.
 - **Backward compatible**: All existing endpoints that were public remain public. Only write operations now require authentication.
@@ -25,7 +25,7 @@ Add JSON Web Token (JWT) authentication to the Go service. Protect write endpoin
 
 ## Files to Modify
 
-- `go-service/cmd/main.go` — Register `/auth/login` route, wrap write endpoints with auth middleware, read `JWT_SECRET`, `JWT_EXPIRATION`, `AUTH_USERNAME`, `AUTH_PASSWORD` env vars
+- `go-service/cmd/main.go` — Register `/auth/login` route, wrap all device endpoints with auth middleware, read `JWT_SECRET`, `JWT_EXPIRATION`, `AUTH_USERNAME`, `AUTH_PASSWORD` env vars
 - `go-service/go.mod` — Add `github.com/golang-jwt/jwt/v5` dependency
 - `go-service/.env.example` — Already has `JWT_SECRET` and `JWT_EXPIRATION`; add `AUTH_USERNAME` and `AUTH_PASSWORD`
 - `README.md` — Add Phase 7 to summary table, update Quick Start with login example
@@ -48,7 +48,7 @@ Add JSON Web Token (JWT) authentication to the Go service. Protect write endpoin
 ## Constraints
 
 - JWT library MUST be `golang-jwt/jwt/v5` (the maintained fork, not `dgrijalva/jwt-go` which is unmaintained).
-- Auth middleware MUST be applied per-route, not globally — GET endpoints must remain public.
+- Auth middleware MUST be applied to all device routes. Infrastructure endpoints (/health*, /metrics) remain public.
 - Credentials MUST be read from environment variables (`AUTH_USERNAME`, `AUTH_PASSWORD`), not hardcoded.
 - JWT secret MUST be read from `JWT_SECRET` environment variable.
 - Token expiration MUST be configurable via `JWT_EXPIRATION` env var with default of 1 hour.

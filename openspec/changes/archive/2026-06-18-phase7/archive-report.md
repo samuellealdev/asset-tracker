@@ -6,7 +6,7 @@
 
 ## Summary
 
-Phase 7 added JWT authentication to the Go service, protecting write endpoints (POST/PUT/DELETE /devices) while keeping read endpoints public. A `POST /auth/login` endpoint issues HMAC-SHA256 signed JWT tokens with configurable expiration.
+Phase 7 added JWT authentication to the Go service, protecting all device endpoints (/devices/*) while keeping infrastructure endpoints (/health, /metrics) public. A `POST /auth/login` endpoint issues HMAC-SHA256 signed JWT tokens with configurable expiration.
 
 ## Specs Synced
 
@@ -61,7 +61,7 @@ ok  	github.com/samuellealdev/asset-tracker/go-service/internal/interfaces	0.010
 
 | Decision | Rationale |
 |----------|-----------|
-| Per-route middleware inside DeviceHandler | Encapsulation; GET routes remain public; follows existing LoggingMiddleware wrapping pattern |
+| Per-route middleware inside DeviceHandler | Encapsulation; only infrastructure routes (/health, /metrics) remain public; follows existing LoggingMiddleware wrapping pattern |
 | Closure factory `NewAuthMiddleware(secret)` | Immutable after construction; simple, no need for config struct |
 | Typed context key `contextKey` | Prevents collisions per Go convention |
 | `jwt.MapClaims` | Minimal for sub/exp/iat; no boilerplate needed |

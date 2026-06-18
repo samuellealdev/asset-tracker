@@ -2,7 +2,7 @@
 
 ## Technical Approach
 
-Add JWT auth to the Go service via three new interface-layer components: `AuthHandler` (login), `AuthMiddleware` (token validation), and typed context keys. Inject credentials and JWT config from `main.go` via constructor parameters — no global state, no env reads inside the interfaces layer. Per-route wrapping: only `POST/PUT/DELETE /devices` passes through `AuthMiddleware`. `GET /devices`, `/health/*`, `/metrics` remain unwrapped.
+Add JWT auth to the Go service via three new interface-layer components: `AuthHandler` (login), `AuthMiddleware` (token validation), and typed context keys. Inject credentials and JWT config from `main.go` via constructor parameters — no global state, no env reads inside the interfaces layer. Per-route wrapping: all `/devices` routes pass through `AuthMiddleware`. `/health/*` and `/metrics` remain unwrapped.
 
 ## Architecture Decisions
 
@@ -88,7 +88,7 @@ func NewDeviceHandler(useCases DeviceUseCases, authMiddleware func(http.Handler)
 |-------|-------------|----------|
 | Interface unit (auth_handler) | Login: valid creds → 200+JWT, invalid → 401, missing fields → 400, malformed JSON → 400 | `httptest` with table-driven subtests (match existing pattern) |
 | Interface unit (auth_middleware) | Valid token passes, expired → 401, missing header → 401, malformed → 401, wrong secret → 401, context injection verified | `httptest`; generate tokens with known secret in test |
-| Interface unit (device_handler) | Existing tests pass unchanged (GET remains public); POST/PUT/DELETE with valid token → 200/201/204, without token → 401 | Extend `device_handler_test.go` with new subtests using real middleware |
+| Interface unit (device_handler) | Existing business-logic tests pass unchanged; all device routes without token → 401, with valid token → 200/201/204 → 200/201/204, without token → 401 | Extend `device_handler_test.go` with new subtests using real middleware |
 
 ## Migration / Rollout
 

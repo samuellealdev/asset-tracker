@@ -44,7 +44,7 @@ Chain strategy: pending
 - [x] 4.1 Change `NewDeviceHandler` signature: add `authMiddleware func(http.Handler) http.Handler` (nil-safe)
 - [x] 4.2 Wrap `POST/PUT/DELETE /devices` with `authMiddleware` in constructor; `GET` routes unchanged
 - [x] 4.3 Update `device_handler_test.go`: pass `nil` as second arg in all constructor calls
-- [x] 4.4 Add auth subtests: POST without token → 401, POST with token → 201, DELETE without token → 401, GET → 200 (public)
+- [x] 4.4 Add auth subtests: POST without token → 401, POST with token → 201, DELETE without token → 401, GET → 401 (requires auth), GET with valid token → 200
 
 ## Phase 5: Wiring — main.go
 

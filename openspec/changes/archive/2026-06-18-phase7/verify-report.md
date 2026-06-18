@@ -54,7 +54,7 @@ ok  	github.com/samuellealdev/asset-tracker/go-service/internal/interfaces	0.010
 | JWT_EXPIRATION default 1h | Default when not set | Code inspection: main.go line 119 | ✅ COMPLIANT |
 | AUTH_USERNAME/AUTH_PASSWORD env vars | Read from env, defaults to admin | Code inspection: main.go lines 104-111 | ✅ COMPLIANT |
 | `golang-jwt/jwt/v5` dependency | Correct library in go.mod | Code inspection: go.mod line 6 | ✅ COMPLIANT |
-| Per-route middleware | Only POST/PUT/DELETE wrapped | Code inspection: device_handler.go lines 40-42 | ✅ COMPLIANT |
+| Per-route middleware | All /device routes wrapped | Code inspection: device_handler.go lines 40-42 | ✅ COMPLIANT |
 
 **Compliance summary**: 24/24 scenarios compliant
 
@@ -82,7 +82,7 @@ ok  	github.com/samuellealdev/asset-tracker/go-service/internal/interfaces	0.010
 
 | Decision | Followed? | Notes |
 |----------|-----------|-------|
-| Wrap inside DeviceHandler, not top mux | ✅ Yes | Protected routes wrapped in `registerWithAuth`, public routes unchanged |
+| Wrap inside DeviceHandler, not top mux | ✅ Yes | Protected routes wrapped in `registerWithAuth`, infrastructure routes (/health, /metrics) unchanged |
 | Closure factory for middleware | ✅ Yes | `NewAuthMiddleware(secret []byte)` returns `func(http.Handler) http.Handler` |
 | Typed context key | ✅ Yes | `type contextKey string` prevents collisions |
 | MapClaims for JWT claims | ✅ Yes | sub, exp, iat stored in MapClaims |
