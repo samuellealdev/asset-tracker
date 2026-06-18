@@ -53,7 +53,9 @@ Inter-service communication is **event-driven via Apache Kafka** in KRaft mode (
 | **Native test runners** | `go test` (table-driven) + `node:test` — no test frameworks needed |
 | **TDD mandatory** for business logic | Red → green → refactor for all domain + application layers |
 | **12-Factor App** configuration | All config via environment variables; `.env` only for local dev |
-| **JWT Bearer token authentication** | POST/PUT/DELETE /devices protected; GET /devices, /health/* public; `golang-jwt/jwt/v5` library; credentials via env vars (demo scope) |
+| **JWT Bearer token authentication** | JWT auth on all `/devices` endpoints; `golang-jwt/jwt/v5` library; credentials via env vars (demo scope) |
+
+> Detailed architecture decisions, including deferred production patterns (circuit breaker, outbox, rate limiting, idempotent consumer, Kafka multi-node, testcontainers), are documented in [`docs/adr/`](docs/adr/).
 
 ## Tech Stack
 
