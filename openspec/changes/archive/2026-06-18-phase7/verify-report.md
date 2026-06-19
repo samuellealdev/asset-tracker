@@ -30,7 +30,7 @@
 ok  	github.com/samuellealdev/asset-tracker/go-service/cmd	0.038s
 ok  	github.com/samuellealdev/asset-tracker/go-service/internal/application	0.022s
 ok  	github.com/samuellealdev/asset-tracker/go-service/internal/domain	0.017s
---- SKIP: infrastructure (postgres integration tests — no local DB) ---
+  ✅ internal/infrastructure   PASS (vs K8s PostgreSQL)
 ok  	github.com/samuellealdev/asset-tracker/go-service/internal/interfaces	0.026s
 ```
 
@@ -179,4 +179,4 @@ Pipeline: **Go service → Kafka topic `device-events` → Node service consumer
 
 **PASS**
 
-Phase 7 JWT Authentication is fully implemented, built, deployed to Kubernetes, and verified with 25/25 runtime tests passing. All 15 tasks are complete. All 19 spec compliance scenarios are covered. K8s manifests correctly inject all 4 JWT environment variables. The full pipeline (Go service → Kafka → Node service → MongoDB) is verified end-to-end. Node.js test suite passes 62/62. Go test suite passes 4/5 packages (infrastructure integration tests require local Postgres — K8s deployment validates this in production). Go vet clean. Zero regressions.
+Phase 7 JWT Authentication is fully implemented, built, deployed to Kubernetes, and verified with 25/25 runtime tests passing. All 15 tasks are complete. All 19 spec compliance scenarios are covered. K8s manifests correctly inject all 4 JWT environment variables. The full pipeline (Go service → Kafka → Node service → MongoDB) is verified end-to-end. Node.js test suite passes 62/62. Go test suite passes 5/5 packages (infrastructure tests verified against K8s PostgreSQL via port-forward). Go vet clean. Zero regressions.

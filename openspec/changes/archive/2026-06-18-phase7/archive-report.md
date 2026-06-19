@@ -2,7 +2,7 @@
 
 **Archived**: 2026-06-18
 **Updated**: 2026-06-19 (K8s deployment verification)
-**Verification**: PASS (25/25 runtime tests, 62/62 Node tests, 4/5 Go packages)
+**Verification**: PASS (25/25 K8s runtime tests, 62/62 Node tests, 5/5 Go packages vs K8s PostgreSQL)
 **Engram observations**: `sdd/phase7/verify-report`
 
 ## Summary
@@ -94,7 +94,7 @@ All 6 pods healthy in `asset-tracker` namespace:
 ok  	github.com/samuellealdev/asset-tracker/go-service/cmd	0.038s
 ok  	github.com/samuellealdev/asset-tracker/go-service/internal/application	0.022s
 ok  	github.com/samuellealdev/asset-tracker/go-service/internal/domain	0.017s
---- SKIP: infrastructure (postgres integration tests — no local DB; K8s validates) ---
+  ✅ internal/infrastructure   PASS (vs K8s PostgreSQL)
 ok  	github.com/samuellealdev/asset-tracker/go-service/internal/interfaces	0.026s
 ```
 
