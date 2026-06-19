@@ -212,7 +212,7 @@ curl http://localhost:8081/node/metrics
 After all services are running:
 
 ```bash
-# 1. Health check Go service
+# 1. Health check Go service (public endpoints — no auth required)
 kubectl port-forward svc/go-service 8080:8080 -n asset-tracker &
 curl http://localhost:8080/health/live
 curl http://localhost:8080/health/ready
@@ -222,12 +222,65 @@ kubectl port-forward svc/node-service 3000:3000 -n asset-tracker &
 curl http://localhost:3000/health/live
 curl http://localhost:3000/health/ready
 
-# 3. Create a device (requires running Go service)
+# 3. Verify protected endpoints require authentication
 curl -X POST http://localhost:8080/devices \
   -H "Content-Type: application/json" \
-  -d '{"name":"test-device","type":"laptop","location":"office"}'
+  -d '{"name":"test-device","type":"laptop"}' -w "\nHTTP %{http_code}\n"
+# Expected: 401 Unauthorized
 
-# 4. Verify Kafka topic has messages
+curl http://localhost:8080/devices -w "\nHTTP %{http_code}\n"
+# Expected: 401 Unauthorized
+
+# 4. Login and obtain JWT token
+TOKEN=$(curl -s -X POST http://localhost:8080/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"admin"}' | jq -r '.token')
+echo "JWT token: ${TOKEN:0:20}..."
+
+# 5. List devices with auth (should be empty initially)
+curl -s http://localhost:8080/devices \
+  -H "Authorization: Bearer $TOKEN" | jq .
+# Expected: 200 with empty array []
+
+# 6. Create a device with auth
+curl -s -X POST http://localhost:8080/devices \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"name":"test-device","type":"laptop"}' | jq .
+# Expected: 201 with device JSON
+
+# 7. List devices with auth (should show created device)
+curl -s http://localhost:8080/devices \
+  -H "Authorization: Bearer $TOKEN" | jq .
+# Expected: 200 with array containing test-device
+
+# 8. Update the device with auth
+DEVICE_ID=$(curl -s http://localhost:8080/devices \
+  -H "Authorization: Bearer $TOKEN" | jq -r '.[0].id')
+curl -s -X PUT "http://localhost:8080/devices/$DEVICE_ID" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"name":"test-device-updated","type":"desktop"}' | jq .
+# Expected: 200 with updated device JSON
+
+# 9. Delete the device with auth
+curl -s -o /dev/null -w "HTTP %{http_code}\n" \
+  -X DELETE "http://localhost:8080/devices/$DEVICE_ID" \
+  -H "Authorization: Bearer $TOKEN"
+# Expected: HTTP 204
+
+# 10. Verify PUT and DELETE require auth (unauthorized attempts)
+curl -s -o /dev/null -w "HTTP %{http_code}\n" \
+  -X PUT "http://localhost:8080/devices/$DEVICE_ID" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"x","type":"y"}'
+# Expected: HTTP 401
+
+curl -s -o /dev/null -w "HTTP %{http_code}\n" \
+  -X DELETE "http://localhost:8080/devices/$DEVICE_ID"
+# Expected: HTTP 401
+
+# 11. Verify Kafka topic has messages
 kubectl exec -n asset-tracker deploy/kafka -- \
   /opt/kafka/bin/kafka-console-consumer.sh \
     --bootstrap-server localhost:9092 \
@@ -236,13 +289,29 @@ kubectl exec -n asset-tracker deploy/kafka -- \
     --max-messages 1 \
     --timeout-ms 5000
 
-# 5. Verify MongoDB has the event (requires mongo client)
+# 12. Verify MongoDB has the event (Kafka E2E pipeline)
 kubectl exec -n asset-tracker deploy/mongo -- \
   mongosh --quiet \
     -u mongo -p changeme \
     --authenticationDatabase admin \
     asset_tracker \
     --eval "db.device_events.find().pretty()"
+
+# 13. Verify /metrics still works (public endpoint, no auth required)
+curl http://localhost:8080/metrics
+```
+
+### Smoke Test Without jq
+
+If `jq` is not available, replace step 4 with:
+
+```bash
+# Login and manually extract token
+curl -v -X POST http://localhost:8080/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"admin"}' 2>&1 | grep '"token"'
+# Copy the token value and use it in subsequent curl commands:
+# curl -H "Authorization: Bearer <paste-token-here>" http://localhost:8080/devices
 ```
 
 ---

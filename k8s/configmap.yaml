@@ -10,3 +10,4 @@ data:
   KAFKA_TOPIC: "device-events"
   POSTGRES_DB: "asset_tracker"
   MONGO_DB: "asset_tracker"
+  JWT_EXPIRATION: "1h"

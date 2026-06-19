@@ -59,3 +59,13 @@ Chain strategy: pending
 - [x] 6.3 Acceptance: POST /devices no token → 401, with token → 201, GET /devices → 200, GET /health → 200
 - [x] 6.4 `docker compose up --build` succeeds, go-service healthy
 - [x] 6.5 Update `README.md` — Phase 7 summary + login curl example
+
+## Phase 7: K8s Deployment Verification (2026-06-19)
+
+- [x] 7.1 Verify K8s manifests inject JWT_SECRET, JWT_EXPIRATION, AUTH_USERNAME, AUTH_PASSWORD env vars
+- [x] 7.2 Build Docker images (`docker build`) and load into cluster
+- [x] 7.3 Deploy to K8s (`kubectl apply -f k8s/`), verify all 6 pods healthy
+- [x] 7.4 Run 25 runtime acceptance tests via `kubectl port-forward`
+- [x] 7.5 Verify Kafka E2E pipeline (Go → Kafka → Node → MongoDB)
+- [x] 7.6 Update verify-report.md and archive-report.md with K8s results
+- [x] 7.7 Mark K8s acceptance criteria as checked in specs/phase7.md

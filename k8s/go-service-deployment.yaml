@@ -45,6 +45,26 @@ spec:
                 configMapKeyRef:
                   name: asset-tracker-config
                   key: KAFKA_TOPIC
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: asset-tracker-secret
+                  key: JWT_SECRET
+            - name: JWT_EXPIRATION
+              valueFrom:
+                configMapKeyRef:
+                  name: asset-tracker-config
+                  key: JWT_EXPIRATION
+            - name: AUTH_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: asset-tracker-secret
+                  key: AUTH_USERNAME
+            - name: AUTH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: asset-tracker-secret
+                  key: AUTH_PASSWORD
           livenessProbe:
             httpGet:
               path: /health/live

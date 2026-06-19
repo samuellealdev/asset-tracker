@@ -13,7 +13,7 @@ Add JSON Web Token (JWT) authentication to the Go service. Protect ALL device en
 - **Public endpoints**: `/health`, `/health/live`, `/health/ready`, `/metrics` remain public.
 - **Credentials storage**: For this demo, credentials are stored as environment variables: `AUTH_USERNAME` and `AUTH_PASSWORD`. No database table for users. This keeps the scope minimal.
 - **Testing**: Unit tests for login handler (valid, invalid, missing fields). Unit tests for middleware (valid token, expired token, missing header, malformed header). Integration test: unauthenticated POST /devices → 401, authenticated → 201.
-- **Backward compatible**: All existing endpoints that were public remain public. Only write operations now require authentication.
+- **Backward compatible**: All existing infrastructure endpoints (/health*, /metrics) remain public. All device endpoints (/devices/*) now require authentication.
 - **Library**: Use `github.com/golang-jwt/jwt/v5` for JWT operations.
 
 ## Files to Create
@@ -40,10 +40,11 @@ Add JSON Web Token (JWT) authentication to the Go service. Protect ALL device en
 - [ ] `TOKEN=$(curl -s -X POST .../auth/login ... | jq -r '.token'); curl -X POST http://localhost:8080/devices -H "Authorization: Bearer $TOKEN" -d '{"name":"test","type":"test"}'` returns HTTP 201 (authorized).
 - [ ] `curl -X DELETE http://localhost:8080/devices/<id>` returns HTTP 401.
 - [ ] `TOKEN=...; curl -X DELETE http://localhost:8080/devices/<id> -H "Authorization: Bearer $TOKEN"` returns HTTP 204.
-- [ ] `curl http://localhost:8080/devices` returns HTTP 200 (GET remains public).
+- [ ] `curl http://localhost:8080/devices` returns HTTP 401 (GET requires auth).
 - [ ] `curl http://localhost:8080/health` returns HTTP 200 (health remains public).
 - [ ] `curl -X POST http://localhost:8080/devices -H "Authorization: Bearer invalidtoken"` returns HTTP 401.
-- [ ] `docker compose up --build` succeeds with go-service healthy.
+- [x] `docker compose up --build` succeeds with go-service healthy.
+- [x] K8s manifests inject `JWT_SECRET`, `JWT_EXPIRATION`, `AUTH_USERNAME`, `AUTH_PASSWORD` env vars; go-service pod starts and auth endpoints work via `kubectl port-forward`. Verified 2026-06-19 via K8s deployment on Docker Desktop.
 
 ## Constraints
 
