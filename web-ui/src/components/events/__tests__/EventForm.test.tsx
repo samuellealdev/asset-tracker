@@ -34,6 +34,73 @@ describe("EventForm", () => {
     expect(screen.getByRole("button", { name: /create event/i })).toBeInTheDocument();
   });
 
+  it("renders all 8 event type preset chips", () => {
+    render(
+      <EventForm
+        devices={mockDevices}
+        onSubmit={async () => {}}
+        isPending={false}
+      />,
+    );
+
+    const presets = [
+      "maintenance",
+      "inspection",
+      "repair",
+      "relocation",
+      "decommissioned",
+      "alert",
+      "audit",
+      "firmware-update",
+    ];
+
+    for (const preset of presets) {
+      expect(screen.getByText(preset)).toBeInTheDocument();
+    }
+  });
+
+  it("clicking a chip fills the type input", async () => {
+    render(
+      <EventForm
+        devices={mockDevices}
+        onSubmit={async () => {}}
+        isPending={false}
+      />,
+    );
+
+    const user = userEvent.setup();
+    await user.click(screen.getByText("repair"));
+
+    const input = screen.getByLabelText(/type/i) as HTMLInputElement;
+    expect(input).toHaveValue("repair");
+  });
+
+  it("accepts a custom type value not in the presets", async () => {
+    const onSubmit = vi.fn();
+    render(
+      <EventForm
+        devices={mockDevices}
+        onSubmit={onSubmit}
+        isPending={false}
+      />,
+    );
+
+    const user = userEvent.setup();
+
+    await user.type(screen.getByLabelText(/type/i), "custom-event-type");
+    await user.selectOptions(screen.getByLabelText(/device/i), "dev-1");
+    await user.type(screen.getByLabelText(/name/i), "Test event");
+    await user.click(screen.getByRole("button", { name: /create event/i }));
+
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: "custom-event-type",
+        }),
+      );
+    });
+  });
+
   it("populates device dropdown with available devices", () => {
     render(
       <EventForm

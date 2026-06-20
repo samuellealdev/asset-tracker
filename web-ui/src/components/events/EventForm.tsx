@@ -4,6 +4,17 @@ import { createEventSchema } from "@/lib/schemas/event";
 import type { Device } from "@/lib/schemas/device";
 import type { CreateEventInput } from "@/lib/schemas/event";
 
+const EVENT_TYPE_PRESETS = [
+  "maintenance",
+  "inspection",
+  "repair",
+  "relocation",
+  "decommissioned",
+  "alert",
+  "audit",
+  "firmware-update",
+] as const;
+
 interface EventFormProps {
   devices: Device[];
   onSubmit: (input: CreateEventInput) => Promise<void>;
@@ -59,11 +70,24 @@ export function EventForm({ devices, onSubmit, isPending }: EventFormProps) {
         >
           Type
         </label>
+        <div className="flex flex-wrap gap-2 mb-3">
+          {EVENT_TYPE_PRESETS.map((preset) => (
+            <button
+              key={preset}
+              type="button"
+              onClick={() => setType(preset)}
+              className="bg-slate-700 text-slate-300 rounded-full px-3 py-1 text-xs font-medium cursor-pointer hover:bg-slate-600 transition-colors"
+            >
+              {preset}
+            </button>
+          ))}
+        </div>
         <input
           id="type"
           type="text"
           value={type}
           onChange={(e) => setType(e.target.value)}
+          list="event-types"
           className={`mt-1 block w-full rounded-lg border bg-slate-800 px-3 py-2 text-sm text-slate-100 shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
             errors.type
               ? "border-red-300 focus:border-red-500"
@@ -71,6 +95,11 @@ export function EventForm({ devices, onSubmit, isPending }: EventFormProps) {
           }`}
           placeholder="e.g. maintenance, inspection, alert"
         />
+        <datalist id="event-types">
+          {EVENT_TYPE_PRESETS.map((preset) => (
+            <option key={preset} value={preset} />
+          ))}
+        </datalist>
         {errors.type && (
           <p className="mt-1 text-sm text-red-400">{errors.type}</p>
         )}
