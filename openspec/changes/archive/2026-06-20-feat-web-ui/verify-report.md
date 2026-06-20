@@ -271,3 +271,21 @@ f6dff7b fix(web-ui): add Outlet to devices route, fix E2E selectors, mock useLoc
 ### Updated Verdict
 
 **PASS** — All critical issues resolved. E2E suite fully green. One known flaky vitest test (parallel timeout in use-metrics) remains — passes in single fork; runner-level issue with vitest v3.2.6 + Node 26.
+
+---
+
+## Post-Archive Fix — 2026-06-20 (Events: deviceId required)
+
+**Symptom**: Events page showed "Failed to load events. Retry?" when no device was selected in the filter.
+
+**Root cause**: The Node.js `/events` endpoint requires `deviceId` as a mandatory query parameter. The UI called `GET /api/node/events` without `deviceId` when the filter was set to "All devices", causing a 400 error (`{"error":"deviceId is required"}`).
+
+**Fix**:
+- `getEvents()` in `lib/api/events.ts`: `deviceId` parameter changed from optional to required
+- `useEvents()` in `hooks/use-events.ts`: query disabled when no `deviceId` is selected (`enabled: !!token && !!deviceId`)
+- Events page: changed "All devices" dropdown option to "Select a device...", added a prompt message when no device is selected guiding the user to pick one
+- Updated unit tests to match new behavior
+
+**Files changed**: `lib/api/events.ts`, `hooks/use-events.ts`, `routes/events.tsx`, `hooks/__tests__/use-events.test.tsx`, `routes/__tests__/events.test.tsx`
+
+**Commit**: `98eee55 fix(web-ui): require deviceId for events API, show select prompt when empty`
