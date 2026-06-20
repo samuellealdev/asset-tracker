@@ -14,7 +14,7 @@ test.describe("Authentication", () => {
 
       // Should redirect to devices page
       await expect(page).toHaveURL(/\/devices/, { timeout: 10_000 });
-      await expect(page.getByText("Devices")).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Devices" })).toBeVisible();
     },
   );
 

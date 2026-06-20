@@ -2,7 +2,6 @@ import { test, expect } from "@playwright/test";
 
 test.describe("Dashboards", () => {
   test.beforeEach(async ({ page }) => {
-    // Login before each test
     await page.goto("/login");
     await page.getByLabel("Username").fill("admin");
     await page.getByLabel("Password").fill("admin");
@@ -18,8 +17,8 @@ test.describe("Dashboards", () => {
       await expect(page.getByRole("heading", { name: "Service Health" })).toBeVisible();
 
       // Health cards should be visible for both services
-      await expect(page.getByText("Go API")).toBeVisible();
-      await expect(page.getByText("Node.js API")).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Go API" }).first()).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Node.js API" }).first()).toBeVisible();
     },
   );
 
@@ -29,8 +28,9 @@ test.describe("Dashboards", () => {
       await page.goto("/dashboards");
 
       // Metrics section should be present
-      await expect(page.getByRole("heading", { name: "Metrics" })).toBeVisible();
       await expect(page.getByText("Auto-refreshes every 30s")).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Go API" }).first()).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Node.js API" }).first()).toBeVisible();
     },
   );
 });

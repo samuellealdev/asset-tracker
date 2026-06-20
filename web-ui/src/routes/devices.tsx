@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useNavigate, useLocation } from "@tanstack/react-router";
 import { useDevices } from "@/hooks/use-devices";
 import { DeviceTable } from "@/components/devices/DeviceTable";
 import { DeleteDialog } from "@/components/devices/DeleteDialog";
@@ -7,6 +7,7 @@ import { useDeleteDevice } from "@/hooks/use-devices";
 
 export function DevicesPage() {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const { data: devices, isLoading, isError, refetch } = useDevices();
   const deleteDevice = useDeleteDevice();
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
@@ -14,6 +15,11 @@ export function DevicesPage() {
   const targetDevice = deleteTarget
     ? devices?.find((d) => d.id === deleteTarget)
     : undefined;
+
+  // If a child route is active (not exactly /devices), render only the Outlet
+  if (pathname !== "/devices") {
+    return <Outlet />;
+  }
 
   return (
     <div className="space-y-6">

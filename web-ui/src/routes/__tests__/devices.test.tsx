@@ -7,6 +7,8 @@ import type { ReactNode } from "react";
 const mockNavigate = vi.fn();
 vi.mock("@tanstack/react-router", () => ({
   useNavigate: () => mockNavigate,
+  useLocation: () => ({ pathname: "/devices" }),
+  Outlet: () => null,
   createFileRoute: () => (config: any) => config,
   Link: ({ children, to, ...props }: any) => (
     <a href={to} {...props}>
