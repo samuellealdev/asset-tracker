@@ -7,9 +7,10 @@ interface DeviceFormProps {
   device?: Device;
   onSubmit: (input: CreateDeviceInput) => Promise<void>;
   isPending: boolean;
+  onCancel?: () => void;
 }
 
-export function DeviceForm({ device, onSubmit, isPending }: DeviceFormProps) {
+export function DeviceForm({ device, onSubmit, isPending, onCancel }: DeviceFormProps) {
   const navigate = useNavigate();
   const [name, setName] = useState(device?.name ?? "");
   const [type, setType] = useState(device?.type ?? "");
@@ -128,7 +129,7 @@ export function DeviceForm({ device, onSubmit, isPending }: DeviceFormProps) {
         </button>
         <button
           type="button"
-          onClick={() => navigate({ to: "/devices" })}
+          onClick={() => (onCancel ? onCancel() : navigate({ to: "/devices" }))}
           className="rounded-lg px-4 py-2 text-sm font-medium text-slate-300 transition-all duration-200 hover:bg-slate-700"
         >
           Cancel

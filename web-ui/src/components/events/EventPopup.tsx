@@ -33,6 +33,7 @@ export function EventPopup({
 
   const [type, setType] = useState("");
   const [name, setName] = useState("");
+  const [actor, setActor] = useState("");
   const [description, setDescription] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [successMsg, setSuccessMsg] = useState("");
@@ -44,6 +45,7 @@ export function EventPopup({
     if (isOpen) {
       setType("");
       setName("");
+      setActor("");
       setDescription("");
       setErrors({});
       setSuccessMsg("");
@@ -70,6 +72,7 @@ export function EventPopup({
         type,
         deviceId,
         name,
+        actor: actor || undefined,
         description: description || undefined,
       });
 
@@ -99,7 +102,7 @@ export function EventPopup({
         setFormPending(false);
       }
     },
-    [type, deviceId, name, description, createEvent],
+    [type, deviceId, name, actor, description, createEvent],
   );
 
   return (
@@ -206,6 +209,24 @@ export function EventPopup({
                 {errors.name && (
                   <p className="mt-1 text-xs text-red-400">{errors.name}</p>
                 )}
+              </div>
+
+              {/* Actor */}
+              <div>
+                <label
+                  htmlFor="ev-actor"
+                  className="block text-xs font-medium text-slate-400 mb-1.5"
+                >
+                  Actor
+                </label>
+                <input
+                  id="ev-actor"
+                  type="text"
+                  value={actor}
+                  onChange={(e) => setActor(e.target.value)}
+                  placeholder="e.g. admin"
+                  className="block w-full rounded-lg border border-slate-600 bg-slate-800 px-3 py-1.5 text-xs text-slate-100 shadow-sm transition-all duration-200 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
               </div>
 
               {/* Description */}

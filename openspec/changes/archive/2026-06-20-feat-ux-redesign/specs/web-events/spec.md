@@ -1,30 +1,6 @@
-# web-events Specification
+# Delta for web-events
 
-## Purpose
-Event listing and manual creation via Node.js `/events` endpoints (no auth required). Events can also be viewed and created per-device via modal popup from the device card grid.
-
-## Requirements
-
-### Requirement: Event List
-The system MUST fetch and display events from GET /events, with optional device filter.
-
-#### Scenario: Events loaded
-- GIVEN user navigates to /events
-- WHEN GET /events returns data
-- THEN a table displays timestamp, device, type, and message for each event
-
-#### Scenario: Filter by device
-- GIVEN user selects a device from the filter dropdown
-- WHEN GET /events?deviceId=X is called
-- THEN only events for that device are displayed
-
-#### Scenario: Empty state
-- GIVEN no events exist or filter returns zero results
-- THEN display "No events found" empty state
-
-#### Scenario: Load error
-- GIVEN GET /events fails
-- THEN display error message with retry button
+## ADDED Requirements
 
 ### Requirement: Event Popup from Device Card
 The system MUST allow viewing and creating events for a specific device via a modal popup triggered from the device card grid.
@@ -47,18 +23,7 @@ The system MUST allow viewing and creating events for a specific device via a mo
 - GIVEN the device has no events
 - THEN the popup shows "No events for this device" with the add-event form available
 
-### Requirement: Manual Event Creation
-The system MUST create events via POST /events with a validated form.
-
-#### Scenario: Successful submission
-- GIVEN a completed form (device, type, message)
-- WHEN submitted
-- THEN POST /events succeeds, event list refreshes, success toast appears
-
-#### Scenario: Validation failure
-- GIVEN required fields are empty
-- WHEN form is submitted
-- THEN inline validation errors appear, form is not submitted
+## MODIFIED Requirements
 
 ### Requirement: Device Selector
 The system MUST pre-select the device when the event creation form is opened from a device card popup.
@@ -74,8 +39,3 @@ The system MUST pre-select the device when the event creation form is opened fro
 - GIVEN user navigates to /events directly
 - WHEN the event creation form renders
 - THEN the device dropdown behaves as before, requiring manual selection
-
-#### Scenario: Dropdown populated
-- GIVEN the event creation form renders
-- WHEN devices are fetched
-- THEN the device dropdown lists all available devices

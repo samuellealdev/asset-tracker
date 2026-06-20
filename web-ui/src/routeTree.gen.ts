@@ -9,7 +9,6 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as EventsRouteImport } from './routes/events'
 import { Route as DevicesRouteImport } from './routes/devices'
@@ -19,11 +18,6 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as DevicesCreateRouteImport } from './routes/devices.create'
 import { Route as DevicesIdRouteImport } from './routes/devices.$id'
 
-const SettingsRoute = SettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -72,7 +66,6 @@ export interface FileRoutesByFullPath {
   '/devices': typeof DevicesRouteWithChildren
   '/events': typeof EventsRoute
   '/login': typeof LoginRoute
-  '/settings': typeof SettingsRoute
   '/devices/$id': typeof DevicesIdRoute
   '/devices/create': typeof DevicesCreateRoute
 }
@@ -83,7 +76,6 @@ export interface FileRoutesByTo {
   '/devices': typeof DevicesRouteWithChildren
   '/events': typeof EventsRoute
   '/login': typeof LoginRoute
-  '/settings': typeof SettingsRoute
   '/devices/$id': typeof DevicesIdRoute
   '/devices/create': typeof DevicesCreateRoute
 }
@@ -95,7 +87,6 @@ export interface FileRoutesById {
   '/devices': typeof DevicesRouteWithChildren
   '/events': typeof EventsRoute
   '/login': typeof LoginRoute
-  '/settings': typeof SettingsRoute
   '/devices/$id': typeof DevicesIdRoute
   '/devices/create': typeof DevicesCreateRoute
 }
@@ -108,7 +99,6 @@ export interface FileRouteTypes {
     | '/devices'
     | '/events'
     | '/login'
-    | '/settings'
     | '/devices/$id'
     | '/devices/create'
   fileRoutesByTo: FileRoutesByTo
@@ -119,7 +109,6 @@ export interface FileRouteTypes {
     | '/devices'
     | '/events'
     | '/login'
-    | '/settings'
     | '/devices/$id'
     | '/devices/create'
   id:
@@ -130,7 +119,6 @@ export interface FileRouteTypes {
     | '/devices'
     | '/events'
     | '/login'
-    | '/settings'
     | '/devices/$id'
     | '/devices/create'
   fileRoutesById: FileRoutesById
@@ -142,18 +130,10 @@ export interface RootRouteChildren {
   DevicesRoute: typeof DevicesRouteWithChildren
   EventsRoute: typeof EventsRoute
   LoginRoute: typeof LoginRoute
-  SettingsRoute: typeof SettingsRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/settings': {
-      id: '/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof SettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -233,7 +213,6 @@ const rootRouteChildren: RootRouteChildren = {
   DevicesRoute: DevicesRouteWithChildren,
   EventsRoute: EventsRoute,
   LoginRoute: LoginRoute,
-  SettingsRoute: SettingsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

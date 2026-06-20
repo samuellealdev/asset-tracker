@@ -67,8 +67,8 @@ describe("AppLayout", () => {
     expect(screen.getByText("ASSET TRACKER")).toBeInTheDocument();
 
     // LiveMetrics
-    expect(screen.getByText("Go")).toBeInTheDocument();
-    expect(screen.getByText("Node")).toBeInTheDocument();
+    expect(screen.getByText("Go API")).toBeInTheDocument();
+    expect(screen.getByText("Node API")).toBeInTheDocument();
 
     // Main content
     expect(screen.getByText("Page content")).toBeInTheDocument();

@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { useGoHealth, useNodeHealth } from "@/hooks/use-health";
 import { useGoMetrics, useNodeMetrics } from "@/hooks/use-metrics";
 import { useSettings } from "@/hooks/use-settings";
+import { Modal } from "@/components/shared/Modal";
 import { cn } from "@/lib/utils/cn";
 
 function HealthDot({ healthy, label }: { healthy: boolean; label: string }) {
@@ -32,6 +34,72 @@ function Counter({
     <span className="text-xs text-slate-400" data-testid={testId}>
       {label}: <span className="font-mono text-slate-300">{value}</span>
     </span>
+  );
+}
+
+interface ServiceDetailProps {
+  healthy: boolean;
+  requests: number | undefined;
+  errors: number | undefined;
+  lastRefresh: string;
+}
+
+function ServiceDetailCard({
+  healthy,
+  requests,
+  errors,
+  lastRefresh,
+}: ServiceDetailProps) {
+  const errRate =
+    requests !== undefined && requests > 0 && errors !== undefined
+      ? ((errors / requests) * 100).toFixed(1)
+      : null;
+
+  return (
+    <div className="space-y-3">
+      {/* Health badge */}
+      <div className="flex items-center gap-2">
+        <span
+          className={cn(
+            "h-3 w-3 rounded-full",
+            healthy ? "bg-green-500" : "bg-red-500",
+          )}
+        />
+        <span className="text-sm font-medium text-slate-200">
+          {healthy ? "Healthy" : "Unhealthy"}
+        </span>
+      </div>
+
+      {/* Last refresh */}
+      <div className="text-xs text-slate-400">
+        Last refresh: <span className="font-mono text-slate-300">{lastRefresh}</span>
+      </div>
+
+      {/* Divider */}
+      <div className="border-t border-slate-700" />
+
+      {/* Metrics */}
+      {requests !== undefined ? (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-slate-400">Requests</span>
+            <span className="font-mono text-sm text-slate-100">{requests.toLocaleString()}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-slate-400">Errors</span>
+            <span className="font-mono text-sm text-red-400">{errors?.toLocaleString() ?? 0}</span>
+          </div>
+          {errRate !== null && (
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-slate-400">Error rate</span>
+              <span className="font-mono text-sm text-slate-100">{errRate}%</span>
+            </div>
+          )}
+        </div>
+      ) : (
+        <p className="text-sm text-slate-400">No requests yet</p>
+      )}
+    </div>
   );
 }
 
@@ -68,6 +136,10 @@ export function LiveMetrics() {
   const hasError =
     goHealth.isError || nodeHealth.isError || goMetrics.isError || nodeMetrics.isError;
 
+  const [detailService, setDetailService] = useState<"go" | "node" | null>(null);
+
+  const lastRefresh = new Date().toLocaleString();
+
   return (
     <div
       data-testid="live-metrics"
@@ -84,22 +156,56 @@ export function LiveMetrics() {
         </span>
       )}
 
-      {/* Go service */}
-      <div className="flex items-center gap-3">
-        <HealthDot healthy={goHealthy} label="Go" />
+      {/* Go service — clickable */}
+      <button
+        type="button"
+        onClick={() => setDetailService("go")}
+        className="flex items-center gap-3 transition-opacity hover:opacity-80"
+        aria-label="Go metrics detail"
+      >
+        <HealthDot healthy={goHealthy} label="Go API" />
         <Counter label="req" value={goReq ?? "—"} testId="go-req" />
         <Counter label="err" value={goErr ?? "—"} testId="go-err" />
-      </div>
+      </button>
 
       {/* Divider */}
       <span className="h-4 w-px bg-slate-700" />
 
-      {/* Node service */}
-      <div className="flex items-center gap-3">
-        <HealthDot healthy={nodeHealthy} label="Node" />
+      {/* Node service — clickable */}
+      <button
+        type="button"
+        onClick={() => setDetailService("node")}
+        className="flex items-center gap-3 transition-opacity hover:opacity-80"
+        aria-label="Node metrics detail"
+      >
+        <HealthDot healthy={nodeHealthy} label="Node API" />
         <Counter label="req" value={nodeReq ?? "—"} testId="node-req" />
         <Counter label="err" value={nodeErr ?? "—"} testId="node-err" />
-      </div>
+      </button>
+
+      {/* Detail modal */}
+      <Modal
+        isOpen={detailService !== null}
+        onClose={() => setDetailService(null)}
+        title={detailService === "go" ? "Go API Metrics" : "Node.js API Metrics"}
+      >
+        {detailService === "go" && (
+          <ServiceDetailCard
+            healthy={goHealthy}
+            requests={goReq}
+            errors={goErr}
+            lastRefresh={lastRefresh}
+          />
+        )}
+        {detailService === "node" && (
+          <ServiceDetailCard
+            healthy={nodeHealthy}
+            requests={nodeReq}
+            errors={nodeErr}
+            lastRefresh={lastRefresh}
+          />
+        )}
+      </Modal>
     </div>
   );
 }

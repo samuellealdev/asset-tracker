@@ -146,13 +146,14 @@ describe("DevicesPage", () => {
     expect(screen.getByText(/no devices yet/i)).toBeInTheDocument();
   });
 
-  it("navigates to create page on button click", async () => {
+  it("opens create modal when create device button is clicked", async () => {
     render(<DevicesPage />, { wrapper: createWrapper() });
 
     const user = userEvent.setup();
     await user.click(screen.getByText(/create device/i));
 
-    expect(mockNavigate).toHaveBeenCalledWith({ to: "/devices/create" });
+    // Modal with "Create Device" heading should appear
+    expect(screen.getByRole("heading", { name: "Create Device" })).toBeInTheDocument();
   });
 
   it("renders Events button on each card", () => {

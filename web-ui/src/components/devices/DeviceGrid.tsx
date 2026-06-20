@@ -9,6 +9,7 @@ interface DeviceGridProps {
   onRetry: () => void;
   onDelete: (id: string) => void;
   onViewEvents: (deviceId: string) => void;
+  onEdit: (deviceId: string) => void;
 }
 
 function SkeletonGrid() {
@@ -113,6 +114,7 @@ export function DeviceGrid({
   onRetry,
   onDelete,
   onViewEvents,
+  onEdit,
 }: DeviceGridProps) {
   const navigate = useNavigate();
 
@@ -138,6 +140,7 @@ export function DeviceGrid({
           device={device}
           onDelete={onDelete}
           onViewEvents={onViewEvents}
+          onEdit={onEdit}
         />
       ))}
     </div>

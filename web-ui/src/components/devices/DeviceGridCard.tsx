@@ -1,17 +1,19 @@
 import { useNavigate } from "@tanstack/react-router";
-import { Pencil, Trash2, List } from "lucide-react";
+import { Info, Pencil, Trash2, List } from "lucide-react";
 import type { Device } from "@/lib/schemas/device";
 
 interface DeviceGridCardProps {
   device: Device;
   onDelete: (id: string) => void;
   onViewEvents: (deviceId: string) => void;
+  onEdit: (deviceId: string) => void;
 }
 
 export function DeviceGridCard({
   device,
   onDelete,
   onViewEvents,
+  onEdit,
 }: DeviceGridCardProps) {
   const navigate = useNavigate();
 
@@ -34,6 +36,14 @@ export function DeviceGridCard({
           onClick={() =>
             navigate({ to: "/devices/$id", params: { id: device.id } })
           }
+          className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-slate-300 transition-all duration-200 hover:bg-slate-700"
+          aria-label="Details"
+        >
+          <Info className="h-3.5 w-3.5" />
+          Details
+        </button>
+        <button
+          onClick={() => onEdit(device.id)}
           className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-slate-300 transition-all duration-200 hover:bg-slate-700"
           aria-label="Edit"
         >

@@ -254,7 +254,7 @@ describe("EventPopup", () => {
     expect(screen.getByPlaceholderText(/Event description/i)).toBeInTheDocument();
   });
 
-  it("does not render device selector or actor field (simplified form)", async () => {
+  it("renders actor field and no device selector in simplified form", async () => {
     render(
       <EventPopup
         deviceId="dev-1"
@@ -268,7 +268,8 @@ describe("EventPopup", () => {
     const user = userEvent.setup();
     await user.click(screen.getByRole("button", { name: "Add New Event" }));
 
-    expect(screen.queryByText(/actor/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/actor/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/e\.g\. admin/i)).toBeInTheDocument();
     expect(screen.queryByText(/Select device/i)).not.toBeInTheDocument();
   });
 

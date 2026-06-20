@@ -1,9 +1,6 @@
-# web-dashboards Specification
+# Delta for web-dashboards
 
-## Purpose
-Health and Prometheus-metrics monitoring for both backend services, now shown in the always-visible LiveMetrics bar.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Health Dashboard
 The system MUST poll /health/live and /health/ready for Go (:8080) and Node.js (:3000) at configurable intervals, defaulting to 2 seconds for health.

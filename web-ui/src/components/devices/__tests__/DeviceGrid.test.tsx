@@ -29,6 +29,7 @@ describe("DeviceGrid", () => {
         onRetry={vi.fn()}
         onDelete={vi.fn()}
         onViewEvents={vi.fn()}
+        onEdit={vi.fn()}
       />,
     );
 
@@ -46,6 +47,7 @@ describe("DeviceGrid", () => {
         onRetry={vi.fn()}
         onDelete={vi.fn()}
         onViewEvents={vi.fn()}
+        onEdit={vi.fn()}
       />,
     );
 
@@ -63,6 +65,7 @@ describe("DeviceGrid", () => {
         onRetry={vi.fn()}
         onDelete={vi.fn()}
         onViewEvents={vi.fn()}
+        onEdit={vi.fn()}
       />,
     );
 
@@ -82,6 +85,7 @@ describe("DeviceGrid", () => {
         onRetry={vi.fn()}
         onDelete={vi.fn()}
         onViewEvents={vi.fn()}
+        onEdit={vi.fn()}
       />,
     );
 
@@ -99,8 +103,9 @@ describe("DeviceGrid", () => {
         isError={true}
         onRetry={vi.fn()}
         onDelete={vi.fn()}
-        onViewEvents={vi.fn()}
-      />,
+onViewEvents={vi.fn()}
+        onEdit={vi.fn()}
+      />
     );
 
     expect(screen.getByText(/failed to load devices/i)).toBeInTheDocument();
@@ -117,6 +122,7 @@ describe("DeviceGrid", () => {
         onRetry={onRetry}
         onDelete={vi.fn()}
         onViewEvents={vi.fn()}
+        onEdit={vi.fn()}
       />,
     );
 
@@ -129,6 +135,7 @@ describe("DeviceGrid", () => {
   it("passes onDelete and onViewEvents to DeviceGridCard", async () => {
     const onDelete = vi.fn();
     const onViewEvents = vi.fn();
+    const onEdit = vi.fn();
     render(
       <DeviceGrid
         devices={[mockDevices[0]!]}
@@ -137,6 +144,7 @@ describe("DeviceGrid", () => {
         onRetry={vi.fn()}
         onDelete={onDelete}
         onViewEvents={onViewEvents}
+        onEdit={onEdit}
       />,
     );
 
