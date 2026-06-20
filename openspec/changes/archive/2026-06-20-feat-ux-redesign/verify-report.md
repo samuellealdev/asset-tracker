@@ -226,3 +226,14 @@ Three UX bugs were fixed in a follow-up branch (`feat/web-ui`) after the origina
   4. **Metrics detail**: Made LiveMetrics counter groups clickable; opens a detail modal with health status, request/error counts, error rate %, and last refresh timestamp; shows "No requests yet" when zero — `LiveMetrics.tsx`, `LiveMetrics.test.tsx`
 - **Files**: `EventPopup.tsx`, `EventPopup.test.tsx`, `DeviceFormModal.tsx` (new), `DeviceForm.tsx`, `devices.tsx`, `devices.create.tsx`, `DeviceGrid.tsx`, `DeviceGridCard.tsx`, `DeviceGridCard.test.tsx`, `DeviceGrid.test.tsx`, `LiveMetrics.tsx`, `LiveMetrics.test.tsx`, `AppLayout.test.tsx`, `devices-create.test.tsx`, `devices.test.tsx`
 - **Tests**: 317 passed (47 files), tsc clean, vite build succeeds
+
+### Fix 5: EventPopup layout improvements (feat/web-ui)
+- **Problem**: Modal got cut off at viewport when "Add New Event" form was expanded; browser-default scrollbar was ugly; form toggle was instant with no transition
+- **Fix**:
+  1. **Modal sizing**: Panel constrained to `max-h-[85vh]` (desktop) / `max-h-[95vh]` (mobile) with `flex flex-col`; timeline area uses `flex-1 overflow-y-auto min-h-0` so it scrolls internally without pushing the modal beyond viewport
+  2. **Scrollbar styling**: Custom thin scrollbar (6px) via `@utility scrollbar-thin` in `index.css` — thumb `bg-slate-600 rounded-full`, track `bg-slate-800`
+  3. **Form transition**: Wrapper always in DOM with `transition-all duration-300 overflow-hidden`; hidden: `max-h-0 opacity-0`; visible: `max-h-[500px] opacity-100`
+  4. **Responsive width**: `w-full max-w-2xl` desktop, `max-md:max-h-[95vh]` mobile; close button always visible in sticky header
+- **Files**: `Modal.tsx`, `EventPopup.tsx`, `EventPopup.test.tsx`, `index.css`
+- **Tests**: 315 passed (47 files), 2 pre-existing flaky timeouts
+- **Commit**: `4f17ae3`
