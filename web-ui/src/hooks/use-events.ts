@@ -8,9 +8,9 @@ export function useEvents(deviceId?: string) {
 
   return useQuery({
     queryKey: ["events", deviceId],
-    queryFn: () => getEvents(deviceId ?? "", token!),
+    queryFn: () => getEvents(deviceId!, token!),
     staleTime: 30_000,
-    enabled: !!token,
+    enabled: !!token && !!deviceId,
   });
 }
 

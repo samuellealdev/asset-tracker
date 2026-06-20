@@ -33,12 +33,10 @@ async function authFetch<T>(
 }
 
 export async function getEvents(
-  deviceId: string | undefined,
+  deviceId: string,
   token: string,
 ): Promise<Event[]> {
-  const url = deviceId
-    ? `${API_BASE}/events?deviceId=${encodeURIComponent(deviceId)}`
-    : `${API_BASE}/events`;
+  const url = `${API_BASE}/events?deviceId=${encodeURIComponent(deviceId)}`;
   return authFetch<Event[]>(url, { method: "GET" }, token);
 }
 

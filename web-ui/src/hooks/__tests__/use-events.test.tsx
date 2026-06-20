@@ -101,19 +101,20 @@ describe("useEvents", () => {
     });
   });
 
-  it("fetches all events when no deviceId is provided", async () => {
+  it("does not fetch when no deviceId is provided", async () => {
     localStorage.setItem("auth_token", "test-token");
-    vi.mocked(eventsApi.getEvents).mockResolvedValueOnce(mockEvents);
 
     const { result } = renderHook(() => useEvents(), {
       wrapper: createWrapper(),
     });
 
     await waitFor(() => {
-      expect(result.current.isSuccess).toBe(true);
+      expect(result.current.isLoading).toBe(false);
     });
 
-    expect(result.current.data).toEqual(mockEvents);
+    // Query should be disabled — no fetch should happen without a deviceId
+    expect(result.current.isSuccess).toBe(false);
+    expect(eventsApi.getEvents).not.toHaveBeenCalled();
   });
 
   it("does not fetch when not authenticated", async () => {

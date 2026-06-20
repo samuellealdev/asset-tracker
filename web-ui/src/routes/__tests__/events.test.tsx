@@ -171,11 +171,11 @@ describe("EventsPage", () => {
     expect(screen.getByText(/no events found/i)).toBeInTheDocument();
   });
 
-  it("renders device filter dropdown with all devices option", () => {
+  it("renders device filter dropdown with select device option", () => {
     render(<EventsPage />, { wrapper: createWrapper() });
 
     expect(screen.getByLabelText(/filter by device/i)).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: /all devices/i })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: /select a device/i })).toBeInTheDocument();
     expect(screen.getByRole("option", { name: /laptop-01/i })).toBeInTheDocument();
     expect(screen.getByRole("option", { name: /server-01/i })).toBeInTheDocument();
   });
@@ -193,11 +193,12 @@ describe("EventsPage", () => {
     expect(mockDeviceId).toBe("dev-1");
   });
 
-  it("shows all events when filter is set to all devices", () => {
+  it("shows select a device prompt when no device is selected", () => {
     render(<EventsPage />, { wrapper: createWrapper() });
 
     expect(mockDeviceId).toBeUndefined();
-    expect(screen.getByText("device.created")).toBeInTheDocument();
-    expect(screen.getByText("device.updated")).toBeInTheDocument();
+    // The prompt text and the dropdown option both contain "select a device"
+    const prompts = screen.getAllByText(/select a device/i);
+    expect(prompts.length).toBeGreaterThanOrEqual(2);
   });
 });
