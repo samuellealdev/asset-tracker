@@ -10,14 +10,16 @@ vi.mock("@/lib/api/metrics", () => ({
 
 import * as metricsApi from "@/lib/api/metrics";
 
-function createWrapper() {
-  const queryClient = new QueryClient({
+function createQueryClient() {
+  return new QueryClient({
     defaultOptions: {
       queries: { retry: false },
       mutations: { retry: false },
     },
   });
+}
 
+function createWrapper(queryClient: QueryClient) {
   return function Wrapper({ children }: { children: ReactNode }) {
     return (
       <QueryClientProvider client={queryClient}>
@@ -38,11 +40,11 @@ describe("useGoMetrics", () => {
     vi.restoreAllMocks();
   });
 
-  it("fetches Go service metrics on mount", async () => {
+  it("fetches Go service metrics on mount with default refetchInterval", async () => {
     vi.mocked(metricsApi.getMetrics).mockResolvedValueOnce(mockMetricsResponse);
 
     const { result } = renderHook(() => useGoMetrics(), {
-      wrapper: createWrapper(),
+      wrapper: createWrapper(createQueryClient()),
     });
 
     await waitFor(() => {
@@ -58,12 +60,73 @@ describe("useGoMetrics", () => {
     vi.mocked(metricsApi.getMetrics).mockRejectedValueOnce(error);
 
     const { result } = renderHook(() => useGoMetrics(), {
-      wrapper: createWrapper(),
+      wrapper: createWrapper(createQueryClient()),
     });
 
     await waitFor(() => {
       expect(result.current.isError).toBe(true);
     });
+  });
+
+  it("works with custom refetchInterval parameter", async () => {
+    vi.mocked(metricsApi.getMetrics).mockResolvedValueOnce(mockMetricsResponse);
+
+    const { result } = renderHook(() => useGoMetrics(5000), {
+      wrapper: createWrapper(createQueryClient()),
+    });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(result.current.data).toEqual(mockMetricsResponse);
+    expect(metricsApi.getMetrics).toHaveBeenCalledWith("go");
+  });
+
+  it("works with refetchInterval of 0 to disable polling", async () => {
+    vi.mocked(metricsApi.getMetrics).mockResolvedValueOnce(mockMetricsResponse);
+
+    const { result } = renderHook(() => useGoMetrics(0), {
+      wrapper: createWrapper(createQueryClient()),
+    });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(result.current.data).toEqual(mockMetricsResponse);
+  });
+
+  it("verifies default refetchInterval via query observer options", () => {
+    const queryClient = createQueryClient();
+
+    renderHook(() => useGoMetrics(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    const query = queryClient
+      .getQueryCache()
+      .find({ queryKey: ["metrics", "go"] });
+    expect(query).toBeDefined();
+    const opts = (query as unknown as { options: Record<string, unknown> })
+      .options;
+    expect(opts.refetchInterval).toBe(30_000);
+  });
+
+  it("verifies custom refetchInterval via query observer options", () => {
+    const queryClient = createQueryClient();
+
+    renderHook(() => useGoMetrics(5000), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    const query = queryClient
+      .getQueryCache()
+      .find({ queryKey: ["metrics", "go"] });
+    expect(query).toBeDefined();
+    const opts = (query as unknown as { options: Record<string, unknown> })
+      .options;
+    expect(opts.refetchInterval).toBe(5000);
   });
 });
 
@@ -72,11 +135,11 @@ describe("useNodeMetrics", () => {
     vi.restoreAllMocks();
   });
 
-  it("fetches Node.js service metrics on mount", async () => {
+  it("fetches Node.js service metrics on mount with default refetchInterval", async () => {
     vi.mocked(metricsApi.getMetrics).mockResolvedValueOnce(mockMetricsResponse);
 
     const { result } = renderHook(() => useNodeMetrics(), {
-      wrapper: createWrapper(),
+      wrapper: createWrapper(createQueryClient()),
     });
 
     await waitFor(() => {
@@ -92,11 +155,58 @@ describe("useNodeMetrics", () => {
     vi.mocked(metricsApi.getMetrics).mockRejectedValueOnce(error);
 
     const { result } = renderHook(() => useNodeMetrics(), {
-      wrapper: createWrapper(),
+      wrapper: createWrapper(createQueryClient()),
     });
 
     await waitFor(() => {
       expect(result.current.isError).toBe(true);
     });
+  });
+
+  it("works with custom refetchInterval parameter", async () => {
+    vi.mocked(metricsApi.getMetrics).mockResolvedValueOnce(mockMetricsResponse);
+
+    const { result } = renderHook(() => useNodeMetrics(10000), {
+      wrapper: createWrapper(createQueryClient()),
+    });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(result.current.data).toEqual(mockMetricsResponse);
+    expect(metricsApi.getMetrics).toHaveBeenCalledWith("node");
+  });
+
+  it("verifies default refetchInterval via query observer options", () => {
+    const queryClient = createQueryClient();
+
+    renderHook(() => useNodeMetrics(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    const query = queryClient
+      .getQueryCache()
+      .find({ queryKey: ["metrics", "node"] });
+    expect(query).toBeDefined();
+    const opts = (query as unknown as { options: Record<string, unknown> })
+      .options;
+    expect(opts.refetchInterval).toBe(30_000);
+  });
+
+  it("verifies custom refetchInterval via query observer options", () => {
+    const queryClient = createQueryClient();
+
+    renderHook(() => useNodeMetrics(8000), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    const query = queryClient
+      .getQueryCache()
+      .find({ queryKey: ["metrics", "node"] });
+    expect(query).toBeDefined();
+    const opts = (query as unknown as { options: Record<string, unknown> })
+      .options;
+    expect(opts.refetchInterval).toBe(8000);
   });
 });
