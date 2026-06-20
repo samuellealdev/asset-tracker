@@ -158,3 +158,70 @@ func TestLoggingMiddleware(t *testing.T) {
 		}
 	})
 }
+
+func TestCORSMiddleware(t *testing.T) {
+	t.Run("sets CORS headers on all responses", func(t *testing.T) {
+		next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		})
+
+		middleware := interfaces.CORSMiddleware(next)
+		req := httptest.NewRequest(http.MethodGet, "/test", nil)
+		w := httptest.NewRecorder()
+		middleware.ServeHTTP(w, req)
+
+		if w.Header().Get("Access-Control-Allow-Origin") != "*" {
+			t.Errorf("expected Access-Control-Allow-Origin: *, got %q", w.Header().Get("Access-Control-Allow-Origin"))
+		}
+		if w.Header().Get("Access-Control-Allow-Headers") != "Authorization, Content-Type" {
+			t.Errorf("expected Access-Control-Allow-Headers: Authorization, Content-Type, got %q", w.Header().Get("Access-Control-Allow-Headers"))
+		}
+		if w.Header().Get("Access-Control-Allow-Methods") != "GET, POST, PUT, DELETE, OPTIONS" {
+			t.Errorf("expected Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS, got %q", w.Header().Get("Access-Control-Allow-Methods"))
+		}
+	})
+
+	t.Run("handles OPTIONS preflight with 204 and no next handler call", func(t *testing.T) {
+		var called bool
+		next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			called = true
+			w.WriteHeader(http.StatusOK)
+		})
+
+		middleware := interfaces.CORSMiddleware(next)
+		req := httptest.NewRequest(http.MethodOptions, "/test", nil)
+		w := httptest.NewRecorder()
+		middleware.ServeHTTP(w, req)
+
+		if called {
+			t.Error("expected next handler NOT to be called for OPTIONS preflight")
+		}
+		if w.Code != http.StatusNoContent {
+			t.Errorf("expected status 204, got %d", w.Code)
+		}
+	})
+
+	t.Run("passes through non-OPTIONS request to next handler", func(t *testing.T) {
+		var called bool
+		next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			called = true
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte("ok"))
+		})
+
+		middleware := interfaces.CORSMiddleware(next)
+		req := httptest.NewRequest(http.MethodGet, "/api/devices", nil)
+		w := httptest.NewRecorder()
+		middleware.ServeHTTP(w, req)
+
+		if !called {
+			t.Error("expected next handler to be called for GET request")
+		}
+		if w.Code != http.StatusOK {
+			t.Errorf("expected status 200, got %d", w.Code)
+		}
+		if w.Body.String() != "ok" {
+			t.Errorf("expected body 'ok', got %q", w.Body.String())
+		}
+	})
+}
