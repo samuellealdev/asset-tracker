@@ -14,7 +14,7 @@ interface DeviceTableProps {
 function ErrorState({ onRetry }: { onRetry: () => void }) {
   return (
     <div className="flex flex-col items-center gap-4 py-16 text-center">
-      <div className="rounded-full bg-red-50 p-4">
+      <div className="rounded-full bg-red-900/30 p-4">
         <svg
           className="h-8 w-8 text-red-400"
           fill="none"
@@ -29,7 +29,7 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
           />
         </svg>
       </div>
-      <p className="text-lg font-medium text-slate-600">
+      <p className="text-lg font-medium text-slate-300">
         Failed to load devices.
       </p>
       <p className="text-sm text-slate-400">Retry?</p>
@@ -80,31 +80,31 @@ export function DeviceTable({
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-      <table className="min-w-full divide-y divide-slate-200">
-        <thead className="bg-slate-50">
+    <div className="overflow-hidden rounded-lg border border-slate-700 bg-slate-800 shadow-sm">
+      <table className="min-w-full divide-y divide-slate-700">
+        <thead className="bg-slate-700">
           <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
+            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">
               Name
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
+            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">
               Type
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
+            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">
               Created
             </th>
-            <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-slate-500">
+            <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-slate-300">
               Actions
             </th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100">
+        <tbody className="divide-y divide-slate-700">
           {devices.map((device, index) => (
             <tr
               key={device.id}
               className={`transition-colors duration-200 ${
-                index % 2 === 0 ? "bg-white" : "bg-slate-50/50"
-              } hover:bg-indigo-50/50`}
+                index % 2 === 0 ? "bg-transparent" : "bg-slate-800/50"
+              } hover:bg-indigo-900/20`}
             >
               <td className="px-6 py-4">
                 <button
@@ -117,11 +117,11 @@ export function DeviceTable({
                 </button>
               </td>
               <td className="px-6 py-4">
-                <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700">
+                <span className="inline-flex items-center rounded-full bg-slate-700 px-2.5 py-0.5 text-xs font-medium text-slate-300">
                   {device.type}
                 </span>
               </td>
-              <td className="px-6 py-4 text-sm text-slate-500">
+              <td className="px-6 py-4 text-sm text-slate-400">
                 {new Date(device.createdAt).toLocaleDateString()}
               </td>
               <td className="px-6 py-4 text-right">
@@ -133,7 +133,7 @@ export function DeviceTable({
                         params: { id: device.id },
                       })
                     }
-                    className="rounded-md px-3 py-1.5 text-sm font-medium text-slate-600 transition-all duration-200 hover:bg-slate-100"
+                    className="rounded-md px-3 py-1.5 text-sm font-medium text-slate-300 transition-all duration-200 hover:bg-slate-700"
                   >
                     View
                   </button>
@@ -144,13 +144,13 @@ export function DeviceTable({
                         params: { id: device.id },
                       })
                     }
-                    className="rounded-md px-3 py-1.5 text-sm font-medium text-slate-600 transition-all duration-200 hover:bg-slate-100"
+                    className="rounded-md px-3 py-1.5 text-sm font-medium text-slate-300 transition-all duration-200 hover:bg-slate-700"
                   >
                     Edit
                   </button>
                   <button
                     onClick={() => onDelete(device.id)}
-                    className="rounded-md px-3 py-1.5 text-sm font-medium text-red-600 transition-all duration-200 hover:bg-red-50"
+                    className="rounded-md px-3 py-1.5 text-sm font-medium text-red-400 transition-all duration-200 hover:bg-red-900/30"
                   >
                     Delete
                   </button>

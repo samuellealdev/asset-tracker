@@ -8,10 +8,10 @@ interface HealthCardProps {
 
 function LoadingSkeleton() {
   return (
-    <div className="animate-pulse space-y-3 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-      <div className="h-5 w-24 rounded bg-slate-200" />
-      <div className="h-4 w-16 rounded bg-slate-200" />
-      <div className="h-4 w-32 rounded bg-slate-200" />
+    <div className="animate-pulse space-y-3 rounded-lg border border-slate-700 bg-slate-800 p-6 shadow-sm">
+      <div className="h-5 w-24 rounded bg-slate-700" />
+      <div className="h-4 w-16 rounded bg-slate-700" />
+      <div className="h-4 w-32 rounded bg-slate-700" />
     </div>
   );
 }
@@ -22,10 +22,10 @@ export function HealthCard({ name, port, isHealthy, dbStatus, isLoading }: Healt
   }
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+    <div className="rounded-lg border border-slate-700 bg-slate-800 p-6 shadow-sm">
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-slate-900">{name}</h3>
-        <span className="text-sm text-slate-400">:{port}</span>
+        <h3 className="text-lg font-semibold text-slate-100">{name}</h3>
+        <span className="text-sm text-slate-500">:{port}</span>
       </div>
 
       <div className="space-y-3">
@@ -35,19 +35,19 @@ export function HealthCard({ name, port, isHealthy, dbStatus, isLoading }: Healt
               isHealthy ? "bg-green-500" : "bg-red-500"
             }`}
           />
-          <span className="text-sm text-slate-600">
+          <span className="text-sm text-slate-300">
             {isHealthy ? "Healthy" : "Unhealthy"}
           </span>
         </div>
 
         {dbStatus && (
           <div className="flex items-center gap-2">
-            <span className="text-sm text-slate-500">Database:</span>
+            <span className="text-sm text-slate-400">Database:</span>
             <span
               className={`text-sm font-medium ${
                 dbStatus === "connected"
-                  ? "text-green-600"
-                  : "text-red-600"
+                  ? "text-green-400"
+                  : "text-red-400"
               }`}
             >
               {dbStatus}

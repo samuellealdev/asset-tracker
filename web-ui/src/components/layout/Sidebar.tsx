@@ -20,7 +20,7 @@ export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
       {/* Mobile overlay */}
       {isOpen && onClose && (
         <div
-          className="fixed inset-0 z-30 bg-black/50 xl:hidden"
+          className="fixed inset-0 z-30 bg-black/60 xl:hidden"
           onClick={onClose}
         />
       )}

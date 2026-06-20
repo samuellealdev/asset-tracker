@@ -13,7 +13,7 @@ export function DashboardsPage() {
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
+        <h1 className="text-2xl font-bold text-slate-100">Dashboard</h1>
         <span className="flex items-center gap-1.5 text-xs text-slate-400">
           <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -23,7 +23,7 @@ export function DashboardsPage() {
       </div>
 
       <section>
-        <h2 className="mb-4 text-lg font-semibold text-slate-700">Service Health</h2>
+        <h2 className="mb-4 text-lg font-semibold text-slate-300">Service Health</h2>
         <div className="grid gap-6 md:grid-cols-2">
           <HealthCard
             name="Go API"
@@ -55,7 +55,7 @@ export function DashboardsPage() {
       </section>
 
       <section>
-        <h2 className="mb-4 text-lg font-semibold text-slate-700">Metrics</h2>
+        <h2 className="mb-4 text-lg font-semibold text-slate-300">Metrics</h2>
         <div className="grid gap-6 md:grid-cols-2">
           <MetricsCard
             title="Go API"

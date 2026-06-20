@@ -35,7 +35,7 @@ export class ErrorBoundary extends Component<
     if (this.state.hasError) {
       return (
         <div className="flex flex-col items-center justify-center gap-4 py-16 text-center">
-          <div className="rounded-full bg-red-50 p-4">
+          <div className="rounded-full bg-red-900/30 p-4">
             <svg
               className="h-8 w-8 text-red-400"
               fill="none"
@@ -50,7 +50,7 @@ export class ErrorBoundary extends Component<
               />
             </svg>
           </div>
-          <p className="text-lg font-medium text-slate-600">
+          <p className="text-lg font-medium text-slate-300">
             Something went wrong
           </p>
           <p className="text-sm text-slate-400">

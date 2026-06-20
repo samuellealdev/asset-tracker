@@ -31,18 +31,18 @@ export function LoginPage() {
         : null;
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-100">
-      <div className="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-8 shadow-lg">
-        <h1 className="mb-2 text-2xl font-bold text-slate-900">
+    <div className="flex min-h-screen items-center justify-center bg-slate-900">
+      <div className="w-full max-w-sm rounded-xl border border-slate-700 bg-slate-800 p-8 shadow-lg">
+        <h1 className="mb-2 text-2xl font-bold text-slate-100">
           Asset Tracker
         </h1>
-        <p className="mb-6 text-sm text-slate-500">Sign in to your account</p>
+        <p className="mb-6 text-sm text-slate-400">Sign in to your account</p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label
               htmlFor="username"
-              className="block text-sm font-medium text-slate-700"
+              className="block text-sm font-medium text-slate-300"
             >
               Username
             </label>
@@ -53,14 +53,14 @@ export function LoginPage() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
-              className="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="mt-1 block w-full rounded-lg border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             />
           </div>
 
           <div>
             <label
               htmlFor="password"
-              className="block text-sm font-medium text-slate-700"
+              className="block text-sm font-medium text-slate-300"
             >
               Password
             </label>
@@ -71,14 +71,14 @@ export function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="mt-1 block w-full rounded-lg border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             />
           </div>
 
           {errorMessage && (
             <div
               role="alert"
-              className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700"
+              className="rounded-lg bg-red-900/30 px-3 py-2 text-sm text-red-400"
             >
               {errorMessage}
             </div>

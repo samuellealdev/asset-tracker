@@ -62,7 +62,7 @@ export function EventForm({ devices, onSubmit, isPending }: EventFormProps) {
       <div>
         <label
           htmlFor="type"
-          className="block text-sm font-medium text-slate-700"
+          className="block text-sm font-medium text-slate-300"
         >
           Type
         </label>
@@ -70,10 +70,10 @@ export function EventForm({ devices, onSubmit, isPending }: EventFormProps) {
           id="type"
           value={type}
           onChange={(e) => setType(e.target.value)}
-          className={`mt-1 block w-full rounded-lg border px-3 py-2 text-sm shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+          className={`mt-1 block w-full rounded-lg border bg-slate-800 px-3 py-2 text-sm text-slate-100 shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
             errors.type
               ? "border-red-300 focus:border-red-500"
-              : "border-slate-300 focus:border-indigo-500"
+              : "border-slate-600 focus:border-indigo-500"
           }`}
         >
           <option value="">Select type...</option>
@@ -84,14 +84,14 @@ export function EventForm({ devices, onSubmit, isPending }: EventFormProps) {
           ))}
         </select>
         {errors.type && (
-          <p className="mt-1 text-sm text-red-600">{errors.type}</p>
+          <p className="mt-1 text-sm text-red-400">{errors.type}</p>
         )}
       </div>
 
       <div>
         <label
           htmlFor="deviceId"
-          className="block text-sm font-medium text-slate-700"
+          className="block text-sm font-medium text-slate-300"
         >
           Device
         </label>
@@ -99,10 +99,10 @@ export function EventForm({ devices, onSubmit, isPending }: EventFormProps) {
           id="deviceId"
           value={deviceId}
           onChange={(e) => setDeviceId(e.target.value)}
-          className={`mt-1 block w-full rounded-lg border px-3 py-2 text-sm shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+          className={`mt-1 block w-full rounded-lg border bg-slate-800 px-3 py-2 text-sm text-slate-100 shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
             errors.deviceId
               ? "border-red-300 focus:border-red-500"
-              : "border-slate-300 focus:border-indigo-500"
+              : "border-slate-600 focus:border-indigo-500"
           }`}
         >
           <option value="">Select device...</option>
@@ -113,14 +113,14 @@ export function EventForm({ devices, onSubmit, isPending }: EventFormProps) {
           ))}
         </select>
         {errors.deviceId && (
-          <p className="mt-1 text-sm text-red-600">{errors.deviceId}</p>
+          <p className="mt-1 text-sm text-red-400">{errors.deviceId}</p>
         )}
       </div>
 
       <div>
         <label
           htmlFor="name"
-          className="block text-sm font-medium text-slate-700"
+          className="block text-sm font-medium text-slate-300"
         >
           Name
         </label>
@@ -129,22 +129,22 @@ export function EventForm({ devices, onSubmit, isPending }: EventFormProps) {
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className={`mt-1 block w-full rounded-lg border px-3 py-2 text-sm shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+          className={`mt-1 block w-full rounded-lg border bg-slate-800 px-3 py-2 text-sm text-slate-100 shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
             errors.name
               ? "border-red-300 focus:border-red-500"
-              : "border-slate-300 focus:border-indigo-500"
+              : "border-slate-600 focus:border-indigo-500"
           }`}
           placeholder="Event name"
         />
         {errors.name && (
-          <p className="mt-1 text-sm text-red-600">{errors.name}</p>
+          <p className="mt-1 text-sm text-red-400">{errors.name}</p>
         )}
       </div>
 
       <div>
         <label
           htmlFor="actor"
-          className="block text-sm font-medium text-slate-700"
+          className="block text-sm font-medium text-slate-300"
         >
           Actor
         </label>
@@ -153,7 +153,7 @@ export function EventForm({ devices, onSubmit, isPending }: EventFormProps) {
           type="text"
           value={actor}
           onChange={(e) => setActor(e.target.value)}
-          className="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm transition-all duration-200 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="mt-1 block w-full rounded-lg border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-100 shadow-sm transition-all duration-200 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           placeholder="e.g. admin"
         />
       </div>
@@ -161,7 +161,7 @@ export function EventForm({ devices, onSubmit, isPending }: EventFormProps) {
       <div>
         <label
           htmlFor="description"
-          className="block text-sm font-medium text-slate-700"
+          className="block text-sm font-medium text-slate-300"
         >
           Description
         </label>
@@ -170,7 +170,7 @@ export function EventForm({ devices, onSubmit, isPending }: EventFormProps) {
           rows={3}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          className="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm transition-all duration-200 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="mt-1 block w-full rounded-lg border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-100 shadow-sm transition-all duration-200 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           placeholder="Event description (optional)"
         />
       </div>
@@ -211,7 +211,7 @@ export function EventForm({ devices, onSubmit, isPending }: EventFormProps) {
         <button
           type="button"
           onClick={() => navigate({ to: "/events" })}
-          className="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 transition-all duration-200 hover:bg-slate-100"
+          className="rounded-lg px-4 py-2 text-sm font-medium text-slate-300 transition-all duration-200 hover:bg-slate-700"
         >
           Cancel
         </button>

@@ -13,7 +13,7 @@ export function EmptyState({
 }: EmptyStateProps) {
   return (
     <div className="flex flex-col items-center gap-4 py-16 text-center">
-      <div className="rounded-full bg-slate-100 p-4">
+      <div className="rounded-full bg-slate-700 p-4">
         <svg
           className="h-8 w-8 text-slate-400"
           fill="none"
@@ -28,9 +28,9 @@ export function EmptyState({
           />
         </svg>
       </div>
-      <p className="text-lg font-medium text-slate-600">{title}</p>
+      <p className="text-lg font-medium text-slate-400">{title}</p>
       {description && (
-        <p className="text-sm text-slate-400">{description}</p>
+        <p className="text-sm text-slate-500">{description}</p>
       )}
       {actionLabel && onAction && (
         <button

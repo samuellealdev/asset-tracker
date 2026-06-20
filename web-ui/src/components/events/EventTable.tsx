@@ -13,13 +13,13 @@ function LoadingSkeleton() {
       {[1, 2, 3, 4].map((i) => (
         <div
           key={i}
-          className="flex h-12 animate-pulse items-center rounded-lg bg-slate-100 px-4"
+          className="flex h-12 animate-pulse items-center rounded-lg bg-slate-800 px-4"
         >
-          <div className="h-4 w-24 rounded bg-slate-200" />
-          <div className="ml-8 h-4 w-20 rounded bg-slate-200" />
-          <div className="ml-8 h-4 w-32 rounded bg-slate-200" />
-          <div className="ml-8 h-4 w-16 rounded bg-slate-200" />
-          <div className="ml-auto h-4 w-40 rounded bg-slate-200" />
+          <div className="h-4 w-24 rounded bg-slate-700" />
+          <div className="ml-8 h-4 w-20 rounded bg-slate-700" />
+          <div className="ml-8 h-4 w-32 rounded bg-slate-700" />
+          <div className="ml-8 h-4 w-16 rounded bg-slate-700" />
+          <div className="ml-auto h-4 w-40 rounded bg-slate-700" />
         </div>
       ))}
     </div>
@@ -29,12 +29,12 @@ function LoadingSkeleton() {
 function EmptyState() {
   return (
     <div className="flex flex-col items-center gap-4 py-16 text-center">
-      <div className="rounded-full bg-slate-100 p-4">
+      <div className="rounded-full bg-slate-700 p-4">
         <svg className="h-8 w-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
       </div>
-      <p className="text-lg font-medium text-slate-600">No events found</p>
+      <p className="text-lg font-medium text-slate-400">No events found</p>
       <p className="text-sm text-slate-400">There are no events to display.</p>
     </div>
   );
@@ -43,12 +43,12 @@ function EmptyState() {
 function ErrorState({ onRetry }: { onRetry: () => void }) {
   return (
     <div className="flex flex-col items-center gap-4 py-16 text-center">
-      <div className="rounded-full bg-red-50 p-4">
+      <div className="rounded-full bg-red-900/30 p-4">
         <svg className="h-8 w-8 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
         </svg>
       </div>
-      <p className="text-lg font-medium text-slate-600">Failed to load events.</p>
+      <p className="text-lg font-medium text-slate-300">Failed to load events.</p>
       <p className="text-sm text-slate-400">Retry?</p>
       <button
         onClick={onRetry}
@@ -64,13 +64,13 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
 }
 
 function EventTypeBadge({ type }: { type: string }) {
-  let colorClass = "bg-gray-100 text-gray-700";
+  let colorClass = "bg-slate-700 text-slate-300";
   if (type === "device.created") {
-    colorClass = "bg-green-100 text-green-700";
+    colorClass = "bg-green-900/30 text-green-300";
   } else if (type === "device.updated") {
-    colorClass = "bg-blue-100 text-blue-700";
+    colorClass = "bg-blue-900/30 text-blue-300";
   } else if (type === "device.deleted") {
-    colorClass = "bg-red-100 text-red-700";
+    colorClass = "bg-red-900/30 text-red-300";
   }
 
   return (
@@ -94,48 +94,48 @@ export function EventTable({ events, isLoading, isError, onRetry }: EventTablePr
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-      <table className="min-w-full divide-y divide-slate-200">
-        <thead className="bg-slate-50">
+    <div className="overflow-hidden rounded-lg border border-slate-700 bg-slate-800 shadow-sm">
+      <table className="min-w-full divide-y divide-slate-700">
+        <thead className="bg-slate-700">
           <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
+            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">
               Type
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
+            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">
               Device
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
+            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">
               Timestamp
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
+            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">
               Actor
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
+            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">
               Description
             </th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100">
+        <tbody className="divide-y divide-slate-700">
           {events.map((event, index) => (
             <tr
               key={event.id}
               className={`transition-colors duration-200 ${
-                index % 2 === 0 ? "bg-white" : "bg-slate-50/50"
-              } hover:bg-indigo-50/50`}
+                index % 2 === 0 ? "bg-transparent" : "bg-slate-800/50"
+              } hover:bg-indigo-900/20`}
             >
               <td className="px-6 py-4">
                 <EventTypeBadge type={event.type} />
               </td>
-              <td className="px-6 py-4 text-sm text-slate-700">
+              <td className="px-6 py-4 text-sm text-slate-200">
                 {event.deviceId}
               </td>
-              <td className="px-6 py-4 text-sm text-slate-500">
+              <td className="px-6 py-4 text-sm text-slate-400">
                 {new Date(event.timestamp).toLocaleString()}
               </td>
-              <td className="px-6 py-4 text-sm text-slate-500">
+              <td className="px-6 py-4 text-sm text-slate-400">
                 {event.actor ?? "—"}
               </td>
-              <td className="px-6 py-4 text-sm text-slate-500">
+              <td className="px-6 py-4 text-sm text-slate-400">
                 {event.description ?? "—"}
               </td>
             </tr>

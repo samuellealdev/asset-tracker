@@ -47,7 +47,7 @@ export function DeleteDialog({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div
-        className="absolute inset-0 bg-black/50 transition-opacity duration-200"
+        className="absolute inset-0 bg-black/60 transition-opacity duration-200"
         onClick={isPending ? undefined : onCancel}
       />
       <div
@@ -56,12 +56,12 @@ export function DeleteDialog({
         aria-modal="true"
         aria-labelledby="delete-dialog-title"
         tabIndex={-1}
-        className="relative z-10 mx-4 w-full max-w-md rounded-lg bg-white p-6 shadow-xl transition-all duration-200"
+        className="relative z-10 mx-4 w-full max-w-md rounded-lg bg-slate-800 p-6 shadow-xl transition-all duration-200"
       >
         <div className="mb-4 flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-900/30">
             <svg
-              className="h-5 w-5 text-red-600"
+              className="h-5 w-5 text-red-400"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -76,15 +76,15 @@ export function DeleteDialog({
           </div>
           <h2
             id="delete-dialog-title"
-            className="text-lg font-semibold text-slate-900"
+            className="text-lg font-semibold text-slate-100"
           >
             Delete Device
           </h2>
         </div>
 
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-slate-300">
           Are you sure you want to delete{" "}
-          <span className="font-medium text-slate-900">{deviceName}</span>?
+          <span className="font-medium text-slate-100">{deviceName}</span>?
           This action cannot be undone.
         </p>
 
@@ -92,7 +92,7 @@ export function DeleteDialog({
           <button
             onClick={onCancel}
             disabled={isPending}
-            className="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 transition-all duration-200 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-lg px-4 py-2 text-sm font-medium text-slate-300 transition-all duration-200 hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Cancel
           </button>
