@@ -107,9 +107,9 @@ export function EventPopup({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={`Events for ${deviceName}`}>
-      <div className="space-y-6">
+      <div className="flex flex-col gap-6 min-h-0 flex-1">
         {/* Event Timeline section — scrollable */}
-        <div className="overflow-y-auto max-h-[70vh]">
+        <div className="flex-1 overflow-y-auto min-h-0 scrollbar-thin">
           {isError ? (
             <div className="flex flex-col items-center gap-3 py-8 text-center">
               <p className="text-sm font-medium text-red-400">
@@ -125,9 +125,6 @@ export function EventPopup({
           ) : (
             <EventTimeline events={events ?? []} isLoading={isLoading} />
           )}
-
-          {/* Toggle button — always visible at bottom of timeline */}
-
         </div>
         <button
           type="button"
@@ -138,11 +135,16 @@ export function EventPopup({
           {showForm ? "Cancel" : "Add New Event"}
         </button>
 
-        {/* Divider + form section — conditionally rendered */}
-        {showForm && (
-          <div className="animate-fade-in">
-            <div className="border-t border-slate-700 pt-6">
-              <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Form with smooth transition */}
+        <div
+          className="transition-all duration-300 overflow-hidden"
+          style={{
+            maxHeight: showForm ? "500px" : "0",
+            opacity: showForm ? 1 : 0,
+          }}
+        >
+          <div className="border-t border-slate-700 pt-6">
+            <form onSubmit={handleSubmit} className="space-y-4">
 
               {/* Device indicator (read-only) */}
               <div className="rounded-lg bg-slate-700/50 px-3 py-2 text-xs text-slate-400">
@@ -263,7 +265,6 @@ export function EventPopup({
             </form>
           </div>
         </div>
-        )}
 
         {/* Success feedback — always visible even after form closes */}
         {successMsg && (

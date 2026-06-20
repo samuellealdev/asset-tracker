@@ -204,8 +204,8 @@ describe("EventPopup", () => {
       screen.getByRole("button", { name: "Add New Event" }),
     ).toBeInTheDocument();
     // Form fields should not be visible initially
-    expect(screen.queryByPlaceholderText(/Event name/i)).not.toBeInTheDocument();
-    expect(screen.queryByPlaceholderText(/Event description/i)).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(/Event name/i)).not.toBeVisible();
+    expect(screen.queryByPlaceholderText(/Event description/i)).not.toBeVisible();
   });
 
   it("toggles form visibility when Add New Event / Cancel is clicked", async () => {
@@ -229,7 +229,7 @@ describe("EventPopup", () => {
 
     // Click to close
     await user.click(toggleBtn);
-    expect(screen.queryByPlaceholderText(/Event name/i)).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(/Event name/i)).not.toBeVisible();
     expect(toggleBtn).toHaveTextContent(/add new event/i);
   });
 
@@ -379,7 +379,7 @@ describe("EventPopup", () => {
     });
 
     // Form should be hidden after successful submit
-    expect(screen.queryByPlaceholderText(/Event name/i)).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(/Event name/i)).not.toBeVisible();
     // Success message should still be visible
     expect(screen.getByText(/Event created successfully/i)).toBeInTheDocument();
     // Toggle button should say "Add New Event" (not "Cancel")
@@ -400,6 +400,8 @@ describe("EventPopup", () => {
     const modal = screen.getByTestId("modal-panel");
     const scrollContainer = modal.querySelector(".overflow-y-auto");
     expect(scrollContainer).toBeTruthy();
-    expect(scrollContainer?.className).toContain("max-h-[70vh]");
+    expect(scrollContainer?.className).toContain("flex-1");
+    expect(scrollContainer?.className).toContain("overflow-y-auto");
+    expect(scrollContainer?.className).toContain("min-h-0");
   });
 });
