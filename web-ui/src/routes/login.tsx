@@ -33,8 +33,8 @@ export function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-900">
       <div className="w-full max-w-sm rounded-xl border border-slate-700 bg-slate-800 p-8 shadow-lg">
-        <h1 className="mb-2 text-2xl font-bold text-slate-100">
-          Asset Tracker
+        <h1 className="mb-2 text-2xl font-extralight tracking-widest uppercase text-slate-100">
+          ASSET TRACKER
         </h1>
         <p className="mb-6 text-sm text-slate-400">Sign in to your account</p>
 

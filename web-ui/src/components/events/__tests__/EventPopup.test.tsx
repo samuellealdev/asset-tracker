@@ -189,7 +189,7 @@ describe("EventPopup", () => {
     expect(onClose).toHaveBeenCalledOnce();
   });
 
-  it("renders simplified event form fields", () => {
+  it("shows 'Add New Event' toggle button and form is hidden by default", () => {
     render(
       <EventPopup
         deviceId="dev-1"
@@ -199,6 +199,53 @@ describe("EventPopup", () => {
       />,
       { wrapper: createWrapper() },
     );
+
+    expect(
+      screen.getByRole("button", { name: "Add New Event" }),
+    ).toBeInTheDocument();
+    // Form fields should not be visible initially
+    expect(screen.queryByPlaceholderText(/Event name/i)).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(/Event description/i)).not.toBeInTheDocument();
+  });
+
+  it("toggles form visibility when Add New Event / Cancel is clicked", async () => {
+    render(
+      <EventPopup
+        deviceId="dev-1"
+        deviceName="Laptop-01"
+        isOpen={true}
+        onClose={onClose}
+      />,
+      { wrapper: createWrapper() },
+    );
+
+    const user = userEvent.setup();
+    const toggleBtn = screen.getByRole("button", { name: "Add New Event" });
+
+    // Click to open
+    await user.click(toggleBtn);
+    expect(screen.getByPlaceholderText(/Event name/i)).toBeInTheDocument();
+    expect(toggleBtn).toHaveTextContent(/cancel/i);
+
+    // Click to close
+    await user.click(toggleBtn);
+    expect(screen.queryByPlaceholderText(/Event name/i)).not.toBeInTheDocument();
+    expect(toggleBtn).toHaveTextContent(/add new event/i);
+  });
+
+  it("renders form fields after toggling open", async () => {
+    render(
+      <EventPopup
+        deviceId="dev-1"
+        deviceName="Laptop-01"
+        isOpen={true}
+        onClose={onClose}
+      />,
+      { wrapper: createWrapper() },
+    );
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Add New Event" }));
 
     // Form has type chips + name + description
     expect(screen.getByText("maintenance")).toBeInTheDocument();
@@ -207,7 +254,7 @@ describe("EventPopup", () => {
     expect(screen.getByPlaceholderText(/Event description/i)).toBeInTheDocument();
   });
 
-  it("does not render device selector or actor field (simplified form)", () => {
+  it("does not render device selector or actor field (simplified form)", async () => {
     render(
       <EventPopup
         deviceId="dev-1"
@@ -217,6 +264,9 @@ describe("EventPopup", () => {
       />,
       { wrapper: createWrapper() },
     );
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Add New Event" }));
 
     expect(screen.queryByText(/actor/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/Select device/i)).not.toBeInTheDocument();
@@ -234,7 +284,8 @@ describe("EventPopup", () => {
     );
 
     const user = userEvent.setup();
-    await user.click(screen.getByRole("button", { name: /add event/i }));
+    await user.click(screen.getByRole("button", { name: "Add New Event" }));
+    await user.click(screen.getByRole("button", { name: "Add Event" }));
 
     await waitFor(() => {
       expect(screen.getByText(/Type is required/i)).toBeInTheDocument();
@@ -254,6 +305,7 @@ describe("EventPopup", () => {
     );
 
     const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Add New Event" }));
 
     // Fill type
     await user.click(screen.getByText("maintenance"));
@@ -265,7 +317,7 @@ describe("EventPopup", () => {
       "Monthly check completed",
     );
     // Submit
-    await user.click(screen.getByRole("button", { name: /add event/i }));
+    await user.click(screen.getByRole("button", { name: "Add Event" }));
 
     await waitFor(() => {
       expect(mockMutateAsync).toHaveBeenCalledWith(
@@ -291,17 +343,18 @@ describe("EventPopup", () => {
     );
 
     const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Add New Event" }));
 
     await user.click(screen.getByText("maintenance"));
     await user.type(screen.getByPlaceholderText(/Event name/i), "Test");
-    await user.click(screen.getByRole("button", { name: /add event/i }));
+    await user.click(screen.getByRole("button", { name: "Add Event" }));
 
     await waitFor(() => {
       expect(screen.getByText(/Event created successfully/i)).toBeInTheDocument();
     });
   });
 
-  it("resets form fields after successful creation", async () => {
+  it("hides form and shows success message after successful creation", async () => {
     render(
       <EventPopup
         deviceId="dev-1"
@@ -313,18 +366,39 @@ describe("EventPopup", () => {
     );
 
     const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Add New Event" }));
 
     // Fill and submit
     await user.click(screen.getByText("maintenance"));
     await user.type(screen.getByPlaceholderText(/Event name/i), "Test event");
-    await user.click(screen.getByRole("button", { name: /add event/i }));
+    await user.click(screen.getByRole("button", { name: "Add Event" }));
 
     await waitFor(() => {
       expect(mockMutateAsync).toHaveBeenCalled();
     });
 
-    // Name input should be cleared
-    const nameInput = screen.getByPlaceholderText(/Event name/i) as HTMLInputElement;
-    expect(nameInput).toHaveValue("");
+    // Form should be hidden after successful submit
+    expect(screen.queryByPlaceholderText(/Event name/i)).not.toBeInTheDocument();
+    // Success message should still be visible
+    expect(screen.getByText(/Event created successfully/i)).toBeInTheDocument();
+    // Toggle button should say "Add New Event" (not "Cancel")
+    expect(screen.getByRole("button", { name: "Add New Event" })).toBeInTheDocument();
+  });
+
+  it("has scrollable content area with max height", () => {
+    render(
+      <EventPopup
+        deviceId="dev-1"
+        deviceName="Laptop-01"
+        isOpen={true}
+        onClose={onClose}
+      />,
+      { wrapper: createWrapper() },
+    );
+
+    const modal = screen.getByTestId("modal-panel");
+    const scrollContainer = modal.querySelector(".overflow-y-auto");
+    expect(scrollContainer).toBeTruthy();
+    expect(scrollContainer?.className).toContain("max-h-[70vh]");
   });
 });
