@@ -59,10 +59,10 @@ Chain strategy: pending
 
 ## Phase 4: Devices CRUD (PR 5)
 
-- [ ] 4.1 Create `hooks/use-devices.ts` — query hooks + CRUD mutations with invalidation. Test (TDD). Design: §Query Hooks.
-- [ ] 4.2 Create `components/devices/DeviceTable.tsx` — list with loading/empty/error states. Spec: web-devices Req: Device List (loaded/empty/error).
-- [ ] 4.3 Create `components/devices/DeviceCard.tsx` + `components/devices/DeviceForm.tsx` (Zod-validated). Spec: web-devices Req: Device Detail + Create + Edit.
-- [ ] 4.4 Create routes: `routes/devices.tsx`, `devices.$id.tsx`, `devices.create.tsx`. Delete with confirmation dialog. Spec: web-devices Req: Device Delete.
+- [x] 4.1 Create `hooks/use-devices.ts` — query hooks + CRUD mutations with invalidation. Test (TDD). Design: §Query Hooks.
+- [x] 4.2 Create `components/devices/DeviceTable.tsx` — list with loading/empty/error states. Spec: web-devices Req: Device List (loaded/empty/error).
+- [x] 4.3 Create `components/devices/DeviceCard.tsx` + `components/devices/DeviceForm.tsx` + `components/devices/DeleteDialog.tsx` (Zod-validated). Spec: web-devices Req: Device Detail + Create + Edit + Delete.
+- [x] 4.4 Create routes: `routes/devices.tsx`, `devices.$id.tsx`, `devices.create.tsx`. Delete with confirmation dialog. Spec: web-devices Req: Device Delete.
 
 ## Phase 5: Events + Dashboards + Settings (PR 6)
 

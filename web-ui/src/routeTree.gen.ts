@@ -6,6 +6,8 @@ import { Route as rootRoute } from "./routes/__root";
 import { Route as IndexRoute } from "./routes/index";
 import { Route as LoginRoute } from "./routes/login";
 import { Route as DevicesRoute } from "./routes/devices";
+import { Route as DevicesIdRoute } from "./routes/devices.$id";
+import { Route as DevicesCreateRoute } from "./routes/devices.create";
 import { Route as EventsRoute } from "./routes/events";
 import { Route as DashboardsRoute } from "./routes/dashboards";
 import { Route as SettingsRoute } from "./routes/settings";
@@ -33,6 +35,20 @@ declare module "@tanstack/react-router" {
       fullPath: "/devices";
       preLoaderRoute: typeof DevicesRoute;
       parentRoute: typeof rootRoute;
+    };
+    "/devices/$id": {
+      id: "/devices/$id";
+      path: "/devices/$id";
+      fullPath: "/devices/$id";
+      preLoaderRoute: typeof DevicesIdRoute;
+      parentRoute: typeof DevicesRoute;
+    };
+    "/devices/create": {
+      id: "/devices/create";
+      path: "/devices/create";
+      fullPath: "/devices/create";
+      preLoaderRoute: typeof DevicesCreateRoute;
+      parentRoute: typeof DevicesRoute;
     };
     "/events": {
       id: "/events";
@@ -68,7 +84,7 @@ declare module "@tanstack/react-router" {
 export const routeTree = rootRoute.addChildren([
   IndexRoute,
   LoginRoute,
-  DevicesRoute,
+  DevicesRoute.addChildren([DevicesIdRoute, DevicesCreateRoute]),
   EventsRoute,
   DashboardsRoute,
   SettingsRoute,
