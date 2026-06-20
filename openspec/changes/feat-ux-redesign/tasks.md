@@ -49,8 +49,8 @@ Chain strategy: pending
 
 ## Phase 4: Event Popup
 
-- [ ] 4.1 Create `src/components/events/EventPopup.tsx` — `<Modal>` wrapping `<EventTimeline>` (GET /events?deviceId=X) and `<EventForm>` (deviceId pre-bound, read-only device field). Props: `deviceId`, `deviceName`, `isOpen`, `onClose`. Loading/empty/error states per spec. On successful event creation, refresh timeline + show success toast. TDD: create `src/components/events/__tests__/EventPopup.test.tsx` first.
-- [ ] 4.2 Update `DeviceGridCard.tsx` — wire Events button to call `onEvents(device.id, device.name)` which opens EventPopup in `devices.tsx`.
+- [x] 4.1 Create `src/components/events/EventPopup.tsx` — `<Modal>` wrapping `<EventTimeline>` (GET /events?deviceId=X) and simplified form (deviceId pre-bound, read-only device indicator, chips + name + description, no device selector, no actor). Props: `deviceId`, `deviceName`, `isOpen`, `onClose`. Loading/empty/error states per spec. On successful event creation, form resets + success flash message. TDD: 13 tests in `src/components/events/__tests__/EventPopup.test.tsx`.
+- [x] 4.2 Update `src/routes/devices.tsx` — replaced placeholder `handleViewEvents` with `selectedDevice` state, looks up device name from `devices` array, renders `<EventPopup>` when selectedDevice is set. Updated `src/routes/__tests__/devices.test.tsx` with EventPopup mock + 4 new tests for open/close/device name.
 
 ## Phase 5: Polish
 

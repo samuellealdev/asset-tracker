@@ -2,8 +2,14 @@ import { createFileRoute, Outlet, useNavigate, useLocation } from "@tanstack/rea
 import { useDevices } from "@/hooks/use-devices";
 import { DeviceGrid } from "@/components/devices/DeviceGrid";
 import { DeleteDialog } from "@/components/devices/DeleteDialog";
+import { EventPopup } from "@/components/events/EventPopup";
 import { useState } from "react";
 import { useDeleteDevice } from "@/hooks/use-devices";
+
+interface SelectedDevice {
+  id: string;
+  name: string;
+}
 
 export function DevicesPage() {
   const navigate = useNavigate();
@@ -11,6 +17,7 @@ export function DevicesPage() {
   const { data: devices, isLoading, isError, refetch } = useDevices();
   const deleteDevice = useDeleteDevice();
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [selectedDevice, setSelectedDevice] = useState<SelectedDevice | null>(null);
 
   const targetDevice = deleteTarget
     ? devices?.find((d) => d.id === deleteTarget)
@@ -22,8 +29,10 @@ export function DevicesPage() {
   }
 
   const handleViewEvents = (deviceId: string) => {
-    // Placeholder for Phase 4 EventPopup
-    console.log("View events for device:", deviceId);
+    const device = devices?.find((d) => d.id === deviceId);
+    if (device) {
+      setSelectedDevice({ id: device.id, name: device.name });
+    }
   };
 
   return (
@@ -61,6 +70,13 @@ export function DevicesPage() {
           }
         }}
         onCancel={() => setDeleteTarget(null)}
+      />
+
+      <EventPopup
+        deviceId={selectedDevice?.id ?? ""}
+        deviceName={selectedDevice?.name ?? ""}
+        isOpen={!!selectedDevice}
+        onClose={() => setSelectedDevice(null)}
       />
     </div>
   );
