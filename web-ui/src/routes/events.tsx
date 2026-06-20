@@ -8,7 +8,8 @@ import { EventForm } from "@/components/events/EventForm";
 export function EventsPage() {
   const [showForm, setShowForm] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { data: events, isLoading, isError, refetch } = useEvents();
+  const [selectedDeviceId, setSelectedDeviceId] = useState("");
+  const { data: events, isLoading, isError, refetch } = useEvents(selectedDeviceId || undefined);
   const { data: devices } = useDevices();
   const createEvent = useCreateEvent();
 
@@ -27,6 +28,25 @@ export function EventsPage() {
             Create Event
           </button>
         )}
+      </div>
+
+      <div className="flex items-center gap-3">
+        <label htmlFor="device-filter" className="text-sm font-medium text-slate-700">
+          Filter by device
+        </label>
+        <select
+          id="device-filter"
+          value={selectedDeviceId}
+          onChange={(e) => setSelectedDeviceId(e.target.value)}
+          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+        >
+          <option value="">All devices</option>
+          {(devices ?? []).map((device) => (
+            <option key={device.id} value={device.id}>
+              {device.name}
+            </option>
+          ))}
+        </select>
       </div>
 
       {showForm && (

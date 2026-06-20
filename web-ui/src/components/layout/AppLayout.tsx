@@ -15,7 +15,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
       {/* Mobile hamburger toggle */}
       <button
-        className="fixed left-4 top-4 z-50 rounded-lg bg-[#1e1e2e] p-2 text-white xl:hidden"
+        className="fixed left-4 top-4 z-50 rounded-lg bg-slate-800 p-2 text-white xl:hidden"
         onClick={() => setSidebarOpen(!sidebarOpen)}
         aria-label="Toggle menu"
       >
