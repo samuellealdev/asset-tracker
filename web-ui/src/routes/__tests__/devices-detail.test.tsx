@@ -44,6 +44,30 @@ vi.mock("@/hooks/use-devices", () => ({
   }),
 }));
 
+const mockDeviceEvents = [
+  {
+    id: "evt-1",
+    type: "device.created",
+    deviceId: "1",
+    name: "Device created",
+    timestamp: "2025-06-01T12:00:00Z",
+    actor: "admin",
+    description: "New device added",
+  },
+];
+
+vi.mock("@/hooks/use-events", () => ({
+  useEvents: () => ({
+    data: mockDeviceEvents,
+    isLoading: false,
+    isError: false,
+  }),
+  useCreateEvent: () => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+  }),
+}));
+
 import { DeviceDetailPage } from "../devices.$id";
 
 function createWrapper() {
@@ -126,6 +150,14 @@ describe("DeviceDetailPage", () => {
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith({ to: "/devices" });
     });
+  });
+
+  it("shows event timeline section when device is loaded", () => {
+    render(<DeviceDetailPage />, { wrapper: createWrapper() });
+
+    expect(screen.getByText(/event timeline/i)).toBeInTheDocument();
+    expect(screen.getByText("Device created")).toBeInTheDocument();
+    expect(screen.getByText("device.created")).toBeInTheDocument();
   });
 
   it("cancels deletion when cancel is clicked", async () => {

@@ -66,11 +66,11 @@ Chain strategy: pending
 
 ## Phase 5: Events + Dashboards + Settings (PR 6)
 
-- [ ] 5.1 Create `hooks/use-events.ts` — `useEvents(deviceId?)`, `useCreateEvent`. Test (TDD). Spec: web-events Req: Event List + Filter.
-- [ ] 5.2 Create `components/events/EventTable.tsx` + `EventForm.tsx` (device dropdown from `useDevices`). Spec: web-events all requirements.
-- [ ] 5.3 Create `hooks/use-health.ts` + `hooks/use-metrics.ts` — 30s auto-refresh. Test (TDD). Spec: web-dashboards both requirements.
-- [ ] 5.4 Create `components/dashboards/HealthCard.tsx` (green/red) + `MetricsCard.tsx` + `routes/dashboards.tsx`. Spec: web-dashboards all scenarios.
-- [ ] 5.5 Create `routes/events.tsx` + `routes/settings.tsx` (read-only config). Design: §Route Map.
+- [x] 5.1 Create `hooks/use-events.ts` — `useEvents(deviceId?)`, `useCreateEvent`. Test (TDD). Spec: web-events Req: Event List + Filter.
+- [x] 5.2 Create `components/events/EventTable.tsx` + `EventTimeline.tsx` + `EventForm.tsx` (device dropdown from `useDevices`). Spec: web-events all requirements.
+- [x] 5.3 Create `hooks/use-health.ts` + `hooks/use-metrics.ts` — 30s auto-refresh. Test (TDD). Spec: web-dashboards both requirements.
+- [x] 5.4 Create `components/dashboards/HealthCard.tsx` (green/red) + `MetricsCard.tsx` + `routes/dashboards.tsx`. Spec: web-dashboards all scenarios.
+- [x] 5.5 Create `routes/events.tsx` + `routes/settings.tsx` (read-only config). Design: §Route Map.
 
 ## Phase 6: Polish + E2E + Docker/K8s (PR 7)
 

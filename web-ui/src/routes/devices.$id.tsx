@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router";
 import { useDevice, useUpdateDevice, useDeleteDevice } from "@/hooks/use-devices";
+import { useEvents } from "@/hooks/use-events";
 import { DeviceCard } from "@/components/devices/DeviceCard";
 import { DeviceForm } from "@/components/devices/DeviceForm";
 import { DeleteDialog } from "@/components/devices/DeleteDialog";
+import { EventTimeline } from "@/components/events/EventTimeline";
 
 function LoadingSkeleton() {
   return (
@@ -18,6 +20,7 @@ export function DeviceDetailPage() {
   const { id } = useParams({ from: "/devices/$id" });
   const navigate = useNavigate();
   const { data: device, isLoading, isError, refetch } = useDevice(id);
+  const { data: events = [] } = useEvents(id);
   const updateDevice = useUpdateDevice();
   const deleteDevice = useDeleteDevice();
   const [isEditing, setIsEditing] = useState(false);
@@ -122,6 +125,11 @@ export function DeviceDetailPage() {
         }}
         onCancel={() => setShowDeleteDialog(false)}
       />
+
+      <div>
+        <h2 className="mb-4 text-xl font-bold text-slate-900">Event Timeline</h2>
+        <EventTimeline events={events} />
+      </div>
     </div>
   );
 }

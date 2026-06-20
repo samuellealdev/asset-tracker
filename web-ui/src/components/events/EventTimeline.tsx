@@ -1,0 +1,98 @@
+import type { Event } from "@/lib/schemas/event";
+
+interface EventTimelineProps {
+  events: Event[];
+}
+
+function EventTypeBadge({ type }: { type: string }) {
+  let colorClass = "bg-gray-100 text-gray-700";
+  if (type === "device.created") {
+    colorClass = "bg-green-100 text-green-700";
+  } else if (type === "device.updated") {
+    colorClass = "bg-blue-100 text-blue-700";
+  } else if (type === "device.deleted") {
+    colorClass = "bg-red-100 text-red-700";
+  }
+
+  return (
+    <span
+      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${colorClass}`}
+    >
+      {type}
+    </span>
+  );
+}
+
+export function EventTimeline({ events }: EventTimelineProps) {
+  if (events.length === 0) {
+    return (
+      <div className="flex flex-col items-center gap-3 py-12 text-center">
+        <div className="rounded-full bg-slate-100 p-3">
+          <svg
+            className="h-6 w-6 text-slate-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.5}
+              d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+        </div>
+        <p className="text-sm font-medium text-slate-500">
+          No events for this device
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative">
+      {/* Vertical connecting line */}
+      <div className="absolute bottom-0 left-[19px] top-0 w-0.5 bg-slate-200" />
+
+      <div className="space-y-6">
+        {events.map((event) => (
+          <div key={event.id} className="relative flex items-start gap-4">
+            {/* Timeline dot */}
+            <div className="relative z-10 mt-1.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white ring-2 ring-slate-200">
+              <div
+                className={`h-3 w-3 rounded-full ${
+                  event.type === "device.created"
+                    ? "bg-green-500"
+                    : event.type === "device.deleted"
+                      ? "bg-red-500"
+                      : "bg-blue-500"
+                }`}
+              />
+            </div>
+
+            {/* Event card */}
+            <div className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <EventTypeBadge type={event.type} />
+                <span className="shrink-0 text-xs text-slate-400">
+                  {new Date(event.timestamp).toLocaleDateString()}
+                </span>
+              </div>
+              <p className="text-sm font-medium text-slate-900">{event.name}</p>
+              {event.description && (
+                <p className="mt-1 text-sm text-slate-500">
+                  {event.description}
+                </p>
+              )}
+              {event.actor && (
+                <p className="mt-1 text-xs text-slate-400">
+                  by {event.actor}
+                </p>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
