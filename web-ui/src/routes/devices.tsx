@@ -1,6 +1,6 @@
 import { createFileRoute, Outlet, useNavigate, useLocation } from "@tanstack/react-router";
 import { useDevices } from "@/hooks/use-devices";
-import { DeviceTable } from "@/components/devices/DeviceTable";
+import { DeviceGrid } from "@/components/devices/DeviceGrid";
 import { DeleteDialog } from "@/components/devices/DeleteDialog";
 import { useState } from "react";
 import { useDeleteDevice } from "@/hooks/use-devices";
@@ -21,6 +21,11 @@ export function DevicesPage() {
     return <Outlet />;
   }
 
+  const handleViewEvents = (deviceId: string) => {
+    // Placeholder for Phase 4 EventPopup
+    console.log("View events for device:", deviceId);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -36,12 +41,13 @@ export function DevicesPage() {
         </button>
       </div>
 
-      <DeviceTable
+      <DeviceGrid
         devices={devices ?? []}
         isLoading={isLoading}
         isError={isError}
         onRetry={() => refetch()}
         onDelete={(id) => setDeleteTarget(id)}
+        onViewEvents={handleViewEvents}
       />
 
       <DeleteDialog

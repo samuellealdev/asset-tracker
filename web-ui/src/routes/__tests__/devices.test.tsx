@@ -17,10 +17,21 @@ vi.mock("@tanstack/react-router", () => ({
   ),
 }));
 
-const mockDevices = [
+const deviceData = [
   { id: "1", name: "Device 1", type: "laptop", createdAt: "2024-01-01" },
   { id: "2", name: "Device 2", type: "server", createdAt: "2024-01-02" },
 ];
+
+// Mutable array that tests can clear/restore — the mock returns this reference
+const mockDevices: { id: string; name: string; type: string; createdAt: string }[] = [];
+
+function resetMockDevices() {
+  mockDevices.length = 0;
+  for (const d of deviceData) {
+    mockDevices.push({ ...d });
+  }
+}
+resetMockDevices();
 
 let mockIsLoading = false;
 let mockIsError = false;
@@ -76,7 +87,7 @@ describe("DevicesPage", () => {
     vi.restoreAllMocks();
     mockIsLoading = false;
     mockIsError = false;
-    mockDevices.length = 2;
+    resetMockDevices();
     mockRefetch = vi.fn();
   });
 
@@ -99,7 +110,7 @@ describe("DevicesPage", () => {
 
     render(<DevicesPage />, { wrapper: createWrapper() });
 
-    // The DeviceTable renders loading skeleton
+    // The DeviceGrid renders loading skeleton
     const container = document.body;
     expect(container.querySelector(".animate-pulse")).toBeTruthy();
   });
@@ -132,5 +143,13 @@ describe("DevicesPage", () => {
     await user.click(screen.getByText(/create device/i));
 
     expect(mockNavigate).toHaveBeenCalledWith({ to: "/devices/create" });
+  });
+
+  it("renders Events button on card and does not crash", () => {
+    render(<DevicesPage />, { wrapper: createWrapper() });
+
+    // DeviceGridCard renders Events button for each device
+    const eventsButtons = screen.getAllByRole("button", { name: /events/i });
+    expect(eventsButtons).toHaveLength(2);
   });
 });

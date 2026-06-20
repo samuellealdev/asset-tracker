@@ -1,102 +1,105 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { DeviceTable } from "../DeviceTable";
+import { DeviceGrid } from "../DeviceGrid";
 import type { Device } from "@/lib/schemas/device";
 
 const mockNavigate = vi.fn();
 vi.mock("@tanstack/react-router", () => ({
   useNavigate: () => mockNavigate,
-  Link: ({ children, to, ...props }: any) => (
-    <a href={to} {...props}>
-      {children}
-    </a>
-  ),
 }));
 
 const mockDevices: Device[] = [
   { id: "1", name: "Laptop-01", type: "laptop", createdAt: "2024-01-15T10:00:00Z" },
   { id: "2", name: "Server-01", type: "server", createdAt: "2024-02-20T14:30:00Z" },
+  { id: "3", name: "Switch-01", type: "network", createdAt: "2024-03-10T08:00:00Z" },
 ];
 
-describe("DeviceTable", () => {
+describe("DeviceGrid", () => {
   beforeEach(() => {
-    vi.restoreAllMocks();
+    vi.clearAllMocks();
   });
 
-  it("renders table headers", () => {
+  it("renders device cards for each device", () => {
     render(
-      <DeviceTable
+      <DeviceGrid
         devices={mockDevices}
         isLoading={false}
         isError={false}
-        onRetry={() => {}}
-        onDelete={() => {}}
-      />,
-    );
-
-    expect(screen.getByText("Name")).toBeInTheDocument();
-    expect(screen.getByText("Type")).toBeInTheDocument();
-    expect(screen.getByText("Created")).toBeInTheDocument();
-    expect(screen.getByText("Actions")).toBeInTheDocument();
-  });
-
-  it("renders device rows with data", () => {
-    render(
-      <DeviceTable
-        devices={mockDevices}
-        isLoading={false}
-        isError={false}
-        onRetry={() => {}}
-        onDelete={() => {}}
+        onRetry={vi.fn()}
+        onDelete={vi.fn()}
+        onViewEvents={vi.fn()}
       />,
     );
 
     expect(screen.getByText("Laptop-01")).toBeInTheDocument();
     expect(screen.getByText("Server-01")).toBeInTheDocument();
-    expect(screen.getByText("laptop")).toBeInTheDocument();
-    expect(screen.getByText("server")).toBeInTheDocument();
+    expect(screen.getByText("Switch-01")).toBeInTheDocument();
   });
 
   it("shows loading skeleton when isLoading is true", () => {
     const { container } = render(
-      <DeviceTable
+      <DeviceGrid
         devices={[]}
         isLoading={true}
         isError={false}
-        onRetry={() => {}}
-        onDelete={() => {}}
+        onRetry={vi.fn()}
+        onDelete={vi.fn()}
+        onViewEvents={vi.fn()}
       />,
     );
 
-    // Should show skeleton rows
-    const skeletons = container.querySelectorAll(".animate-pulse");
-    expect(skeletons!.length).toBeGreaterThan(0);
+    // Should render skeleton placeholders with animate-pulse
+    const skeletons = container.querySelectorAll('[aria-label="Loading"]');
+    expect(skeletons.length).toBeGreaterThanOrEqual(4);
   });
 
   it("shows empty state when no devices and not loading", () => {
     render(
-      <DeviceTable
+      <DeviceGrid
         devices={[]}
         isLoading={false}
         isError={false}
-        onRetry={() => {}}
-        onDelete={() => {}}
+        onRetry={vi.fn()}
+        onDelete={vi.fn()}
+        onViewEvents={vi.fn()}
       />,
     );
 
     expect(screen.getByText(/no devices yet/i)).toBeInTheDocument();
     expect(screen.getByText(/create your first device/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /create device/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("navigates to create page from empty state button", async () => {
+    render(
+      <DeviceGrid
+        devices={[]}
+        isLoading={false}
+        isError={false}
+        onRetry={vi.fn()}
+        onDelete={vi.fn()}
+        onViewEvents={vi.fn()}
+      />,
+    );
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /create device/i }));
+
+    expect(mockNavigate).toHaveBeenCalledWith({ to: "/devices/create" });
   });
 
   it("shows error state when isError is true", () => {
     render(
-      <DeviceTable
+      <DeviceGrid
         devices={[]}
         isLoading={false}
         isError={true}
-        onRetry={() => {}}
-        onDelete={() => {}}
+        onRetry={vi.fn()}
+        onDelete={vi.fn()}
+        onViewEvents={vi.fn()}
       />,
     );
 
@@ -104,53 +107,44 @@ describe("DeviceTable", () => {
     expect(screen.getByRole("button", { name: /retry/i })).toBeInTheDocument();
   });
 
-  it("calls onRetry when retry button is clicked", async () => {
+  it("calls onRetry when retry button is clicked in error state", async () => {
     const onRetry = vi.fn();
     render(
-      <DeviceTable
+      <DeviceGrid
         devices={[]}
         isLoading={false}
         isError={true}
         onRetry={onRetry}
-        onDelete={() => {}}
+        onDelete={vi.fn()}
+        onViewEvents={vi.fn()}
       />,
     );
 
     const user = userEvent.setup();
     await user.click(screen.getByRole("button", { name: /retry/i }));
+
     expect(onRetry).toHaveBeenCalledOnce();
   });
 
-  it("has View button that navigates to device detail", async () => {
-    render(
-      <DeviceTable
-        devices={mockDevices}
-        isLoading={false}
-        isError={false}
-        onRetry={() => {}}
-        onDelete={() => {}}
-      />,
-    );
-
-    const viewButtons = screen.getAllByRole("button", { name: /view/i });
-    expect(viewButtons).toHaveLength(2);
-  });
-
-  it("calls onDelete when delete button is clicked", async () => {
+  it("passes onDelete and onViewEvents to DeviceGridCard", async () => {
     const onDelete = vi.fn();
+    const onViewEvents = vi.fn();
     render(
-      <DeviceTable
-        devices={mockDevices}
+      <DeviceGrid
+        devices={[mockDevices[0]!]}
         isLoading={false}
         isError={false}
-        onRetry={() => {}}
+        onRetry={vi.fn()}
         onDelete={onDelete}
+        onViewEvents={onViewEvents}
       />,
     );
 
     const user = userEvent.setup();
-    const deleteButtons = screen.getAllByRole("button", { name: /delete/i });
-    await user.click(deleteButtons[0]!);
+    await user.click(screen.getByRole("button", { name: /delete/i }));
     expect(onDelete).toHaveBeenCalledWith("1");
+
+    await user.click(screen.getByRole("button", { name: /events/i }));
+    expect(onViewEvents).toHaveBeenCalledWith("1");
   });
 });
