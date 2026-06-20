@@ -1,3 +1,16 @@
+const FIELD_ORDER = ["requests_total", "errors_total"];
+
+function sortMetricsByFieldOrder(
+  entries: [string, unknown][],
+): [string, unknown][] {
+  return [...entries].sort(([a], [b]) => {
+    const aIdx = FIELD_ORDER.indexOf(a);
+    const bIdx = FIELD_ORDER.indexOf(b);
+    // Known fields sort by FIELD_ORDER; unknown fields go after
+    return (aIdx === -1 ? Infinity : aIdx) - (bIdx === -1 ? Infinity : bIdx);
+  });
+}
+
 interface MetricsCardProps {
   title: string;
   metrics: Record<string, unknown>;
@@ -69,7 +82,7 @@ export function MetricsCard({
     <div className="rounded-lg border border-slate-700 bg-slate-800 p-6 shadow-sm">
       <h3 className="mb-4 text-lg font-semibold text-slate-100">{title}</h3>
       <div className="grid grid-cols-2 gap-4">
-        {Object.entries(metrics).map(([key, value]) => (
+        {sortMetricsByFieldOrder(Object.entries(metrics)).map(([key, value]) => (
           <MetricItem key={key} label={key} value={value} />
         ))}
       </div>

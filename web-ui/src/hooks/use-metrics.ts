@@ -6,6 +6,7 @@ export function useGoMetrics() {
     queryKey: ["metrics", "go"],
     queryFn: () => getMetrics("go"),
     staleTime: 60_000,
+    refetchInterval: 30_000,
   });
 }
 
@@ -14,5 +15,6 @@ export function useNodeMetrics() {
     queryKey: ["metrics", "node"],
     queryFn: () => getMetrics("node"),
     staleTime: 60_000,
+    refetchInterval: 30_000,
   });
 }

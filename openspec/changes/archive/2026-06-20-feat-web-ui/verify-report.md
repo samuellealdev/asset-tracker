@@ -361,3 +361,32 @@ f6dff7b fix(web-ui): add Outlet to devices route, fix E2E selectors, mock useLoc
 - `npx vitest run` — 42 files, 229/229 tests passed
 - `npx tsc --noEmit` — zero errors
 - `node --test` (node-service) — 9 suites, 62/62 tests passed
+
+---
+
+## Post-Archive Fix — 2026-06-20 (Dashboard metrics auto-refresh and card field order)
+
+**Symptom**: Two issues on the Dashboard:
+
+1. **Metrics not auto-refreshing**: The page shows "Auto-refreshes every 30s" but metric cards display stale data. Go API stuck at 1 error / 16 requests even after making new requests.
+2. **Layout inconsistency**: Go API MetricsCard shows `errors_total` on the left and `requests_total` on the right, while Node.js API shows `requests_total` first.
+
+**Root cause**:
+
+1. `use-metrics.ts` had `staleTime: 60_000` but **no `refetchInterval`**, so metrics were fetched once and never refreshed. Compare `use-health.ts` which correctly has `refetchInterval: 30_000` on both hooks.
+2. Go's `encoding/json` marshals `map[string]int64` with **alphabetically sorted keys** → `errors_total` appears before `requests_total` in the JSON response. Node.js uses JS object literal insertion order → `requests_total` first. Since `MetricsCard` used `Object.entries()` which preserves the API's key order, the two cards showed different field layouts.
+
+**Fix**:
+
+1. **Auto-refresh**: Added `refetchInterval: 30_000` to both `useGoMetrics()` and `useNodeMetrics()` in `use-metrics.ts`.
+2. **Field order**: Added `FIELD_ORDER` constant and `sortMetricsByFieldOrder()` helper to `MetricsCard.tsx` that enforces a deterministic display order: `requests_total` first, `errors_total` second. Unknown fields still appear (after known ones), so adding new metrics won't break anything.
+
+**Files changed**:
+- `web-ui/src/hooks/use-metrics.ts` — added `refetchInterval: 30_000` to both queries
+- `web-ui/src/components/dashboards/MetricsCard.tsx` — added `FIELD_ORDER` array + `sortMetricsByFieldOrder()` helper
+
+**Verification**:
+- `npx vitest run` — 42 files, 229/229 tests passed
+- `npx tsc --noEmit` — zero errors
+
+**Commit**: `fix(web-ui): add auto-refresh to metrics and fix card field order`
