@@ -289,3 +289,75 @@ f6dff7b fix(web-ui): add Outlet to devices route, fix E2E selectors, mock useLoc
 **Files changed**: `lib/api/events.ts`, `hooks/use-events.ts`, `routes/events.tsx`, `hooks/__tests__/use-events.test.tsx`, `routes/__tests__/events.test.tsx`
 
 **Commit**: `98eee55 fix(web-ui): require deviceId for events API, show select prompt when empty`
+
+---
+
+## Post-Archive Fix — 2026-06-20 (Event type free text)
+
+**Symptom**: The EventForm had a `<select>` dropdown with hardcoded event types (`device.created`, `device.updated`, `device.deleted`, `custom`). The first three are Kafka-generated events that users should never create manually.
+
+**Root cause**: The event type field was implemented as a fixed select with Kafka system event types, instead of allowing users to type any custom event type.
+
+**Fix**:
+- Removed the `EVENT_TYPES` constant and `<select>`/`<option>` elements from `EventForm.tsx`
+- Replaced with a text `<input>` with placeholder "e.g. maintenance, inspection, alert"
+- Zod schema (`createEventSchema`) already validated with `z.string().min(1)` — no schema change needed
+- Updated test: changed `user.selectOptions()` to `user.type()` with custom type "maintenance"
+- Updated assertion from `type: "device.created"` to `type: "maintenance"`
+
+**Files changed**: `web-ui/src/components/events/EventForm.tsx`, `web-ui/src/components/events/__tests__/EventForm.test.tsx`
+
+**Verification**:
+- `npx vitest run` — 226/226 tests passed
+- `npx tsc --noEmit` — zero errors
+- `npx playwright test e2e/events.spec.ts` — 2/2 passed
+
+**Commit**: `bc9b89e fix(web-ui): replace event type select with free text input`
+
+---
+
+## Post-Archive Fix — Event type chips
+
+**Symptom**: The EventForm had a plain text input for the Type field with no quick-select options, requiring users to manually type the event type every time.
+
+**Fix**:
+- Added `EVENT_TYPE_PRESETS` constant with 8 common event types: `maintenance`, `inspection`, `repair`, `relocation`, `decommissioned`, `alert`, `audit`, `firmware-update`
+- Replaced the plain Type `<input>` with:
+  - A **chips row** — clickable rounded buttons (`bg-slate-700 text-slate-300 rounded-full`) that set the type value on click
+  - A text `<input>` with `<datalist>` containing the same preset types for autocomplete suggestions
+- Chips are quick-select only (no highlight state) — user can still type any custom free-text value
+- Updated tests: added 3 new tests covering chip rendering, chip click behavior, and custom type acceptance
+
+**Files changed**: `web-ui/src/components/events/EventForm.tsx`, `web-ui/src/components/events/__tests__/EventForm.test.tsx`
+
+**Verification**:
+- `npx vitest run` — 227/229 tests passed (2 pre-existing flaky)
+- `npx tsc --noEmit` — zero errors
+- `npx playwright test e2e/events.spec.ts` — 2/2 passed
+
+**Commit**: `d3f2cbe feat(web-ui): add clickable event type chips with datalist suggestions`
+
+---
+
+## Post-Archive Fix — 2026-06-20 (Go service metrics always show 0)
+
+**Symptom**: Go API metrics on the Dashboard always show `0` for both REQUESTS TOTAL and ERRORS TOTAL. Node.js metrics show data but the Go counters never increment.
+
+**Root cause**: The Go service's `MetricsHandler` has `IncrementRequests()` and `IncrementErrors()` methods, but nothing calls them. The handler is created and exposed on `GET /metrics` in `main.go`, but there is no middleware that wires the counters into the HTTP request pipeline. Compare with the Node.js service (`index.js` lines 62–68) which correctly calls `metricsHandler.incrementRequest()` on every request and `metricsHandler.incrementError()` on `>= 400` responses.
+
+**Fix**:
+- Added `MetricsMiddleware(m *MetricsHandler) func(http.Handler) http.Handler` to `go-service/internal/interfaces/metrics_handler.go` — a middleware factory following the existing `CORSMiddleware`/`LoggingMiddleware` pattern
+- The middleware increments the requests counter for every request, wraps the response writer to capture the status code, and increments the errors counter when the status code is `>= 400`
+- Wired `metricsWrapper := interfaces.MetricsMiddleware(metricsHandler)` into the middleware chain in `go-service/cmd/main.go`: `CORS → Logging → Metrics → mux`
+- Added 5 table-driven tests in `metrics_handler_test.go` covering: request counting across multiple calls, 4xx error counting, 5xx error counting, successful (200) requests not incrementing errors, and ensuring the next handler is called
+
+**Files changed**:
+- `go-service/internal/interfaces/metrics_handler.go` — added `MetricsMiddleware` function
+- `go-service/cmd/main.go` — wired `MetricsMiddleware` into the middleware chain
+- `go-service/internal/interfaces/metrics_handler_test.go` — added 5 middleware tests
+
+**Verification**:
+- `go test ./...` — 5 packages, all OK
+- `npx vitest run` — 42 files, 229/229 tests passed
+- `npx tsc --noEmit` — zero errors
+- `node --test` (node-service) — 9 suites, 62/62 tests passed

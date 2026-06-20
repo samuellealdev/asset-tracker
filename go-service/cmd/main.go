@@ -154,8 +154,11 @@ func main() {
 	mux.Handle("GET /metrics", metricsHandler)
 	mux.Handle("/", deviceHandler)
 
-	// --- Wrap entire mux with middleware chain: CORS (outermost) → Logging → mux ---
-	wrappedMux := interfaces.CORSMiddleware(interfaces.LoggingMiddleware(mux))
+	// --- Metrics middleware counts requests and errors through the pipeline ---
+	metricsWrapper := interfaces.MetricsMiddleware(metricsHandler)
+
+	// --- Wrap entire mux with middleware chain: CORS (outermost) → Logging → Metrics → mux ---
+	wrappedMux := interfaces.CORSMiddleware(interfaces.LoggingMiddleware(metricsWrapper(mux)))
 
 	server := &http.Server{
 		Addr:         ":" + port,
