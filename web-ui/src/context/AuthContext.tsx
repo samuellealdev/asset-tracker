@@ -6,11 +6,13 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
+import { login as apiLogin } from "@/lib/api/auth";
 
 interface AuthContextValue {
   token: string | null;
   isAuthenticated: boolean;
-  login: (token: string) => void;
+  isLoading: boolean;
+  login: (username: string, password: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -22,6 +24,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(() => {
     return localStorage.getItem(STORAGE_KEY);
   });
+  const [isLoading, setIsLoading] = useState(false);
 
   const isAuthenticated = token !== null;
 
@@ -35,10 +38,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("auth:logout", handleLogout);
   }, []);
 
-  const login = useCallback((newToken: string) => {
-    setToken(newToken);
-    localStorage.setItem(STORAGE_KEY, newToken);
-  }, []);
+  const login = useCallback(
+    async (username: string, password: string) => {
+      setIsLoading(true);
+      try {
+        const response = await apiLogin(username, password);
+        setToken(response.token);
+        localStorage.setItem(STORAGE_KEY, response.token);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [],
+  );
 
   const logout = useCallback(() => {
     setToken(null);
@@ -46,7 +58,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ token, isAuthenticated, login, logout }}>
+    <AuthContext.Provider
+      value={{ token, isAuthenticated, isLoading, login, logout }}
+    >
       {children}
     </AuthContext.Provider>
   );

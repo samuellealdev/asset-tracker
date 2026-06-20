@@ -79,14 +79,14 @@ describe("ApiClient", () => {
       );
       vi.stubGlobal("fetch", mockFetch);
 
-      const events: CustomEvent[] = [];
-      const listener = (e: CustomEvent) => events.push(e);
-      window.addEventListener("auth:logout", listener as EventListener);
+      const events: Event[] = [];
+      const listener = (e: Event) => events.push(e);
+      window.addEventListener("auth:logout", listener);
 
       await expect(client.get("/secured")).rejects.toThrow();
       expect(events).toHaveLength(1);
 
-      window.removeEventListener("auth:logout", listener as EventListener);
+      window.removeEventListener("auth:logout", listener);
     });
   });
 
