@@ -30,23 +30,23 @@ Chain strategy: pending
 
 ## Phase 0: CORS Prerequisite (PR 1)
 
-- [ ] 0.1 Add `CORSMiddleware` to `go-service/internal/interfaces/middleware.go`: set `Access-Control-Allow-Origin: *`, `Allow-Headers: Authorization, Content-Type`, `Allow-Methods: GET,POST,PUT,DELETE,OPTIONS`; handle OPTIONS preflight with 204. Write test in `middleware_test.go` (TDD: preflight→implement). Design: §Production prerequisite, API audit.
-- [ ] 0.2 Wire CORS as outermost in `go-service/cmd/main.go`: `CORSMiddleware(LoggingMiddleware(mux))`. Verify `go test ./...` passes.
+- [x] 0.1 Add `CORSMiddleware` to `go-service/internal/interfaces/middleware.go`: set `Access-Control-Allow-Origin: *`, `Allow-Headers: Authorization, Content-Type`, `Allow-Methods: GET,POST,PUT,DELETE,OPTIONS`; handle OPTIONS preflight with 204. Write test in `middleware_test.go` (TDD: preflight→implement). Design: §Production prerequisite, API audit.
+- [x] 0.2 Wire CORS as outermost in `go-service/cmd/main.go`: `CORSMiddleware(LoggingMiddleware(mux))`. Verify `go test ./...` passes.
 
 ## Phase 1: Project Scaffolding (PR 2)
 
-- [ ] 1.1 Create `web-ui/package.json` — React 19, TS strict, Vite, TanStack Router/Query, Tailwind 4, shadcn/ui, Zod, Vitest, Playwright.
-- [ ] 1.2 Create `vite.config.ts` — React plugin, dev proxy (`/api/go`→:8080, `/api/node`→:3000), Vitest config. Design: §Dev proxy.
-- [ ] 1.3 Create `tsconfig.json` (strict, `@/`→`src/`), `.eslintrc.cjs`, `tailwind.config.ts`. Design: §Architecture Decisions.
-- [ ] 1.4 Create `index.html` + `web-ui/src/main.tsx` entry point.
+- [x] 1.1 Create `web-ui/package.json` — React 19, TS strict, Vite, TanStack Router/Query, Tailwind 4, shadcn/ui, Zod, Vitest, Playwright.
+- [x] 1.2 Create `vite.config.ts` — React plugin, dev proxy (`/api/go`→:8080, `/api/node`→:3000), Vitest config. Design: §Dev proxy.
+- [x] 1.3 Create `tsconfig.json` (strict, `@/`→`src/`), `.eslintrc.cjs`, `tailwind.config.ts`. Design: §Architecture Decisions.
+- [x] 1.4 Create `index.html` + `web-ui/src/main.tsx` entry point.
 
 ## Phase 2: Foundation (PR 3)
 
-- [ ] 2.1 Create `lib/api/client.ts` — `fetch` wrapper with Bearer interceptor, 401→logout. Test with Vitest+MSW (TDD: test interceptor→implement). Design: §Data Flow.
-- [ ] 2.2 Create Zod schemas: `lib/schemas/auth.ts`, `device.ts`, `event.ts`. Test valid/invalid payloads (TDD). Design: §Validation. Specs: web-devices Req: Device Create validation.
-- [ ] 2.3 Create API fns: `lib/api/{auth,devices,events,health,metrics}.ts`. Test with MSW (TDD). Design: §Directory Structure.
-- [ ] 2.4 Create `lib/utils/cn.ts` (`clsx`+`twMerge`). Unit test. Design: §Styling.
-- [ ] 2.5 Create `App.tsx` — QueryClientProvider + AuthProvider + RouterProvider. Design: §Architecture.
+- [x] 2.1 Create `lib/api/client.ts` — `fetch` wrapper with Bearer interceptor, 401→logout. Test with Vitest+MSW (TDD: test interceptor→implement). Design: §Data Flow.
+- [x] 2.2 Create Zod schemas: `lib/schemas/auth.ts`, `device.ts`, `event.ts`. Test valid/invalid payloads (TDD). Design: §Validation. Specs: web-devices Req: Device Create validation.
+- [x] 2.3 Create API fns: `lib/api/{auth,devices,events,health,metrics}.ts`. Test with MSW (TDD). Design: §Directory Structure.
+- [x] 2.4 Create `lib/utils/cn.ts` (`clsx`+`twMerge`). Unit test. Design: §Styling.
+- [x] 2.5 Create `App.tsx` — QueryClientProvider + AuthProvider + RouterProvider. Design: §Architecture.
 
 ## Phase 3: Auth + Layout (PR 4)
 
