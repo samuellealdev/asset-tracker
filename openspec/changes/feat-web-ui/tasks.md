@@ -74,7 +74,7 @@ Chain strategy: pending
 
 ## Phase 6: Polish + E2E + Docker/K8s (PR 7)
 
-- [ ] 6.1 Create `components/shared/ErrorBoundary.tsx`, `LoadingSkeleton.tsx`, `EmptyState.tsx`. Spec: web-layout Req: Error Boundary.
-- [ ] 6.2 Write Playwright E2E smoke tests: login→devices CRUD→events→dashboards. Proposal: §Success Criteria (verify 5 capabilities).
-- [ ] 6.3 Add web-ui to `docker-compose.yml` — multi-stage build, healthcheck. Design: §File Changes.
-- [ ] 6.4 Create `k8s/web-deployment.yaml` + `k8s/web-service.yaml`. Modify `k8s/ingress.yaml` if exists.
+- [x] 6.1 Create `components/shared/ErrorBoundary.tsx`, `LoadingSkeleton.tsx`, `EmptyState.tsx`. Spec: web-layout Req: Error Boundary.
+- [x] 6.2 Write Playwright E2E smoke tests: login→devices CRUD→events→dashboards. Proposal: §Success Criteria (verify 5 capabilities).
+- [x] 6.3 Add web-ui to `docker-compose.yml` — multi-stage build, healthcheck. Design: §File Changes.
+- [x] 6.4 Create `k8s/web-deployment.yaml` + `k8s/web-service.yaml`. Modify `k8s/ingress.yaml` if exists.

@@ -34,6 +34,13 @@ const mockEvents: Event[] = [
 ];
 
 describe("EventTimeline", () => {
+  it("shows loading skeleton when isLoading is true", () => {
+    const { container } = render(<EventTimeline events={[]} isLoading={true} />);
+
+    // Should show skeleton elements (animate-pulse class)
+    const skeletons = container.querySelectorAll(".animate-pulse");
+    expect(skeletons.length).toBeGreaterThan(0);
+  });
   it("renders a list of events in chronological order", () => {
     render(<EventTimeline events={mockEvents} />);
 

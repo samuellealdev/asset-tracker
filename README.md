@@ -14,26 +14,33 @@
 | 5 | Kubernetes Manifests | ✅ Complete | 2026-06-12 |
 | 6 | Business Events — manual event tracking with GET /events | ✅ Complete | 2026-06-15 |
 | 7 | JWT Authentication — login endpoint, auth middleware, protected write endpoints | ✅ Complete | 2026-06-18 |
+| 8 | Frontend — React 19 SPA, 8 routes, 223+ tests, Docker/K8s | ✅ Complete | 2026-06-20 |
 
 ## Architecture
 
 ```
-                 ┌──────────────┐
-                 │  go-service  │────► PostgreSQL
-                 │   :8080      │
-                 │              │────► Kafka (producer)
-                 └──────────────┘      :9092
-                                        │
-                 ┌──────────────┐       │
-                 │ node-service │◄──────┘
-                 │   :3000      │────► MongoDB
-                 └──────────────┘      (consumer)
+                     ┌──────────────┐
+                     │   web-ui     │── React 19 SPA (Vite)
+                     │   :80        │
+                     └──────┬───────┘
+                            │
+               ┌────────────┴────────────┐
+               │                         │
+        ┌──────▼───────┐        ┌───────▼──────┐
+        │  go-service  │────►   │ node-service │
+        │   :8080      │        │   :3000      │
+        │              │────►   │              │────► MongoDB
+        └──────┬───────┘ :9092  └──────────────┘
+               │
+               ▼
+          PostgreSQL
 ```
 
-Two microservices built with **hexagonal architecture** (ports & adapters):
+Three services built with **hexagonal architecture** (ports & adapters):
 
 | Service | Language | Port | Database | Responsibility |
 |---------|----------|------|----------|----------------|
+| `web-ui` | React 19 + Vite | 80 (nginx) | — | SPA frontend with login, devices CRUD, events, dashboards, settings |
 | `go-service` | Go 1.23+ | 8080 | PostgreSQL | Full device CRUD (5 endpoints) + JWT auth + Kafka producer |
 | `node-service` | Node.js 22+ | 3000 | MongoDB | Event logging (`POST /events`) + Kafka consumer |
 
@@ -54,6 +61,10 @@ Inter-service communication is **event-driven via Apache Kafka** in KRaft mode (
 | **TDD mandatory** for business logic | Red → green → refactor for all domain + application layers |
 | **12-Factor App** configuration | All config via environment variables; `.env` only for local dev |
 | **JWT Bearer token authentication** | JWT auth on all `/devices` endpoints; `golang-jwt/jwt/v5` library; credentials via env vars (demo scope) |
+| **React 19 + Vite** for frontend | Fast dev server with HMR, type-safe routing with TanStack Router |
+| **TanStack Query** for server state | Cache invalidation on mutations, stale-while-revalidate, zero reducers |
+| **React Context** for auth state | Single token value — no global state library needed |
+| **SPA with nginx** | Multi-stage Docker build; nginx serves static assets and proxies API calls |
 
 > Detailed architecture decisions, including deferred production patterns (circuit breaker, outbox, rate limiting, idempotent consumer, Kafka multi-node, testcontainers), are documented in [`docs/adr/`](docs/adr/).
 
@@ -61,12 +72,14 @@ Inter-service communication is **event-driven via Apache Kafka** in KRaft mode (
 
 | Component | Technology |
 |-----------|------------|
+| Frontend | React 19, Vite 6, TanStack Router, TanStack Query, Tailwind CSS 4, Zod |
 | Go service | Go 1.23+, `slog`, `pgx`, `net/http`, `segmentio/kafka-go`, `golang-jwt/jwt/v5` |
 | Node.js service | Node.js 22+, `pino`, MongoDB native driver, `@confluentinc/kafka-javascript` |
 | Databases | PostgreSQL 16, MongoDB 7 |
 | Message Broker | Apache Kafka 3.9.2 (KRaft mode, apache/kafka image) |
 | Containerization | Docker multi-stage builds, Docker Compose |
 | Orchestration | Kubernetes (Kind for local dev) |
+| Testing (frontend) | Vitest (unit/integration), Playwright (E2E) |
 
 ## Skills
 
@@ -81,6 +94,29 @@ Inter-service communication is **event-driven via Apache Kafka** in KRaft mode (
 | `kubernetes-manifests` | K8s manifests with probes, resources |
 
 ## Quick Start
+
+### Full Stack (with Docker Compose)
+
+```bash
+docker compose up -d
+# Open http://localhost in your browser
+# Login with username: admin, password: admin
+```
+
+### Frontend Development (standalone Vite dev server)
+
+Requires the backend services running (via `docker compose up -d`):
+
+```bash
+cd web-ui
+npm install
+npm run dev
+# Open http://localhost:5173 in your browser
+```
+
+The Vite dev server proxies `/api/go/*` to `localhost:8080` and `/api/node/*` to `localhost:3000`.
+
+### Backend API (curl)
 
 ```bash
 docker compose up -d
@@ -130,6 +166,12 @@ cd go-service && go test ./...
 
 # Node.js service
 cd node-service && node --test
+
+# Frontend (unit + integration)
+cd web-ui && npm test
+
+# Frontend (E2E — requires backend running)
+cd web-ui && npx playwright test
 ```
 
 Tests run automatically on every push via [GitHub Actions](.github/workflows/ci.yml).

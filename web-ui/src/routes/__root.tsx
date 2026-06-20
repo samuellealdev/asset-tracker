@@ -5,6 +5,7 @@ import {
   useLocation,
 } from "@tanstack/react-router";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
 
 export function checkAuth({
   location,
@@ -17,17 +18,35 @@ export function checkAuth({
   }
 }
 
+function PageTransition({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="animate-fade-in motion-safe:animate-fade-in">
+      {children}
+    </div>
+  );
+}
+
 function RootComponent() {
   const { pathname } = useLocation();
   const isLoginPage = pathname === "/login";
 
   if (isLoginPage) {
-    return <Outlet />;
+    return (
+      <ErrorBoundary>
+        <PageTransition>
+          <Outlet />
+        </PageTransition>
+      </ErrorBoundary>
+    );
   }
 
   return (
     <AppLayout>
-      <Outlet />
+      <ErrorBoundary>
+        <PageTransition>
+          <Outlet />
+        </PageTransition>
+      </ErrorBoundary>
     </AppLayout>
   );
 }

@@ -3,10 +3,50 @@ import type { Device } from "@/lib/schemas/device";
 
 interface DeviceCardProps {
   device: Device;
+  isLoading?: boolean;
+  isError?: boolean;
+  onRetry?: () => void;
 }
 
-export function DeviceCard({ device }: DeviceCardProps) {
+function LoadingSkeleton() {
+  return (
+    <div className="animate-pulse rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="flex items-start justify-between">
+        <div className="flex-1">
+          <div className="h-5 w-32 rounded bg-slate-200" />
+          <div className="mt-2 h-4 w-48 rounded bg-slate-200" />
+        </div>
+        <div className="h-6 w-16 rounded-full bg-slate-200" />
+      </div>
+      <div className="mt-4 h-4 w-40 rounded bg-slate-200" />
+    </div>
+  );
+}
+
+export function DeviceCard({ device, isLoading, isError, onRetry }: DeviceCardProps) {
   const navigate = useNavigate();
+
+  if (isLoading) {
+    return <LoadingSkeleton />;
+  }
+
+  if (isError) {
+    return (
+      <div className="flex flex-col items-center gap-3 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+        <p className="text-sm font-medium text-red-600">
+          Failed to load device
+        </p>
+        {onRetry && (
+          <button
+            onClick={onRetry}
+            className="text-sm text-indigo-600 hover:text-indigo-800"
+          >
+            Try again
+          </button>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div

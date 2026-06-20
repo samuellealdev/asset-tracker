@@ -1,5 +1,7 @@
 import { useNavigate } from "@tanstack/react-router";
 import type { Device } from "@/lib/schemas/device";
+import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
+import { EmptyState } from "@/components/shared/EmptyState";
 
 interface DeviceTableProps {
   devices: Device[];
@@ -7,61 +9,6 @@ interface DeviceTableProps {
   isError: boolean;
   onRetry: () => void;
   onDelete: (id: string) => void;
-}
-
-function LoadingSkeleton() {
-  return (
-    <div className="space-y-2">
-      {[1, 2, 3].map((i) => (
-        <div
-          key={i}
-          className="flex h-12 animate-pulse items-center rounded-lg bg-slate-100 px-4"
-        >
-          <div className="h-4 w-1/4 rounded bg-slate-200" />
-          <div className="ml-8 h-4 w-1/6 rounded bg-slate-200" />
-          <div className="ml-8 h-4 w-1/6 rounded bg-slate-200" />
-          <div className="ml-auto h-4 w-24 rounded bg-slate-200" />
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function EmptyState({ onCreateClick }: { onCreateClick: () => void }) {
-  return (
-    <div className="flex flex-col items-center gap-4 py-16 text-center">
-      <div className="rounded-full bg-slate-100 p-4">
-        <svg
-          className="h-8 w-8 text-slate-400"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={1.5}
-            d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0V12a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 12V5.25"
-          />
-        </svg>
-      </div>
-      <p className="text-lg font-medium text-slate-600">
-        No devices yet.
-      </p>
-      <p className="text-sm text-slate-400">
-        Create your first device.
-      </p>
-      <button
-        onClick={onCreateClick}
-        className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-all duration-200 hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-      >
-        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.5v15m7.5-7.5h-15" />
-        </svg>
-        Create Device
-      </button>
-    </div>
-  );
 }
 
 function ErrorState({ onRetry }: { onRetry: () => void }) {
@@ -124,7 +71,10 @@ export function DeviceTable({
   if (devices.length === 0) {
     return (
       <EmptyState
-        onCreateClick={() => navigate({ to: "/devices/create" })}
+        title="No devices yet."
+        description="Create your first device."
+        actionLabel="Create Device"
+        onAction={() => navigate({ to: "/devices/create" })}
       />
     );
   }
