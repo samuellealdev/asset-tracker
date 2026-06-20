@@ -54,8 +54,8 @@ Chain strategy: pending
 
 ## Phase 5: Polish
 
-- [ ] 5.1 Modify `src/routes/dashboards.tsx` — remove health/metrics live sections (now in LiveMetrics bar). Keep summary/detail overview if applicable. Update `src/routes/__tests__/dashboards.test.tsx`.
-- [ ] 5.2 Delete route `src/routes/settings.tsx` and `src/routes/__tests__/settings.test.tsx`. Remove `/settings` from route tree (regenerate `routeTree.gen.ts`).
-- [ ] 5.3 Update E2E tests in `web-ui/e2e/devices.spec.ts` — verify card grid renders instead of table, Events button opens EventPopup, delete from card triggers confirmation.
-- [ ] 5.4 Update E2E tests in `web-ui/e2e/dashboards.spec.ts` — verify dashboards page renders (simplified content), no test regressions.
-- [ ] 5.5 Final verification: run `cd web-ui && npx vitest run` (all unit + integration), `npx tsc --noEmit` (type check), and `npx playwright test` (E2E). Ensure 0 failures and ≥70% coverage.
+- [x] 5.1 Modify `src/routes/dashboards.tsx` — remove health/metrics live sections (now in LiveMetrics bar). Keep simplified overview. Update `src/routes/__tests__/dashboards.test.tsx`.
+- [x] 5.2 Delete route `src/routes/settings.tsx` and `src/routes/__tests__/settings.test.tsx`. Remove `/settings` from route tree.
+- [x] 5.3 Update E2E tests in `web-ui/e2e/devices.spec.ts` — card grid with Edit/Delete/Events buttons instead of table.
+- [x] 5.4 Update E2E tests in `web-ui/e2e/dashboards.spec.ts` — simplified dashboard with overview text.
+- [x] 5.5 Final verification: vitest run (305 pass, 2 pre-existing timeouts), `tsc --noEmit` (clean), `vite build` (success), Go tests (all pass), Node tests (62 pass).

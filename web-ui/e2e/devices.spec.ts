@@ -23,7 +23,7 @@ test.describe("Devices CRUD", () => {
       await page.getByLabel("Type").fill("laptop");
       await page.getByRole("button", { name: "Create Device" }).click();
 
-      // Should redirect to devices list and show the new device
+      // Should redirect to devices list and show the new device in a card
       await expect(page).toHaveURL(/\/devices$/, { timeout: 10_000 });
       await expect(page.getByText(deviceName)).toBeVisible({ timeout: 10_000 });
     },
@@ -41,8 +41,8 @@ test.describe("Devices CRUD", () => {
       await page.getByRole("button", { name: "Create Device" }).click();
       await expect(page).toHaveURL(/\/devices$/, { timeout: 10_000 });
 
-      // Click on the device name in the table to view detail
-      await page.getByText(deviceName).first().click();
+      // Click Edit button in the card to navigate to device detail
+      await page.getByRole("button", { name: "Edit" }).first().click();
       await expect(page).toHaveURL(/\/devices\//);
 
       // Should see device detail
@@ -63,8 +63,8 @@ test.describe("Devices CRUD", () => {
       await page.getByRole("button", { name: "Create Device" }).click();
       await expect(page).toHaveURL(/\/devices$/, { timeout: 10_000 });
 
-      // Navigate to detail
-      await page.getByText(originalName).first().click();
+      // Click Edit button in the card to navigate to device detail
+      await page.getByRole("button", { name: "Edit" }).first().click();
       await expect(page).toHaveURL(/\/devices\//);
 
       // Click edit button
@@ -93,8 +93,8 @@ test.describe("Devices CRUD", () => {
       await page.getByRole("button", { name: "Create Device" }).click();
       await expect(page).toHaveURL(/\/devices$/, { timeout: 10_000 });
 
-      // Navigate to detail
-      await page.getByText(deleteName).first().click();
+      // Click Edit button in the card to navigate to device detail
+      await page.getByRole("button", { name: "Edit" }).first().click();
       await expect(page).toHaveURL(/\/devices\//);
 
       // Click delete button

@@ -9,28 +9,15 @@ test.describe("Dashboards", () => {
     await expect(page).toHaveURL(/\/devices/, { timeout: 10_000 });
   });
 
-  test("Health status display",
+  test("Simplified dashboard renders with overview",
     { tag: ["@smoke", "@critical"] },
     async ({ page }) => {
       await page.goto("/dashboards");
       await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
-      await expect(page.getByRole("heading", { name: "Service Health" })).toBeVisible();
 
-      // Health cards should be visible for both services
-      await expect(page.getByRole("heading", { name: "Go API" }).first()).toBeVisible();
-      await expect(page.getByRole("heading", { name: "Node.js API" }).first()).toBeVisible();
-    },
-  );
-
-  test("Metrics display",
-    { tag: ["@smoke"] },
-    async ({ page }) => {
-      await page.goto("/dashboards");
-
-      // Metrics section should be present
-      await expect(page.getByText("Auto-refreshes every 30s")).toBeVisible();
-      await expect(page.getByRole("heading", { name: "Go API" }).first()).toBeVisible();
-      await expect(page.getByRole("heading", { name: "Node.js API" }).first()).toBeVisible();
+      // Health and metrics are now in the top bar — dashboards shows an overview
+      await expect(page.getByText(/overview/i)).toBeVisible();
+      await expect(page.getByText(/live service health/i)).toBeVisible();
     },
   );
 });

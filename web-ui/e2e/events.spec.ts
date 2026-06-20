@@ -15,7 +15,7 @@ test.describe("Events", () => {
       await page.goto("/events");
       await expect(page.getByRole("heading", { name: "Events" })).toBeVisible();
 
-      // Filter dropdown should be present (events filter from Phase 5 fix)
+      // Filter dropdown should be present
       await expect(page.getByLabel("Filter by device")).toBeVisible();
       await expect(page.getByRole("button", { name: "Create Event" })).toBeVisible();
     },
@@ -32,8 +32,8 @@ test.describe("Events", () => {
       await page.getByRole("button", { name: "Create Device" }).click();
       await expect(page).toHaveURL(/\/devices$/, { timeout: 10_000 });
 
-      // Navigate to device detail via the table
-      await page.getByText(deviceName).first().click();
+      // Click Edit button in the card to navigate to device detail
+      await page.getByRole("button", { name: "Edit" }).first().click();
       await expect(page).toHaveURL(/\/devices\//);
 
       // Should see the heading with device name
