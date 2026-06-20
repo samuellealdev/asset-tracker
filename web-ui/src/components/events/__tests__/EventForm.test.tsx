@@ -79,7 +79,7 @@ describe("EventForm", () => {
 
     const user = userEvent.setup();
 
-    await user.selectOptions(screen.getByLabelText(/type/i), "device.created");
+    await user.type(screen.getByLabelText(/type/i), "maintenance");
     await user.selectOptions(screen.getByLabelText(/device/i), "dev-1");
     await user.type(screen.getByLabelText(/name/i), "Test event");
     await user.click(screen.getByRole("button", { name: /create event/i }));
@@ -87,7 +87,7 @@ describe("EventForm", () => {
     await waitFor(() => {
       expect(onSubmit).toHaveBeenCalledWith(
         expect.objectContaining({
-          type: "device.created",
+          type: "maintenance",
           deviceId: "dev-1",
           name: "Test event",
         }),

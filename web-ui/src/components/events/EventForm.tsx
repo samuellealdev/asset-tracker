@@ -4,13 +4,6 @@ import { createEventSchema } from "@/lib/schemas/event";
 import type { Device } from "@/lib/schemas/device";
 import type { CreateEventInput } from "@/lib/schemas/event";
 
-const EVENT_TYPES = [
-  "device.created",
-  "device.updated",
-  "device.deleted",
-  "custom",
-] as const;
-
 interface EventFormProps {
   devices: Device[];
   onSubmit: (input: CreateEventInput) => Promise<void>;
@@ -66,8 +59,9 @@ export function EventForm({ devices, onSubmit, isPending }: EventFormProps) {
         >
           Type
         </label>
-        <select
+        <input
           id="type"
+          type="text"
           value={type}
           onChange={(e) => setType(e.target.value)}
           className={`mt-1 block w-full rounded-lg border bg-slate-800 px-3 py-2 text-sm text-slate-100 shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
@@ -75,14 +69,8 @@ export function EventForm({ devices, onSubmit, isPending }: EventFormProps) {
               ? "border-red-300 focus:border-red-500"
               : "border-slate-600 focus:border-indigo-500"
           }`}
-        >
-          <option value="">Select type...</option>
-          {EVENT_TYPES.map((t) => (
-            <option key={t} value={t}>
-              {t}
-            </option>
-          ))}
-        </select>
+          placeholder="e.g. maintenance, inspection, alert"
+        />
         {errors.type && (
           <p className="mt-1 text-sm text-red-400">{errors.type}</p>
         )}
