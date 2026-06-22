@@ -247,3 +247,15 @@ Three UX bugs were fixed in a follow-up branch (`feat/web-ui`) after the origina
 - **Files**: `Modal.tsx`, `EventPopup.tsx`
 - **Tests**: 314 passed, 3 pre-existing flaky timeouts
 - **Commit**: `a69f94b`
+
+### Fix 7: Events refactor — remove EventPopup, add New Event to detail page (feat/web-ui)
+- **Problem**: EventPopup UX issues (form cutoff, scroll behavior) couldn't be resolved satisfactorily. User decided to change approach.
+- **Fix**:
+  1. Removed "Events" (📋) button from `DeviceGridCard` and `onViewEvents` prop from `DeviceGrid`
+  2. Deleted `EventPopup.tsx` component and its test file entirely
+  3. Events now viewed only via "Details" button → device detail page (`/devices/$id`)
+  4. Added "New Event" button on device detail page → opens a modal with EventForm (type chips, name, actor, description)
+  5. Pre-fills deviceId automatically, refreshes timeline on success
+- **Files**: `DeviceGridCard.tsx`, `DeviceGrid.tsx`, `devices.tsx`, `devices.$id.tsx`, deleted `EventPopup.tsx` + `EventPopup.test.tsx`
+- **Tests**: 302 passed (46 files), tsc clean, vite build succeeds
+- **Commit**: `33c8043`
