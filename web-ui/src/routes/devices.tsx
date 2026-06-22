@@ -3,7 +3,6 @@ import { useDevices, useCreateDevice, useUpdateDevice, useDeleteDevice } from "@
 import { DeviceGrid } from "@/components/devices/DeviceGrid";
 import { DeviceFormModal } from "@/components/devices/DeviceFormModal";
 import { DeleteDialog } from "@/components/devices/DeleteDialog";
-import { EventPopup } from "@/components/events/EventPopup";
 import { useState } from "react";
 
 interface SelectedDevice {
@@ -18,7 +17,6 @@ export function DevicesPage() {
   const updateDevice = useUpdateDevice();
   const deleteDevice = useDeleteDevice();
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
-  const [selectedDevice, setSelectedDevice] = useState<SelectedDevice | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingDevice, setEditingDevice] = useState<SelectedDevice | null>(null);
 
@@ -34,13 +32,6 @@ export function DevicesPage() {
   if (pathname !== "/devices") {
     return <Outlet />;
   }
-
-  const handleViewEvents = (deviceId: string) => {
-    const device = devices?.find((d) => d.id === deviceId);
-    if (device) {
-      setSelectedDevice({ id: device.id, name: device.name });
-    }
-  };
 
   const handleEdit = (deviceId: string) => {
     const device = devices?.find((d) => d.id === deviceId);
@@ -70,7 +61,6 @@ export function DevicesPage() {
         isError={isError}
         onRetry={() => refetch()}
         onDelete={(id) => setDeleteTarget(id)}
-        onViewEvents={handleViewEvents}
         onEdit={handleEdit}
       />
 
@@ -110,12 +100,6 @@ export function DevicesPage() {
         isPending={updateDevice.isPending}
       />
 
-      <EventPopup
-        deviceId={selectedDevice?.id ?? ""}
-        deviceName={selectedDevice?.name ?? ""}
-        isOpen={!!selectedDevice}
-        onClose={() => setSelectedDevice(null)}
-      />
     </div>
   );
 }

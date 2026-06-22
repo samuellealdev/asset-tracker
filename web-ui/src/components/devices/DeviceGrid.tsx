@@ -8,7 +8,6 @@ interface DeviceGridProps {
   isError: boolean;
   onRetry: () => void;
   onDelete: (id: string) => void;
-  onViewEvents: (deviceId: string) => void;
   onEdit: (deviceId: string) => void;
 }
 
@@ -113,7 +112,6 @@ export function DeviceGrid({
   isError,
   onRetry,
   onDelete,
-  onViewEvents,
   onEdit,
 }: DeviceGridProps) {
   const navigate = useNavigate();
@@ -139,7 +137,6 @@ export function DeviceGrid({
           key={device.id}
           device={device}
           onDelete={onDelete}
-          onViewEvents={onViewEvents}
           onEdit={onEdit}
         />
       ))}

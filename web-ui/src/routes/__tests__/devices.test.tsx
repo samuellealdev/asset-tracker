@@ -37,16 +37,6 @@ let mockIsLoading = false;
 let mockIsError = false;
 let mockRefetch = vi.fn();
 
-vi.mock("@/components/events/EventPopup", () => ({
-  EventPopup: ({ isOpen, deviceName, onClose }: any) =>
-    isOpen ? (
-      <div data-testid="event-popup">
-        <span>{deviceName}</span>
-        <button onClick={onClose}>Close</button>
-      </div>
-    ) : null,
-}));
-
 vi.mock("@/hooks/use-devices", () => ({
   useDevices: () => ({
     data: mockDevices,
@@ -156,58 +146,5 @@ describe("DevicesPage", () => {
     expect(screen.getByRole("heading", { name: "Create Device" })).toBeInTheDocument();
   });
 
-  it("renders Events button on each card", () => {
-    render(<DevicesPage />, { wrapper: createWrapper() });
 
-    const eventsButtons = screen.getAllByRole("button", { name: /events/i });
-    expect(eventsButtons).toHaveLength(2);
-  });
-
-  it("opens EventPopup when Events button is clicked", async () => {
-    render(<DevicesPage />, { wrapper: createWrapper() });
-
-    const user = userEvent.setup();
-    const eventsButtons = screen.getAllByRole("button", { name: /events/i });
-
-    await user.click(eventsButtons[0]!);
-
-    expect(screen.getByTestId("event-popup")).toBeInTheDocument();
-  });
-
-  it("shows correct device name in EventPopup", async () => {
-    render(<DevicesPage />, { wrapper: createWrapper() });
-
-    const user = userEvent.setup();
-    const eventsButtons = screen.getAllByRole("button", { name: /events/i });
-
-    await user.click(eventsButtons[0]!);
-
-    const popup = screen.getByTestId("event-popup");
-    expect(popup).toHaveTextContent("Device 1");
-  });
-
-  it("closes EventPopup when close is clicked", async () => {
-    render(<DevicesPage />, { wrapper: createWrapper() });
-
-    const user = userEvent.setup();
-    const eventsButtons = screen.getAllByRole("button", { name: /events/i });
-
-    await user.click(eventsButtons[0]!);
-    expect(screen.getByTestId("event-popup")).toBeInTheDocument();
-
-    await user.click(screen.getByText("Close"));
-    expect(screen.queryByTestId("event-popup")).not.toBeInTheDocument();
-  });
-
-  it("opens EventPopup for a different device by clicking its Events button", async () => {
-    render(<DevicesPage />, { wrapper: createWrapper() });
-
-    const user = userEvent.setup();
-    const eventsButtons = screen.getAllByRole("button", { name: /events/i });
-
-    await user.click(eventsButtons[1]!);
-
-    const popup = screen.getByTestId("event-popup");
-    expect(popup).toHaveTextContent("Device 2");
-  });
 });

@@ -28,7 +28,6 @@ describe("DeviceGrid", () => {
         isError={false}
         onRetry={vi.fn()}
         onDelete={vi.fn()}
-        onViewEvents={vi.fn()}
         onEdit={vi.fn()}
       />,
     );
@@ -46,7 +45,6 @@ describe("DeviceGrid", () => {
         isError={false}
         onRetry={vi.fn()}
         onDelete={vi.fn()}
-        onViewEvents={vi.fn()}
         onEdit={vi.fn()}
       />,
     );
@@ -64,7 +62,6 @@ describe("DeviceGrid", () => {
         isError={false}
         onRetry={vi.fn()}
         onDelete={vi.fn()}
-        onViewEvents={vi.fn()}
         onEdit={vi.fn()}
       />,
     );
@@ -84,7 +81,6 @@ describe("DeviceGrid", () => {
         isError={false}
         onRetry={vi.fn()}
         onDelete={vi.fn()}
-        onViewEvents={vi.fn()}
         onEdit={vi.fn()}
       />,
     );
@@ -103,7 +99,6 @@ describe("DeviceGrid", () => {
         isError={true}
         onRetry={vi.fn()}
         onDelete={vi.fn()}
-onViewEvents={vi.fn()}
         onEdit={vi.fn()}
       />
     );
@@ -121,7 +116,6 @@ onViewEvents={vi.fn()}
         isError={true}
         onRetry={onRetry}
         onDelete={vi.fn()}
-        onViewEvents={vi.fn()}
         onEdit={vi.fn()}
       />,
     );
@@ -132,9 +126,8 @@ onViewEvents={vi.fn()}
     expect(onRetry).toHaveBeenCalledOnce();
   });
 
-  it("passes onDelete and onViewEvents to DeviceGridCard", async () => {
+  it("passes onDelete and onEdit to DeviceGridCard", async () => {
     const onDelete = vi.fn();
-    const onViewEvents = vi.fn();
     const onEdit = vi.fn();
     render(
       <DeviceGrid
@@ -143,7 +136,6 @@ onViewEvents={vi.fn()}
         isError={false}
         onRetry={vi.fn()}
         onDelete={onDelete}
-        onViewEvents={onViewEvents}
         onEdit={onEdit}
       />,
     );
@@ -152,7 +144,7 @@ onViewEvents={vi.fn()}
     await user.click(screen.getByRole("button", { name: /delete/i }));
     expect(onDelete).toHaveBeenCalledWith("1");
 
-    await user.click(screen.getByRole("button", { name: /events/i }));
-    expect(onViewEvents).toHaveBeenCalledWith("1");
+    await user.click(screen.getByRole("button", { name: /^edit$/i }));
+    expect(onEdit).toHaveBeenCalledWith("1");
   });
 });

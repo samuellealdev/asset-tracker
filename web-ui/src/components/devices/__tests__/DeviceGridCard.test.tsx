@@ -23,7 +23,7 @@ describe("DeviceGridCard", () => {
 
   it("renders device name as heading", () => {
     render(
-      <DeviceGridCard device={mockDevice} onDelete={vi.fn()} onViewEvents={vi.fn()} onEdit={vi.fn()} />,
+      <DeviceGridCard device={mockDevice} onDelete={vi.fn()} onEdit={vi.fn()} />,
     );
 
     expect(screen.getByRole("heading", { name: "Laptop-01" })).toBeInTheDocument();
@@ -31,7 +31,7 @@ describe("DeviceGridCard", () => {
 
   it("renders device type as badge", () => {
     render(
-      <DeviceGridCard device={mockDevice} onDelete={vi.fn()} onViewEvents={vi.fn()} onEdit={vi.fn()} />,
+      <DeviceGridCard device={mockDevice} onDelete={vi.fn()} onEdit={vi.fn()} />,
     );
 
     expect(screen.getByText("laptop")).toBeInTheDocument();
@@ -39,7 +39,7 @@ describe("DeviceGridCard", () => {
 
   it("renders device created date", () => {
     render(
-      <DeviceGridCard device={mockDevice} onDelete={vi.fn()} onViewEvents={vi.fn()} onEdit={vi.fn()} />,
+      <DeviceGridCard device={mockDevice} onDelete={vi.fn()} onEdit={vi.fn()} />,
     );
 
     // Date rendered via toLocaleDateString() which is locale-dependent
@@ -51,7 +51,7 @@ describe("DeviceGridCard", () => {
   it("calls onDelete with device id when Delete button is clicked", async () => {
     const onDelete = vi.fn();
     render(
-      <DeviceGridCard device={mockDevice} onDelete={onDelete} onViewEvents={vi.fn()} onEdit={vi.fn()} />,
+      <DeviceGridCard device={mockDevice} onDelete={onDelete} onEdit={vi.fn()} />,
     );
 
     const user = userEvent.setup();
@@ -61,22 +61,9 @@ describe("DeviceGridCard", () => {
     expect(onDelete).toHaveBeenCalledOnce();
   });
 
-  it("calls onViewEvents with device id when Events button is clicked", async () => {
-    const onViewEvents = vi.fn();
-    render(
-      <DeviceGridCard device={mockDevice} onDelete={vi.fn()} onViewEvents={onViewEvents} onEdit={vi.fn()} />,
-    );
-
-    const user = userEvent.setup();
-    await user.click(screen.getByRole("button", { name: /events/i }));
-
-    expect(onViewEvents).toHaveBeenCalledWith("dev-1");
-    expect(onViewEvents).toHaveBeenCalledOnce();
-  });
-
   it("navigates to device detail when Details button is clicked", async () => {
     render(
-      <DeviceGridCard device={mockDevice} onDelete={vi.fn()} onViewEvents={vi.fn()} onEdit={vi.fn()} />,
+      <DeviceGridCard device={mockDevice} onDelete={vi.fn()} onEdit={vi.fn()} />,
     );
 
     const user = userEvent.setup();
@@ -91,7 +78,7 @@ describe("DeviceGridCard", () => {
   it("calls onEdit when Edit button is clicked", async () => {
     const onEdit = vi.fn();
     render(
-      <DeviceGridCard device={mockDevice} onDelete={vi.fn()} onViewEvents={vi.fn()} onEdit={onEdit} />,
+      <DeviceGridCard device={mockDevice} onDelete={vi.fn()} onEdit={onEdit} />,
     );
 
     const user = userEvent.setup();
@@ -100,15 +87,14 @@ describe("DeviceGridCard", () => {
     expect(onEdit).toHaveBeenCalledWith("dev-1");
   });
 
-  it("renders all four action buttons", () => {
+  it("renders all three action buttons", () => {
     render(
-      <DeviceGridCard device={mockDevice} onDelete={vi.fn()} onViewEvents={vi.fn()} onEdit={vi.fn()} />,
+      <DeviceGridCard device={mockDevice} onDelete={vi.fn()} onEdit={vi.fn()} />,
     );
 
     expect(screen.getByRole("button", { name: /details/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^edit$/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /delete/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /events/i })).toBeInTheDocument();
   });
 
   it("long device names renders full name without clipping DOM content", () => {
@@ -120,7 +106,7 @@ describe("DeviceGridCard", () => {
     };
 
     render(
-      <DeviceGridCard device={longNameDevice} onDelete={vi.fn()} onViewEvents={vi.fn()} onEdit={vi.fn()} />,
+      <DeviceGridCard device={longNameDevice} onDelete={vi.fn()} onEdit={vi.fn()} />,
     );
 
     // CSS truncation is visual-only, the DOM must contain the full name
@@ -138,7 +124,7 @@ describe("DeviceGridCard", () => {
     };
 
     render(
-      <DeviceGridCard device={serverDevice} onDelete={vi.fn()} onViewEvents={vi.fn()} onEdit={vi.fn()} />,
+      <DeviceGridCard device={serverDevice} onDelete={vi.fn()} onEdit={vi.fn()} />,
     );
 
     expect(screen.getByText("server")).toBeInTheDocument();

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
@@ -26,6 +26,7 @@ const mockDevice = {
 let mockIsLoading = false;
 let mockIsError = false;
 let mockRefetch = vi.fn();
+let mockCreateEvent = vi.fn().mockResolvedValue({ id: "evt-2" });
 
 vi.mock("@/hooks/use-devices", () => ({
   useDevice: () => ({
@@ -63,7 +64,7 @@ vi.mock("@/hooks/use-events", () => ({
     isError: false,
   }),
   useCreateEvent: () => ({
-    mutateAsync: vi.fn(),
+    mutateAsync: mockCreateEvent,
     isPending: false,
   }),
 }));
@@ -89,7 +90,7 @@ function createWrapper() {
 
 describe("DeviceDetailPage", () => {
   beforeEach(() => {
-    vi.restoreAllMocks();
+    vi.clearAllMocks();
     mockIsLoading = false;
     mockIsError = false;
     mockRefetch = vi.fn();
@@ -158,6 +159,105 @@ describe("DeviceDetailPage", () => {
     expect(screen.getByText(/event timeline/i)).toBeInTheDocument();
     expect(screen.getByText("Device created")).toBeInTheDocument();
     expect(screen.getByText("device.created")).toBeInTheDocument();
+  });
+
+  it("shows New Event button in the event timeline section", () => {
+    render(<DeviceDetailPage />, { wrapper: createWrapper() });
+
+    expect(
+      screen.getByRole("button", { name: /new event/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("opens event creation modal when New Event is clicked", async () => {
+    render(<DeviceDetailPage />, { wrapper: createWrapper() });
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /new event/i }));
+
+    expect(screen.getByRole("heading", { name: "Create Event" })).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/Event name/i)).toBeInTheDocument();
+  });
+
+  it("displays preset type chips in the event form", async () => {
+    render(<DeviceDetailPage />, { wrapper: createWrapper() });
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /new event/i }));
+
+    expect(screen.getByText("maintenance")).toBeInTheDocument();
+    expect(screen.getByText("inspection")).toBeInTheDocument();
+    expect(screen.getByText("repair")).toBeInTheDocument();
+    expect(screen.getByText("relocation")).toBeInTheDocument();
+  });
+
+  it("closes modal when Cancel is clicked", async () => {
+    render(<DeviceDetailPage />, { wrapper: createWrapper() });
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /new event/i }));
+    expect(screen.getByRole("heading", { name: "Create Event" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /cancel/i }));
+    await waitFor(() => {
+      expect(screen.queryByRole("heading", { name: "Create Event" })).not.toBeInTheDocument();
+    });
+  });
+
+  it("shows validation errors when submitting empty event form", async () => {
+    render(<DeviceDetailPage />, { wrapper: createWrapper() });
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /new event/i }));
+    await user.click(screen.getByRole("button", { name: /create event/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Type is required/i)).toBeInTheDocument();
+      expect(screen.getByText(/Name is required/i)).toBeInTheDocument();
+    });
+  });
+
+  it("submits event form and closes modal on success", async () => {
+    render(<DeviceDetailPage />, { wrapper: createWrapper() });
+
+    fireEvent.click(screen.getByRole("button", { name: /new event/i }));
+
+    // Verify modal is open
+    expect(screen.getByTestId("modal-panel")).toBeInTheDocument();
+
+    // Fill type
+    fireEvent.click(screen.getByText("maintenance"));
+    // Fill name
+    fireEvent.change(screen.getByPlaceholderText(/Event name/i), {
+      target: { value: "Monthly maintenance" },
+    });
+    // Fill description
+    fireEvent.change(screen.getByPlaceholderText("Event description (optional)"), {
+      target: { value: "Routine check completed" },
+    });
+
+    // Submit
+    fireEvent.click(screen.getByRole("button", { name: /create event/i }));
+
+    // Modal should close after successful creation
+    await waitFor(() => {
+      expect(screen.queryByTestId("modal-panel")).not.toBeInTheDocument();
+    });
+  });
+
+  it("shows device name in the event form", async () => {
+    render(<DeviceDetailPage />, { wrapper: createWrapper() });
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /new event/i }));
+
+    // The device indicator shows "Device: Device 1" in a div
+    const deviceIndicator = screen
+      .getAllByText(/Device:/i)
+      .find((el) => el.closest("[data-testid='modal-panel']"));
+
+    expect(deviceIndicator).toBeInTheDocument();
+    expect(deviceIndicator?.textContent).toMatch(/Device:\s*Device 1/);
   });
 
   it("cancels deletion when cancel is clicked", async () => {
