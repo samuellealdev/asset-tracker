@@ -259,3 +259,10 @@ Three UX bugs were fixed in a follow-up branch (`feat/web-ui`) after the origina
 - **Files**: `DeviceGridCard.tsx`, `DeviceGrid.tsx`, `devices.tsx`, `devices.$id.tsx`, deleted `EventPopup.tsx` + `EventPopup.test.tsx`
 - **Tests**: 302 passed (46 files), tsc clean, vite build succeeds
 - **Commit**: `33c8043`
+
+### Fix 8: Modal focus trap stealing focus from inputs (feat/web-ui)
+- **Problem**: Typing in any form field inside "New Event" modal caused focus to jump to the close (X) button.
+- **Root cause**: Modal's `useEffect` depended on `[isOpen, handleKeyDown]`. `handleKeyDown` was recreated on every parent render (closure capturing `onClose`). Typing updated parent state → Modal re-rendered → effect re-ran → focus trap reset to first focusable element (X button).
+- **Fix**: Moved `handleKeyDown` to a ref so the effect only depends on `isOpen`. Initial focus now prefers `input/textarea/select` over the close button.
+- **Files**: `Modal.tsx`
+- **Commit**: `36ba311`
