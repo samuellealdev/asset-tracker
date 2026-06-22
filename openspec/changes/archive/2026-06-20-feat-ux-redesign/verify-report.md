@@ -237,3 +237,13 @@ Three UX bugs were fixed in a follow-up branch (`feat/web-ui`) after the origina
 - **Files**: `Modal.tsx`, `EventPopup.tsx`, `EventPopup.test.tsx`, `index.css`
 - **Tests**: 315 passed (47 files), 2 pre-existing flaky timeouts
 - **Commit**: `4f17ae3`
+
+### Fix 6: EventPopup form expansion (feat/web-ui)
+- **Problem**: When clicking "Add New Event", form fields (type chips, name, actor, description) were cut off. Three compounding layout constraints: modal `max-h-[85vh]` too short, `max-w-2xl` too narrow (672px caused 8 type chips to wrap to 3+ lines), form transition `max-h-[500px]` insufficient.
+- **Fix**:
+  1. Modal: `max-h-[85vh]` → `max-h-[90vh]`, `max-w-2xl` → `max-w-3xl` (768px)
+  2. Form transition: `max-h-[500px]` → `max-h-[600px]`
+  3. Outer container: added `overflow-y-auto` as scroll fallback
+- **Files**: `Modal.tsx`, `EventPopup.tsx`
+- **Tests**: 314 passed, 3 pre-existing flaky timeouts
+- **Commit**: `a69f94b`
