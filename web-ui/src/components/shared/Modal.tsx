@@ -12,6 +12,9 @@ interface ModalProps {
 const FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
+const INPUT_SELECTOR =
+  'input:not([disabled]):not([type="hidden"]), textarea:not([disabled]), select:not([disabled])';
+
 export function Modal({ isOpen, onClose, children, title }: ModalProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const previousActiveElement = useRef<HTMLElement | null>(null);
@@ -51,32 +54,42 @@ export function Modal({ isOpen, onClose, children, title }: ModalProps) {
     [onClose],
   );
 
+  // Keep latest handler in a ref so the effect never re-runs due to callback identity
+  const handleKeyDownRef = useRef(handleKeyDown);
+  handleKeyDownRef.current = handleKeyDown;
+
   useEffect(() => {
-    if (isOpen) {
-      previousActiveElement.current = document.activeElement as HTMLElement;
+    if (!isOpen) return;
 
-      // Focus the first focusable element inside the modal
-      requestAnimationFrame(() => {
-        if (panelRef.current) {
-          const focusable =
-            panelRef.current.querySelectorAll<HTMLElement>(
-              FOCUSABLE_SELECTOR,
-            );
-          if (focusable.length > 0) {
-            focusable[0]!.focus();
-          } else {
-            panelRef.current.focus();
-          }
-        }
-      });
+    previousActiveElement.current = document.activeElement as HTMLElement;
 
-      document.addEventListener("keydown", handleKeyDown);
-      return () => {
-        document.removeEventListener("keydown", handleKeyDown);
-        previousActiveElement.current?.focus();
-      };
-    }
-  }, [isOpen, handleKeyDown]);
+    // Focus the first input, textarea, or select inside the modal (skip close button)
+    requestAnimationFrame(() => {
+      if (!panelRef.current) return;
+
+      const input =
+        panelRef.current.querySelector<HTMLElement>(INPUT_SELECTOR);
+      if (input) {
+        input.focus();
+        return;
+      }
+
+      const focusable =
+        panelRef.current.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
+      if (focusable.length > 0) {
+        focusable[0]!.focus();
+      } else {
+        panelRef.current.focus();
+      }
+    });
+
+    const onKeyDown = (e: KeyboardEvent) => handleKeyDownRef.current(e);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      previousActiveElement.current?.focus();
+    };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
