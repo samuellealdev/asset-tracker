@@ -94,7 +94,7 @@ export function Modal({ isOpen, onClose, children, title }: ModalProps) {
         aria-modal="true"
         aria-labelledby={title ? titleId : undefined}
         tabIndex={-1}
-        className="relative z-10 mx-4 w-full max-w-2xl max-md:max-h-[95vh] md:max-h-[85vh] rounded-lg bg-slate-800 p-6 shadow-xl transition-all duration-200 flex flex-col overflow-hidden"
+        className="relative z-10 mx-4 w-full max-w-3xl max-md:max-h-[95vh] md:max-h-[90vh] rounded-lg bg-slate-800 p-6 shadow-xl transition-all duration-200 flex flex-col overflow-hidden"
       >
         <div className="mb-4 flex items-center justify-between">
           {title && (

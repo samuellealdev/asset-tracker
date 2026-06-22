@@ -107,7 +107,7 @@ export function EventPopup({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={`Events for ${deviceName}`}>
-      <div className="flex flex-col gap-6 min-h-0 flex-1">
+      <div className="flex flex-col gap-6 min-h-0 flex-1 overflow-y-auto">
         {/* Event Timeline section — scrollable */}
         <div className="flex-1 overflow-y-auto min-h-0 scrollbar-thin">
           {isError ? (
@@ -139,7 +139,7 @@ export function EventPopup({
         <div
           className="transition-all duration-300 overflow-hidden"
           style={{
-            maxHeight: showForm ? "500px" : "0",
+            maxHeight: showForm ? "600px" : "0",
             opacity: showForm ? 1 : 0,
           }}
         >
