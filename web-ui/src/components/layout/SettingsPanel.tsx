@@ -24,6 +24,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
   const [editMetricsInterval, setEditMetricsInterval] = useState(metricsInterval);
   const [healthError, setHealthError] = useState<string | null>(null);
   const [metricsError, setMetricsError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -67,6 +68,8 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
     if (valid) {
       updateHealthInterval(editHealthInterval);
       updateMetricsInterval(editMetricsInterval);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
     }
   };
 
@@ -137,6 +140,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                   {healthError}
                 </p>
               )}
+              <p className="text-xs text-slate-500 mt-1">Default: 2000ms</p>
             </div>
             <div>
               <label
@@ -161,6 +165,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                   {metricsError}
                 </p>
               )}
+              <p className="text-xs text-slate-500 mt-1">Default: 5000ms</p>
             </div>
             <button
               onClick={handleSaveIntervals}
@@ -168,6 +173,14 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
             >
               Save Intervals
             </button>
+            {saved && (
+              <p
+                className="text-green-400 text-sm mt-2 transition-opacity duration-500"
+                data-testid="save-success"
+              >
+                ✓ Settings saved
+              </p>
+            )}
           </Section>
 
           {/* Auth Status */}

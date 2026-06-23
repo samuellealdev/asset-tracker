@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 const mockNavigate = vi.fn();
@@ -33,6 +33,7 @@ function createWrapper() {
 describe("SettingsPanel", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    vi.useRealTimers();
     localStorage.clear();
     mockNavigate.mockClear();
   });
@@ -145,6 +146,46 @@ describe("SettingsPanel", () => {
     expect(screen.getByLabelText(/health check every/i)).toHaveValue(4000);
     expect(screen.getByLabelText(/metrics refresh every/i)).toHaveValue(8000);
   });
+
+  it("shows default value hints for polling intervals", () => {
+    render(<SettingsPanel isOpen={true} onClose={() => {}} />, {
+      wrapper: createWrapper(),
+    });
+
+    expect(screen.getByText("Default: 2000ms")).toBeInTheDocument();
+    expect(screen.getByText("Default: 5000ms")).toBeInTheDocument();
+  });
+
+  it("shows success message after saving intervals", async () => {
+    render(<SettingsPanel isOpen={true} onClose={() => {}} />, {
+      wrapper: createWrapper(),
+    });
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /save intervals/i }));
+
+    expect(
+      screen.getByTestId("save-success"),
+    ).toHaveTextContent(/settings saved/i);
+  });
+
+  it("hides success message after timeout", async () => {
+    render(<SettingsPanel isOpen={true} onClose={() => {}} />, {
+      wrapper: createWrapper(),
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /save intervals/i }));
+
+    expect(screen.getByTestId("save-success")).toBeInTheDocument();
+
+    // Wait for the 2-second auto-dismiss timeout
+    await waitFor(
+      () => {
+        expect(screen.queryByTestId("save-success")).not.toBeInTheDocument();
+      },
+      { timeout: 5000, interval: 100 },
+    );
+  }, 10000);
 
   it("closes when close button is clicked", async () => {
     const onClose = vi.fn();
