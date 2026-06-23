@@ -50,3 +50,8 @@ export async function createEvent(
     token,
   );
 }
+
+export async function getDeletedDevices(token: string): Promise<Event[]> {
+  const url = `${API_BASE}/events?type=device.deleted`;
+  return authFetch<Event[]>(url, { method: "GET" }, token);
+}

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
-import { getEvents, createEvent } from "@/lib/api/events";
+import { getEvents, createEvent, getDeletedDevices } from "@/lib/api/events";
 import type { CreateEventInput } from "@/lib/schemas/event";
 
 export function useEvents(deviceId?: string) {
@@ -23,5 +23,16 @@ export function useCreateEvent() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["events"] });
     },
+  });
+}
+
+export function useDeletedDevices() {
+  const { token } = useAuth();
+
+  return useQuery({
+    queryKey: ["events", "device.deleted"],
+    queryFn: () => getDeletedDevices(token!),
+    staleTime: 30_000,
+    enabled: !!token,
   });
 }

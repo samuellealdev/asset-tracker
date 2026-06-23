@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { getEvents, createEvent } from "./events";
+import { getEvents, createEvent, getDeletedDevices } from "./events";
 import type { Event, CreateEventInput } from "@/lib/schemas/event";
 
 describe("events API", () => {
@@ -125,6 +125,57 @@ describe("events API", () => {
       await expect(
         createEvent({ type: "checkout", deviceId: "d-1", name: "Test" }, "bad-token"),
       ).rejects.toThrow();
+      expect(dispatchSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ type: "auth:logout" }),
+      );
+    });
+  });
+
+  describe("getDeletedDevices", () => {
+    it("fetches deleted device events via GET /events with type=device.deleted", async () => {
+      const mockFetch = vi.fn().mockResolvedValue(
+        new Response(JSON.stringify([mockEvent]), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+      vi.stubGlobal("fetch", mockFetch);
+
+      const result = await getDeletedDevices("test-token");
+
+      expect(result).toEqual([mockEvent]);
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/node/events?type=device.deleted",
+        expect.objectContaining({
+          method: "GET",
+          headers: expect.objectContaining({
+            Authorization: "Bearer test-token",
+          }),
+        }),
+      );
+    });
+
+    it("returns empty array when no deleted devices exist", async () => {
+      const mockFetch = vi.fn().mockResolvedValue(
+        new Response(JSON.stringify([]), { status: 200 }),
+      );
+      vi.stubGlobal("fetch", mockFetch);
+
+      const result = await getDeletedDevices("test-token");
+      expect(result).toEqual([]);
+    });
+
+    it("dispatches auth:logout on 401", async () => {
+      const dispatchSpy = vi.fn();
+      window.dispatchEvent = dispatchSpy;
+      const mockFetch = vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+        }),
+      );
+      vi.stubGlobal("fetch", mockFetch);
+
+      await expect(getDeletedDevices("bad-token")).rejects.toThrow();
       expect(dispatchSpy).toHaveBeenCalledWith(
         expect.objectContaining({ type: "auth:logout" }),
       );

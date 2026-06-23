@@ -7,6 +7,10 @@ vi.mock("@tanstack/react-router", () => ({
   createFileRoute: () => (config: any) => config,
 }));
 
+vi.mock("@/components/devices/DeletedDevicesList", () => ({
+  DeletedDevicesList: () => <div data-testid="deleted-devices">Deleted Devices</div>,
+}));
+
 import { DashboardsPage } from "../dashboards";
 
 function createWrapper() {

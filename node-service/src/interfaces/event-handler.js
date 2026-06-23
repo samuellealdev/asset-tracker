@@ -56,7 +56,7 @@ export class EventHandler {
   }
 
   /**
-   * Handle GET /events — query events by deviceId.
+   * Handle GET /events — query events by deviceId or type.
    *
    * @param {import('node:http').IncomingMessage} req
    * @param {import('node:http').ServerResponse} res
@@ -64,15 +64,21 @@ export class EventHandler {
   async handleGet(req, res) {
     const url = new URL(req.url, 'http://localhost');
     const deviceId = url.searchParams.get('deviceId');
+    const type = url.searchParams.get('type');
 
-    if (!deviceId) {
+    if (!deviceId && !type) {
       res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'deviceId is required' }));
+      res.end(JSON.stringify({ error: 'deviceId or type is required' }));
       return;
     }
 
     try {
-      const events = await this.listEventsUseCase.execute(deviceId);
+      let events;
+      if (type) {
+        events = await this.listEventsUseCase.executeByType(type);
+      } else {
+        events = await this.listEventsUseCase.execute(deviceId);
+      }
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(events));
     } catch (err) {

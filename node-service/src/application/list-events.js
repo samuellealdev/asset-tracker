@@ -1,9 +1,9 @@
 import { ValidationError } from '../domain/event.js';
 
 /**
- * Use case for listing events by device ID.
+ * Use case for listing events by device ID or type.
  *
- * Validates the deviceId format and delegates to the repository
+ * Validates the input and delegates to the repository
  * to fetch events ordered by timestamp descending.
  */
 export class ListEventsUseCase {
@@ -32,5 +32,20 @@ export class ListEventsUseCase {
     }
 
     return this.repo.findByDeviceId(deviceId);
+  }
+
+  /**
+   * List all events of a given type, ordered by timestamp descending.
+   *
+   * @param {string} type - Event type string (e.g. "device.deleted")
+   * @returns {Promise<import('../domain/event.js').Event[]>}
+   * @throws {ValidationError} When type is missing or empty
+   */
+  async executeByType(type) {
+    if (!type || typeof type !== 'string' || type.trim().length === 0) {
+      throw new ValidationError('type is required');
+    }
+
+    return this.repo.findByType(type);
   }
 }

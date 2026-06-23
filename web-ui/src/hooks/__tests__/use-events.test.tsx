@@ -2,12 +2,13 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/context/AuthContext";
-import { useEvents, useCreateEvent } from "../use-events";
+import { useEvents, useCreateEvent, useDeletedDevices } from "../use-events";
 import type { ReactNode } from "react";
 
 vi.mock("@/lib/api/events", () => ({
   getEvents: vi.fn(),
   createEvent: vi.fn(),
+  getDeletedDevices: vi.fn(),
 }));
 
 import * as eventsApi from "@/lib/api/events";
@@ -184,5 +185,80 @@ describe("useCreateEvent", () => {
     await waitFor(() => {
       expect(result.current.isError).toBe(true);
     });
+  });
+});
+
+describe("useDeletedDevices", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    localStorage.clear();
+  });
+
+  it("fetches deleted device events when authenticated", async () => {
+    const mockEvents = [
+      {
+        id: "evt-1",
+        type: "device.deleted",
+        deviceId: "dev-1",
+        name: "Old Laptop",
+        timestamp: "2025-06-01T12:00:00Z",
+        actor: "admin",
+        description: "Decommissioned",
+      },
+    ];
+    localStorage.setItem("auth_token", "test-token");
+    vi.mocked(eventsApi.getDeletedDevices).mockResolvedValueOnce(mockEvents);
+
+    const { result } = renderHook(() => useDeletedDevices(), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(result.current.data).toEqual(mockEvents);
+    expect(eventsApi.getDeletedDevices).toHaveBeenCalledWith("test-token");
+  });
+
+  it("returns empty array when no deleted devices exist", async () => {
+    localStorage.setItem("auth_token", "test-token");
+    vi.mocked(eventsApi.getDeletedDevices).mockResolvedValueOnce([]);
+
+    const { result } = renderHook(() => useDeletedDevices(), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(result.current.data).toEqual([]);
+  });
+
+  it("surfaces error when fetch fails", async () => {
+    localStorage.setItem("auth_token", "test-token");
+    const error = { status: 500, body: { error: "Server error" } };
+    vi.mocked(eventsApi.getDeletedDevices).mockRejectedValueOnce(error);
+
+    const { result } = renderHook(() => useDeletedDevices(), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => {
+      expect(result.current.isError).toBe(true);
+    });
+  });
+
+  it("does not fetch when not authenticated", async () => {
+    const { result } = renderHook(() => useDeletedDevices(), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    expect(eventsApi.getDeletedDevices).not.toHaveBeenCalled();
   });
 });
