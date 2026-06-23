@@ -1,8 +1,9 @@
 import { useState, type ReactNode } from "react";
-import { useDeletedDevices } from "@/hooks/use-events";
+import { useDeletedDevices, useEvents } from "@/hooks/use-events";
 import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
 import { DeviceGridCard } from "./DeviceGridCard";
 import { Modal } from "@/components/shared/Modal";
+import { EventTimeline } from "@/components/events/EventTimeline";
 import type { Device } from "@/lib/schemas/device";
 import type { Event } from "@/lib/schemas/event";
 
@@ -30,6 +31,12 @@ export function DeletedDevicesList({
 }: DeletedDevicesListProps) {
   const { data: events, isLoading, isError, refetch } = useDeletedDevices();
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const {
+    data: deviceEvents,
+    isLoading: eventsLoading,
+    isError: eventsError,
+    refetch: refetchEvents,
+  } = useEvents(selectedEvent?.deviceId);
 
   // Don't render anything until data arrives
   if (!events && !isLoading && !isError) {
@@ -151,6 +158,22 @@ export function DeletedDevicesList({
                 </p>
               </div>
             )}
+
+            <hr className="border-slate-700" />
+
+            <div>
+              <h3 className="mb-3 text-sm font-semibold text-slate-300">
+                Event Timeline
+              </h3>
+              <div className="max-h-[60vh] overflow-y-auto">
+                <EventTimeline
+                  events={deviceEvents ?? []}
+                  isLoading={eventsLoading}
+                  isError={eventsError}
+                  onRetry={() => refetchEvents()}
+                />
+              </div>
+            </div>
           </div>
         )}
       </Modal>
