@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 const mockNavigate = vi.fn();
@@ -170,22 +170,26 @@ describe("SettingsPanel", () => {
   });
 
   it("hides success message after timeout", async () => {
-    render(<SettingsPanel isOpen={true} onClose={() => {}} />, {
-      wrapper: createWrapper(),
-    });
+    vi.useFakeTimers();
+    try {
+      render(<SettingsPanel isOpen={true} onClose={() => {}} />, {
+        wrapper: createWrapper(),
+      });
 
-    fireEvent.click(screen.getByRole("button", { name: /save intervals/i }));
+      fireEvent.click(screen.getByRole("button", { name: /save intervals/i }));
 
-    expect(screen.getByTestId("save-success")).toBeInTheDocument();
+      expect(screen.getByTestId("save-success")).toBeInTheDocument();
 
-    // Wait for the 2-second auto-dismiss timeout
-    await waitFor(
-      () => {
-        expect(screen.queryByTestId("save-success")).not.toBeInTheDocument();
-      },
-      { timeout: 5000, interval: 100 },
-    );
-  }, 10000);
+      // Advance timer and flush React updates in one act scope
+      await act(async () => {
+        vi.advanceTimersByTime(2000);
+      });
+
+      expect(screen.queryByTestId("save-success")).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 
   it("closes when close button is clicked", async () => {
     const onClose = vi.fn();

@@ -266,3 +266,13 @@ Three UX bugs were fixed in a follow-up branch (`feat/web-ui`) after the origina
 - **Fix**: Moved `handleKeyDown` to a ref so the effect only depends on `isOpen`. Initial focus now prefers `input/textarea/select` over the close button.
 - **Files**: `Modal.tsx`
 - **Commit**: `36ba311`
+
+### Fix 9: SettingsPanel success feedback + default hints (feat/web-ui)
+- **Problem**: Save had no feedback; default values (health: 2000ms, metrics: 5000ms) were not shown to the user
+- **Fix**:
+  1. Added `saved` boolean state; on successful save shows "✓ Settings saved" (green, `text-green-400 text-sm mt-2`) with `data-testid="save-success"`; auto-dismisses after 2 seconds via `setTimeout`
+  2. Added default hints below each interval input: "Default: 2000ms" and "Default: 5000ms" (`text-xs text-slate-500 mt-1`)
+  3. Added 3 tests: default hints visible, success message appears after save, success message disappears after 2-second timeout
+- **Files**: `SettingsPanel.tsx`, `SettingsPanel.test.tsx`
+- **Tests**: 17 passed (3 new), tsc clean
+- **Commits**: `ab2e6ca`, `a7dd411` (test reliability fix)
