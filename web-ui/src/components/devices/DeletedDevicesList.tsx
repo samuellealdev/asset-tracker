@@ -1,8 +1,10 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { useDeletedDevices } from "@/hooks/use-events";
 import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
 import { DeviceGridCard } from "./DeviceGridCard";
+import { Modal } from "@/components/shared/Modal";
 import type { Device } from "@/lib/schemas/device";
+import type { Event } from "@/lib/schemas/event";
 
 interface DeletedDevicesListProps {
   showDeleted: boolean;
@@ -17,7 +19,7 @@ function mapEventToDevice(event: {
   return {
     id: event.deviceId,
     name: event.name,
-    type: "Unknown",
+    type: "Deleted",
     createdAt: event.timestamp,
   };
 }
@@ -27,6 +29,7 @@ export function DeletedDevicesList({
   onToggle,
 }: DeletedDevicesListProps) {
   const { data: events, isLoading, isError, refetch } = useDeletedDevices();
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
 
   // Don't render anything until data arrives
   if (!events && !isLoading && !isError) {
@@ -79,6 +82,7 @@ export function DeletedDevicesList({
               <DeviceGridCard
                 key={event.id}
                 device={mapEventToDevice(event)}
+                onDetails={() => setSelectedEvent(event)}
               />
             ))}
           </div>
@@ -88,11 +92,68 @@ export function DeletedDevicesList({
   }
 
   return (
-    <section className="rounded-lg border border-slate-700 bg-slate-800 p-6 shadow-sm">
-      <h2 className="mb-3 text-lg font-semibold text-slate-300">
-        Deleted Devices
-      </h2>
-      {content}
-    </section>
+    <>
+      <section className="rounded-lg border border-slate-700 bg-slate-800 p-6 shadow-sm">
+        <h2 className="mb-3 text-lg font-semibold text-slate-300">
+          Deleted Devices
+        </h2>
+        {content}
+      </section>
+
+      <Modal
+        isOpen={!!selectedEvent}
+        onClose={() => setSelectedEvent(null)}
+        title="Deleted Device"
+      >
+        {selectedEvent && (
+          <div className="space-y-4">
+            <div>
+              <span className="block text-xs font-medium text-slate-400">
+                Name
+              </span>
+              <p className="mt-0.5 text-sm text-slate-100">
+                {selectedEvent.name}
+              </p>
+            </div>
+            <div>
+              <span className="block text-xs font-medium text-slate-400">
+                Device ID
+              </span>
+              <p className="mt-0.5 break-all font-mono text-xs text-slate-100">
+                {selectedEvent.deviceId}
+              </p>
+            </div>
+            <div>
+              <span className="block text-xs font-medium text-slate-400">
+                Deleted at
+              </span>
+              <p className="mt-0.5 text-sm text-slate-100">
+                {new Date(selectedEvent.timestamp).toLocaleDateString()}
+              </p>
+            </div>
+            {selectedEvent.actor && (
+              <div>
+                <span className="block text-xs font-medium text-slate-400">
+                  Actor
+                </span>
+                <p className="mt-0.5 text-sm text-slate-100">
+                  {selectedEvent.actor}
+                </p>
+              </div>
+            )}
+            {selectedEvent.description && (
+              <div>
+                <span className="block text-xs font-medium text-slate-400">
+                  Description
+                </span>
+                <p className="mt-0.5 whitespace-pre-wrap text-sm text-slate-100">
+                  {selectedEvent.description}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+      </Modal>
+    </>
   );
 }

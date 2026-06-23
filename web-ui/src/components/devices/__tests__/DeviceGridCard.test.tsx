@@ -135,6 +135,30 @@ describe("DeviceGridCard", () => {
     );
   });
 
+  it("calls onDetails instead of navigate when provided", async () => {
+    const onDetails = vi.fn();
+    render(<DeviceGridCard device={mockDevice} onDetails={onDetails} />);
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /details/i }));
+
+    expect(onDetails).toHaveBeenCalledWith("dev-1");
+    expect(onDetails).toHaveBeenCalledOnce();
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
+  it("navigates to device detail when onDetails is not provided", async () => {
+    render(<DeviceGridCard device={mockDevice} />);
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /details/i }));
+
+    expect(mockNavigate).toHaveBeenCalledWith({
+      to: "/devices/$id",
+      params: { id: "dev-1" },
+    });
+  });
+
   it("renders with a different device type badge", () => {
     const serverDevice: Device = {
       id: "dev-3",

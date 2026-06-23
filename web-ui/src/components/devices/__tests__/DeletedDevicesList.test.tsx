@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { DeletedDevicesList } from "../DeletedDevicesList";
 
 vi.mock("@/hooks/use-events", () => ({
@@ -33,6 +34,10 @@ const baseEvents = [
     description: null,
   },
 ];
+
+function setupUserEvent() {
+  return { user: userEvent.setup() };
+}
 
 function mockDeletedDevices(data: typeof baseEvents | null = baseEvents) {
   vi.mocked(useDeletedDevices).mockReturnValue({
@@ -144,6 +149,23 @@ describe("DeletedDevicesList", () => {
     expect(detailsButtons).toHaveLength(2);
     expect(screen.queryByRole("button", { name: /^edit$/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^delete$/i })).not.toBeInTheDocument();
+  });
+
+  it("opens a modal with event details when Details is clicked", async () => {
+    mockDeletedDevices();
+    const { user } = setupUserEvent();
+
+    render(<DeletedDevicesList showDeleted={true} onToggle={vi.fn()} />);
+
+    const detailsButtons = screen.getAllByRole("button", { name: /details/i });
+    await user.click(detailsButtons[0]!);
+
+    // Modal should show device-specific info from the event
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(screen.getByText("Deleted Device")).toBeInTheDocument();
+    expect(
+      screen.getByText("550e8400-e29b-41d4-a716-446655440000"),
+    ).toBeInTheDocument();
   });
 
   it("hides deleted section content when showDeleted is false", () => {

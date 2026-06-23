@@ -6,12 +6,14 @@ interface DeviceGridCardProps {
   device: Device;
   onDelete?: (id: string) => void;
   onEdit?: (deviceId: string) => void;
+  onDetails?: (deviceId: string) => void;
 }
 
 export function DeviceGridCard({
   device,
   onDelete,
   onEdit,
+  onDetails,
 }: DeviceGridCardProps) {
   const navigate = useNavigate();
 
@@ -31,9 +33,13 @@ export function DeviceGridCard({
 
       <div className="mt-4 flex items-center gap-1 border-t border-slate-700 pt-3">
         <button
-          onClick={() =>
-            navigate({ to: "/devices/$id", params: { id: device.id } })
-          }
+          onClick={() => {
+            if (onDetails) {
+              onDetails(device.id);
+            } else {
+              navigate({ to: "/devices/$id", params: { id: device.id } });
+            }
+          }}
           className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-slate-300 transition-all duration-200 hover:bg-slate-700"
           aria-label="Details"
         >
