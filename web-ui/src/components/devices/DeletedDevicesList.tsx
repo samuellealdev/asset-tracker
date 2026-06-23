@@ -1,10 +1,37 @@
 import type { ReactNode } from "react";
 import { useDeletedDevices } from "@/hooks/use-events";
 import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
-import { DeletedDeviceCard } from "./DeletedDeviceCard";
+import { DeviceGridCard } from "./DeviceGridCard";
+import type { Device } from "@/lib/schemas/device";
 
-export function DeletedDevicesList() {
+interface DeletedDevicesListProps {
+  showDeleted: boolean;
+  onToggle: () => void;
+}
+
+function mapEventToDevice(event: {
+  deviceId: string;
+  name: string;
+  timestamp: string;
+}): Device {
+  return {
+    id: event.deviceId,
+    name: event.name,
+    type: "Unknown",
+    createdAt: event.timestamp,
+  };
+}
+
+export function DeletedDevicesList({
+  showDeleted,
+  onToggle,
+}: DeletedDevicesListProps) {
   const { data: events, isLoading, isError, refetch } = useDeletedDevices();
+
+  // Don't render anything until data arrives
+  if (!events && !isLoading && !isError) {
+    return null;
+  }
 
   let content: ReactNode;
 
@@ -30,16 +57,33 @@ export function DeletedDevicesList() {
     );
   } else {
     content = (
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {events.map((event) => (
-          <DeletedDeviceCard
-            key={event.id}
-            name={event.name}
-            deviceId={event.deviceId}
-            timestamp={event.timestamp}
-          />
-        ))}
-      </div>
+      <>
+        {events.length > 0 && (
+          <button
+            onClick={onToggle}
+            className="mb-4 inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-300 transition-all duration-200 hover:bg-slate-700"
+          >
+            {showDeleted
+              ? "Hide deleted devices"
+              : `Show deleted devices (${events.length})`}
+          </button>
+        )}
+
+        <div
+          className={`overflow-hidden transition-all duration-300 ${
+            showDeleted ? "max-h-[5000px] opacity-100" : "max-h-0 opacity-0"
+          }`}
+        >
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {events.map((event) => (
+              <DeviceGridCard
+                key={event.id}
+                device={mapEventToDevice(event)}
+              />
+            ))}
+          </div>
+        </div>
+      </>
     );
   }
 

@@ -17,6 +17,7 @@ export function DevicesPage() {
   const createDevice = useCreateDevice();
   const updateDevice = useUpdateDevice();
   const deleteDevice = useDeleteDevice();
+  const [showDeleted, setShowDeleted] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingDevice, setEditingDevice] = useState<SelectedDevice | null>(null);
@@ -65,7 +66,10 @@ export function DevicesPage() {
         onEdit={handleEdit}
       />
 
-      <DeletedDevicesList />
+      <DeletedDevicesList
+        showDeleted={showDeleted}
+        onToggle={() => setShowDeleted(!showDeleted)}
+      />
 
       <DeleteDialog
         deviceName={targetDevice?.name ?? ""}

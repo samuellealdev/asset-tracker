@@ -13,6 +13,36 @@ vi.mock("@tanstack/react-router", () => ({
 
 import { useDeletedDevices } from "@/hooks/use-events";
 
+const baseEvents = [
+  {
+    id: "evt-1",
+    type: "device.deleted",
+    deviceId: "550e8400-e29b-41d4-a716-446655440000",
+    name: "Old Laptop",
+    timestamp: "2025-06-01T12:00:00Z",
+    actor: "admin",
+    description: "Decommissioned",
+  },
+  {
+    id: "evt-2",
+    type: "device.deleted",
+    deviceId: "660e8400-e29b-41d4-a716-446655440001",
+    name: "Old Monitor",
+    timestamp: "2025-06-02T12:00:00Z",
+    actor: null,
+    description: null,
+  },
+];
+
+function mockDeletedDevices(data: typeof baseEvents | null = baseEvents) {
+  vi.mocked(useDeletedDevices).mockReturnValue({
+    data,
+    isLoading: false,
+    isError: false,
+    refetch: vi.fn(),
+  } as unknown as ReturnType<typeof useDeletedDevices>);
+}
+
 describe("DeletedDevicesList", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
@@ -26,7 +56,7 @@ describe("DeletedDevicesList", () => {
       refetch: vi.fn(),
     } as unknown as ReturnType<typeof useDeletedDevices>);
 
-    render(<DeletedDevicesList />);
+    render(<DeletedDevicesList showDeleted={false} onToggle={vi.fn()} />);
 
     expect(screen.getByText("Deleted Devices")).toBeInTheDocument();
     expect(screen.getAllByRole("status")).toHaveLength(3);
@@ -41,7 +71,7 @@ describe("DeletedDevicesList", () => {
       refetch,
     } as unknown as ReturnType<typeof useDeletedDevices>);
 
-    render(<DeletedDevicesList />);
+    render(<DeletedDevicesList showDeleted={false} onToggle={vi.fn()} />);
 
     expect(screen.getByText("Failed to load deleted devices")).toBeInTheDocument();
     const retryButton = screen.getByText("Try again");
@@ -50,59 +80,82 @@ describe("DeletedDevicesList", () => {
   });
 
   it("shows empty state when no deleted devices exist", () => {
-    vi.mocked(useDeletedDevices).mockReturnValue({
-      data: [],
-      isLoading: false,
-      isError: false,
-      refetch: vi.fn(),
-    } as unknown as ReturnType<typeof useDeletedDevices>);
+    mockDeletedDevices([]);
 
-    render(<DeletedDevicesList />);
+    render(<DeletedDevicesList showDeleted={false} onToggle={vi.fn()} />);
 
     expect(screen.getByText("No deleted devices")).toBeInTheDocument();
   });
 
-  it("renders cards for each deleted device", () => {
-    vi.mocked(useDeletedDevices).mockReturnValue({
-      data: [
-        {
-          id: "evt-1",
-          type: "device.deleted",
-          deviceId: "550e8400-e29b-41d4-a716-446655440000",
-          name: "Old Laptop",
-          timestamp: "2025-06-01T12:00:00Z",
-          actor: "admin",
-          description: "Decommissioned",
-        },
-        {
-          id: "evt-2",
-          type: "device.deleted",
-          deviceId: "660e8400-e29b-41d4-a716-446655440001",
-          name: "Old Monitor",
-          timestamp: "2025-06-02T12:00:00Z",
-          actor: null,
-          description: null,
-        },
-      ],
-      isLoading: false,
-      isError: false,
-      refetch: vi.fn(),
-    } as unknown as ReturnType<typeof useDeletedDevices>);
+  it("does not render anything when events is null (no data yet)", () => {
+    mockDeletedDevices(null);
 
-    render(<DeletedDevicesList />);
+    const { container } = render(
+      <DeletedDevicesList showDeleted={false} onToggle={vi.fn()} />,
+    );
 
-    // Card content
+    expect(container.innerHTML).toBe("");
+  });
+
+  it("renders toggle button with count when events exist", () => {
+    mockDeletedDevices();
+
+    render(<DeletedDevicesList showDeleted={false} onToggle={vi.fn()} />);
+
+    const toggle = screen.getByRole("button", { name: /show deleted devices/i });
+    expect(toggle).toBeInTheDocument();
+    expect(toggle.textContent).toContain("2");
+  });
+
+  it("calls onToggle when toggle button is clicked", () => {
+    const onToggle = vi.fn();
+    mockDeletedDevices();
+
+    render(<DeletedDevicesList showDeleted={false} onToggle={onToggle} />);
+
+    screen.getByRole("button", { name: /show deleted devices/i }).click();
+    expect(onToggle).toHaveBeenCalledOnce();
+  });
+
+  it("shows 'Hide deleted devices' when showDeleted is true", () => {
+    mockDeletedDevices();
+
+    render(<DeletedDevicesList showDeleted={true} onToggle={vi.fn()} />);
+
+    expect(screen.getByRole("button", { name: /hide deleted devices/i })).toBeInTheDocument();
+  });
+
+  it("renders DeviceGridCard for each event when showDeleted is true", () => {
+    mockDeletedDevices();
+
+    render(<DeletedDevicesList showDeleted={true} onToggle={vi.fn()} />);
+
     expect(screen.getByText("Old Laptop")).toBeInTheDocument();
     expect(screen.getByText("Old Monitor")).toBeInTheDocument();
-    expect(screen.getByText((content) => content.includes("Jun 1, 2025"))).toBeInTheDocument();
-    expect(screen.getByText((content) => content.includes("Jun 2, 2025"))).toBeInTheDocument();
+  });
 
-    // Deleted badges
-    const badges = screen.getAllByText("Deleted");
-    expect(badges).toHaveLength(2);
+  it("renders only Details button on deleted device cards", () => {
+    mockDeletedDevices();
 
-    // Details buttons
+    render(<DeletedDevicesList showDeleted={true} onToggle={vi.fn()} />);
+
+    // Only Details buttons, no Edit or the plain "Delete" action
     const detailsButtons = screen.getAllByRole("button", { name: /details/i });
     expect(detailsButtons).toHaveLength(2);
+    expect(screen.queryByRole("button", { name: /^edit$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^delete$/i })).not.toBeInTheDocument();
+  });
+
+  it("hides deleted section content when showDeleted is false", () => {
+    mockDeletedDevices();
+
+    const { container } = render(
+      <DeletedDevicesList showDeleted={false} onToggle={vi.fn()} />,
+    );
+
+    // The card wrapper has max-h-0 opacity-0 when hidden
+    const cardWrapper = container.querySelector(".overflow-hidden");
+    expect(cardWrapper?.className).toContain("max-h-0");
+    expect(cardWrapper?.className).toContain("opacity-0");
   });
 });

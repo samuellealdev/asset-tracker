@@ -4,8 +4,8 @@ import type { Device } from "@/lib/schemas/device";
 
 interface DeviceGridCardProps {
   device: Device;
-  onDelete: (id: string) => void;
-  onEdit: (deviceId: string) => void;
+  onDelete?: (id: string) => void;
+  onEdit?: (deviceId: string) => void;
 }
 
 export function DeviceGridCard({
@@ -40,22 +40,26 @@ export function DeviceGridCard({
           <Info className="h-3.5 w-3.5" />
           Details
         </button>
-        <button
-          onClick={() => onEdit(device.id)}
-          className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-slate-300 transition-all duration-200 hover:bg-slate-700"
-          aria-label="Edit"
-        >
-          <Pencil className="h-3.5 w-3.5" />
-          Edit
-        </button>
-        <button
-          onClick={() => onDelete(device.id)}
-          className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-red-400 transition-all duration-200 hover:bg-red-900/30"
-          aria-label="Delete"
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-          Delete
-        </button>
+        {onEdit && (
+          <button
+            onClick={() => onEdit(device.id)}
+            className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-slate-300 transition-all duration-200 hover:bg-slate-700"
+            aria-label="Edit"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+            Edit
+          </button>
+        )}
+        {onDelete && (
+          <button
+            onClick={() => onDelete(device.id)}
+            className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-red-400 transition-all duration-200 hover:bg-red-900/30"
+            aria-label="Delete"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            Delete
+          </button>
+        )}
       </div>
     </div>
   );

@@ -97,6 +97,26 @@ describe("DeviceGridCard", () => {
     expect(screen.getByRole("button", { name: /delete/i })).toBeInTheDocument();
   });
 
+  it("renders only Details button when no action handlers provided", () => {
+    render(
+      <DeviceGridCard device={mockDevice} />,
+    );
+
+    expect(screen.getByRole("button", { name: /details/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /edit/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /delete/i })).not.toBeInTheDocument();
+  });
+
+  it("works backward-compatible when both handlers provided", () => {
+    render(
+      <DeviceGridCard device={mockDevice} onDelete={vi.fn()} onEdit={vi.fn()} />,
+    );
+
+    expect(screen.getByRole("button", { name: /details/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^edit$/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /delete/i })).toBeInTheDocument();
+  });
+
   it("long device names renders full name without clipping DOM content", () => {
     const longNameDevice: Device = {
       id: "dev-2",
