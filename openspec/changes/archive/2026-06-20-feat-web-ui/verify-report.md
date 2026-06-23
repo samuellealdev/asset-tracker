@@ -436,3 +436,31 @@ f6dff7b fix(web-ui): add Outlet to devices route, fix E2E selectors, mock useLoc
 - `docker compose up -d --build go-service` — rebuilt and running
 
 **Commit**: `ef7465a fix(go-service): use time.Now() for device.deleted event timestamp`
+
+---
+
+## Post-Archive Fix — 2026-06-23 (Deleted Devices section)
+
+**Symptom**: Users couldn't view previously deleted devices. Since devices are hard-deleted from PostgreSQL, the only record exists in MongoDB's `events` collection as `device.deleted` events.
+
+**Fix**:
+- **Backend (node-service)**: Added `findByType(type)` to the event repository port, implemented it in MongoDB repository, added `executeByType(type)` to the list-events use case, and updated the event handler to accept optional `?type=` query param alongside `?deviceId=`
+- **Frontend (web-ui)**: Created `DeletedDevicesList` component with loading/error/empty/data states; added `getDeletedDevices()` to API client and `useDeletedDevices()` hook; integrated the list into the Dashboard page
+- 13 new tests in node-service (use case, handler, repository), 13 new tests in web-ui (API, hook, component, dashboard)
+
+**Files changed**:
+- `node-service/src/domain/event-repository.js` — added `findByType` port
+- `node-service/src/infrastructure/mongo-event-repository.js` — MongoDB implementation
+- `node-service/src/application/list-events.js` — added `executeByType`
+- `node-service/src/interfaces/event-handler.js` — new `?type=` query param
+- `web-ui/src/lib/api/events.ts` — added `getDeletedDevices()`
+- `web-ui/src/hooks/use-events.ts` — added `useDeletedDevices()`
+- `web-ui/src/components/devices/DeletedDevicesList.tsx` — new component
+- `web-ui/src/routes/dashboards.tsx` — integrated DeletedDevicesList
+
+**Verification**:
+- `node --test` — 70 tests (all pass)
+- `npx vitest run` — 315 tests (1 pre-existing flaky)
+- `npx tsc --noEmit` — clean
+
+**Commit**: `e87f820 feat: add deleted devices section (backend + frontend)`
