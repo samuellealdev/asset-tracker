@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/samuellealdev/asset-tracker/go-service/internal/application"
 	"github.com/samuellealdev/asset-tracker/go-service/internal/domain"
@@ -39,7 +40,7 @@ func TestUpdateDeviceUseCase_Execute(t *testing.T) {
 		if pub.UpdatedCallCount() != 1 {
 			t.Errorf("expected 1 PublishDeviceUpdated call, got %d", pub.UpdatedCallCount())
 		}
-		lastID, lastName, _, ok := pub.LastUpdatedCall()
+		lastID, lastName, timestamp, ok := pub.LastUpdatedCall()
 		if !ok {
 			t.Fatal("expected at least one updated call")
 		}
@@ -48,6 +49,16 @@ func TestUpdateDeviceUseCase_Execute(t *testing.T) {
 		}
 		if lastName != "server" {
 			t.Errorf("expected name 'server', got %q", lastName)
+		}
+		if timestamp.IsZero() {
+			t.Error("expected non-zero timestamp")
+		}
+		if timestamp.Equal(d.CreatedAt) {
+			t.Error("updated event timestamp should differ from device CreatedAt")
+		}
+		now := time.Now().UTC()
+		if now.Sub(timestamp) > 5*time.Second {
+			t.Errorf("updated timestamp should be recent, got %v (now=%v)", timestamp, now)
 		}
 	})
 
