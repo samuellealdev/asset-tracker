@@ -37,6 +37,10 @@ let mockIsLoading = false;
 let mockIsError = false;
 let mockRefetch = vi.fn();
 
+vi.mock("@/components/devices/DeletedDevicesList", () => ({
+  DeletedDevicesList: () => <div data-testid="deleted-devices">Deleted Devices</div>,
+}));
+
 vi.mock("@/hooks/use-devices", () => ({
   useDevices: () => ({
     data: mockDevices,
@@ -94,7 +98,7 @@ describe("DevicesPage", () => {
   it("renders the devices title and create button", () => {
     render(<DevicesPage />, { wrapper: createWrapper() });
 
-    expect(screen.getByText(/devices/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /devices/i })).toBeInTheDocument();
     expect(screen.getByText(/create device/i)).toBeInTheDocument();
   });
 

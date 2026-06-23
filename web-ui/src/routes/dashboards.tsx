@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { DeletedDevicesList } from "@/components/devices/DeletedDevicesList";
 
 export function DashboardsPage() {
   return (
@@ -15,8 +14,6 @@ export function DashboardsPage() {
           quick reference. Use the Devices tab to manage your devices.
         </p>
       </section>
-
-      <DeletedDevicesList />
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { useDeletedDevices } from "@/hooks/use-events";
-import { formatDate, truncateId } from "@/lib/utils/format";
 import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
+import { DeletedDeviceCard } from "./DeletedDeviceCard";
 
 export function DeletedDevicesList() {
   const { data: events, isLoading, isError, refetch } = useDeletedDevices();
@@ -30,29 +30,14 @@ export function DeletedDevicesList() {
     );
   } else {
     content = (
-      <div className="space-y-2">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {events.map((event) => (
-          <div
+          <DeletedDeviceCard
             key={event.id}
-            className="flex items-center justify-between rounded-lg bg-slate-700/30 px-4 py-3"
-          >
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-medium text-slate-200">
-                {event.name}
-              </span>
-              <span className="font-mono text-xs text-slate-500">
-                {truncateId(event.deviceId)}
-              </span>
-            </div>
-            <div className="flex items-center gap-4">
-              {event.actor && (
-                <span className="text-xs text-slate-500">{event.actor}</span>
-              )}
-              <span className="text-xs text-slate-500">
-                {formatDate(event.timestamp)}
-              </span>
-            </div>
-          </div>
+            name={event.name}
+            deviceId={event.deviceId}
+            timestamp={event.timestamp}
+          />
         ))}
       </div>
     );

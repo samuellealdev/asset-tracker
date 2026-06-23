@@ -1,6 +1,7 @@
 import { createFileRoute, Outlet, useLocation } from "@tanstack/react-router";
 import { useDevices, useCreateDevice, useUpdateDevice, useDeleteDevice } from "@/hooks/use-devices";
 import { DeviceGrid } from "@/components/devices/DeviceGrid";
+import { DeletedDevicesList } from "@/components/devices/DeletedDevicesList";
 import { DeviceFormModal } from "@/components/devices/DeviceFormModal";
 import { DeleteDialog } from "@/components/devices/DeleteDialog";
 import { useState } from "react";
@@ -63,6 +64,8 @@ export function DevicesPage() {
         onDelete={(id) => setDeleteTarget(id)}
         onEdit={handleEdit}
       />
+
+      <DeletedDevicesList />
 
       <DeleteDialog
         deviceName={targetDevice?.name ?? ""}

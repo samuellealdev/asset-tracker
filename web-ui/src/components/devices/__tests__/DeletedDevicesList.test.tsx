@@ -6,6 +6,11 @@ vi.mock("@/hooks/use-events", () => ({
   useDeletedDevices: vi.fn(),
 }));
 
+const mockNavigate = vi.fn();
+vi.mock("@tanstack/react-router", () => ({
+  useNavigate: () => mockNavigate,
+}));
+
 import { useDeletedDevices } from "@/hooks/use-events";
 
 describe("DeletedDevicesList", () => {
@@ -57,7 +62,7 @@ describe("DeletedDevicesList", () => {
     expect(screen.getByText("No deleted devices")).toBeInTheDocument();
   });
 
-  it("renders list of deleted devices", () => {
+  it("renders cards for each deleted device", () => {
     vi.mocked(useDeletedDevices).mockReturnValue({
       data: [
         {
@@ -86,10 +91,18 @@ describe("DeletedDevicesList", () => {
 
     render(<DeletedDevicesList />);
 
+    // Card content
     expect(screen.getByText("Old Laptop")).toBeInTheDocument();
     expect(screen.getByText("Old Monitor")).toBeInTheDocument();
-    expect(screen.getByText("admin")).toBeInTheDocument();
-    expect(screen.getByText("Jun 1, 2025")).toBeInTheDocument();
-    expect(screen.getByText("Jun 2, 2025")).toBeInTheDocument();
+    expect(screen.getByText((content) => content.includes("Jun 1, 2025"))).toBeInTheDocument();
+    expect(screen.getByText((content) => content.includes("Jun 2, 2025"))).toBeInTheDocument();
+
+    // Deleted badges
+    const badges = screen.getAllByText("Deleted");
+    expect(badges).toHaveLength(2);
+
+    // Details buttons
+    const detailsButtons = screen.getAllByRole("button", { name: /details/i });
+    expect(detailsButtons).toHaveLength(2);
   });
 });
