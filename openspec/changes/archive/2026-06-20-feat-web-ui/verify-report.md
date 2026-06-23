@@ -390,3 +390,49 @@ f6dff7b fix(web-ui): add Outlet to devices route, fix E2E selectors, mock useLoc
 - `npx tsc --noEmit` — zero errors
 
 **Commit**: `fix(web-ui): add auto-refresh to metrics and fix card field order`
+
+---
+
+## Post-Archive Fix — 2026-06-23 (device.updated event timestamp)
+
+**Symptom**: When editing a device, the `device.updated` event showed the same timestamp as `device.created`.
+
+**Root cause**: `go-service/internal/application/update_device.go` line 48 passed `device.CreatedAt` (the device's original creation timestamp, which never changes) as the timestamp parameter to `PublishDeviceUpdated`. The `device.created` event correctly uses `device.CreatedAt` (freshly set in `NewDevice`), but the update event needs `time.Now().UTC()` to capture when the update actually occurred.
+
+**Fix**:
+- Changed timestamp from `device.CreatedAt` to `time.Now().UTC()` in `PublishDeviceUpdated` call
+- Added `"time"` import to `update_device.go`
+- Added 3 timestamp assertions to the test: verify timestamp is non-zero, differs from `CreatedAt`, and is within 5 seconds of current time
+
+**Files changed**:
+- `go-service/internal/application/update_device.go` — `device.CreatedAt` → `time.Now().UTC()`
+- `go-service/internal/application/update_device_test.go` — added timestamp assertions
+
+**Verification**:
+- `go test ./...` — 5 packages, all OK
+- `go test ./internal/application/... -v -run TestUpdateDevice` — 5/5 tests passed
+
+**Commit**: `e8b4cea fix(go-service): use time.Now() for device.updated event timestamp`
+
+---
+
+## Post-Archive Fix — 2026-06-23 (device.deleted event timestamp)
+
+**Symptom**: When deleting a device, the `device.deleted` event showed the device's original creation timestamp instead of the actual deletion time.
+
+**Root cause**: `go-service/internal/application/delete_device.go` line 42 passed `device.CreatedAt` (the device's original creation timestamp, which never changes) as the timestamp parameter to `PublishDeviceDeleted`. Same bug as the `device.updated` event fixed earlier.
+
+**Fix**:
+- Changed timestamp from `device.CreatedAt` to `time.Now().UTC()` in `PublishDeviceDeleted` call
+- Added `"time"` import to `delete_device.go`
+- Added 3 timestamp assertions to the test: verify timestamp is non-zero, differs from `CreatedAt`, and is within 5 seconds of current time
+
+**Files changed**:
+- `go-service/internal/application/delete_device.go` — `device.CreatedAt` → `time.Now().UTC()`
+- `go-service/internal/application/delete_device_test.go` — added timestamp assertions
+
+**Verification**:
+- `go test ./...` — 5 packages, all OK
+- `docker compose up -d --build go-service` — rebuilt and running
+
+**Commit**: `ef7465a fix(go-service): use time.Now() for device.deleted event timestamp`

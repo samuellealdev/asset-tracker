@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/samuellealdev/asset-tracker/go-service/internal/application"
 	"github.com/samuellealdev/asset-tracker/go-service/internal/domain"
@@ -38,7 +39,7 @@ func TestDeleteDeviceUseCase_Execute(t *testing.T) {
 		if pub.DeletedCallCount() != 1 {
 			t.Errorf("expected 1 PublishDeviceDeleted call, got %d", pub.DeletedCallCount())
 		}
-		lastID, lastName, _, ok := pub.LastDeletedCall()
+		lastID, lastName, timestamp, ok := pub.LastDeletedCall()
 		if !ok {
 			t.Fatal("expected at least one deleted call")
 		}
@@ -47,6 +48,16 @@ func TestDeleteDeviceUseCase_Execute(t *testing.T) {
 		}
 		if lastName != "laptop" {
 			t.Errorf("expected name 'laptop', got %q", lastName)
+		}
+		if timestamp.IsZero() {
+			t.Error("expected non-zero timestamp")
+		}
+		if timestamp.Equal(d.CreatedAt) {
+			t.Error("deleted event timestamp should differ from device CreatedAt")
+		}
+		now := time.Now().UTC()
+		if now.Sub(timestamp) > 5*time.Second {
+			t.Errorf("deleted timestamp should be recent, got %v (now=%v)", timestamp, now)
 		}
 	})
 
