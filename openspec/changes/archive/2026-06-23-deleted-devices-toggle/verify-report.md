@@ -95,3 +95,20 @@ None.
 **Files**: `EventTimeline.tsx`, `DeletedDevicesList.tsx`, `DeletedDevicesList.test.tsx`
 **Tests**: 332/332 passed
 **Commit**: `993f692`
+
+---
+
+## Post-Verify Fix — Event timeline in deleted device modal
+
+**Problem**: Deleted device detail modal only showed basic info (name, ID, date). User wanted the full event timeline.
+
+**Fix**:
+- Added `isError` and `onRetry` optional props to `EventTimeline` component
+- In `DeletedDevicesList`, added `useEvents(deviceId)` hook call
+- Modal now renders `<EventTimeline>` below basic info, with loading/error/empty/data states
+- Added `max-h-[60vh] overflow-y-auto` for scroll on long timelines
+- 5 new tests covering all timeline states
+
+**Files**: `EventTimeline.tsx`, `DeletedDevicesList.tsx`, `DeletedDevicesList.test.tsx`
+**Tests**: 332/332 passed
+**Commit**: `993f692`
