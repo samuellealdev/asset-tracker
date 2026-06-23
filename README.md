@@ -149,6 +149,12 @@ curl -X POST localhost:3000/events \
   -H 'Content-Type: application/json' \
   -d '{"type":"device.created","deviceId":"550e8400-e29b-41d4-a716-446655440000","name":"laptop"}'
 
+# Query events by device ID
+curl "localhost:3000/events?deviceId=550e8400-e29b-41d4-a716-446655440000"
+
+# Query events by type (e.g., view deleted devices)
+curl "localhost:3000/events?type=device.deleted"
+
 # Verify Kafka events (after CRUD operations)
 docker compose exec kafka /opt/kafka/bin/kafka-console-consumer.sh \
   --bootstrap-server kafka:9092 --topic device-events --from-beginning --max-messages 3
