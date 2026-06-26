@@ -464,3 +464,22 @@ f6dff7b fix(web-ui): add Outlet to devices route, fix E2E selectors, mock useLoc
 - `npx tsc --noEmit` — clean
 
 **Commit**: `e87f820 feat: add deleted devices section (backend + frontend)`
+
+---
+
+## Post-Archive Fix — 2026-06-26 (Kafka topic not ready on startup, lost device.deleted events)
+
+**Symptom**: Deleting a device after `docker compose up` produced no `device.deleted` event in MongoDB, so the device didn't appear in Deleted Devices.
+
+**Root cause**: Go service published to Kafka before the `device-events` topic was created. Kafka auto-creation triggered but the first message was lost. The `depends_on` for go-service only waited for Kafka container to start, not for it to be healthy (topic created).
+
+**Fix**:
+1. **docker-compose.yml**: Added `depends_on: kafka: service_healthy` to go-service and node-service, so they wait for Kafka healthcheck (topic list available) before starting
+2. **kafka_event_publisher.go**: Added retry logic (3 attempts, 100ms backoff) for transient errors like "Unknown Topic Or Partition"
+3. Recovered the missing event manually in MongoDB
+
+**Files changed**:
+- `docker-compose.yml` — go-service/node-service now wait for kafka healthy
+- `go-service/internal/infrastructure/kafka_event_publisher.go` — retry with backoff
+
+**Commit**: `9f7a818 fix: pre-create Kafka topic and add retry logic to prevent lost device.deleted events`
