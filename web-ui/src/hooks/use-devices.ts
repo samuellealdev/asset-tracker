@@ -79,7 +79,7 @@ export function useDeleteDevice() {
         queryClient.invalidateQueries({
           queryKey: ["events", "device.deleted"],
         });
-      }, 2_000);
+      }, 5_000);
     },
   });
 }
