@@ -34,12 +34,12 @@ Chain strategy: pending
 
 > TDD: RED → GREEN → REFACTOR for `DeletedDevicesList.tsx`
 
-- [ ] 2.1 **RED** — Write failing test in `web-ui/src/components/devices/__tests__/DeletedDevicesList.test.tsx`: mock `useDeletedDevices` with `{ data: baseEvents, isFetching: true }`, assert skeleton cards (role="status") appear inside grid container, toggle button remains visible with stale count, no SVG spinner in button, real cards absent. Flip to `isFetching: false`, assert real cards present, skeleton absent. Run `npx vitest run` to confirm RED.
-- [ ] 2.2 **GREEN** — In `DeletedDevicesList.tsx`, inside the `events.length > 0` branch: when `isFetching`, render `LoadingSkeleton variant="grid" count={events.length}` inside the grid container div instead of `DeviceGridCard` components. Remove the inline SVG spinner (`{isFetching && <svg>...</svg>}`) from the toggle button. Run `npx vitest run` to confirm GREEN.
-- [ ] 2.3 **VERIFY** — Confirm all existing `DeletedDevicesList` tests still pass (`npx vitest run src/components/devices/__tests__/DeletedDevicesList.test.tsx`). Backward-compatible: toggle mechanics, modal, error, empty, and hidden states unchanged.
+- [x] 2.1 **RED** — Write failing test in `web-ui/src/components/devices/__tests__/DeletedDevicesList.test.tsx`: mock `useDeletedDevices` with `{ data: baseEvents, isFetching: true }`, assert skeleton cards (role="status") appear inside grid container, toggle button remains visible with stale count, no SVG spinner in button, real cards absent. Flip to `isFetching: false`, assert real cards present, skeleton absent. Run `npx vitest run` to confirm RED.
+- [x] 2.2 **GREEN** — In `DeletedDevicesList.tsx`, inside the `events.length > 0` branch: when `isFetching`, render `LoadingSkeleton variant="grid" count={events.length}` inside the grid container div instead of `DeviceGridCard` components. Remove the inline SVG spinner (`{isFetching && <svg>...</svg>}`) from the toggle button. Run `npx vitest run` to confirm GREEN.
+- [x] 2.3 **VERIFY** — Confirm all existing `DeletedDevicesList` tests still pass (`npx vitest run src/components/devices/__tests__/DeletedDevicesList.test.tsx`). Backward-compatible: toggle mechanics, modal, error, empty, and hidden states unchanged.
 
 ## Phase 3: Verification
 
-- [ ] 3.1 Run `npx tsc --noEmit` from `web-ui/` — zero type errors.
-- [ ] 3.2 Run full test suite: `npx vitest run` from `web-ui/` — all green.
-- [ ] 3.3 Run `npx vite build` from `web-ui/` — clean production build.
+- [x] 3.1 Run `npx tsc --noEmit` from `web-ui/` — zero type errors.
+- [x] 3.2 Run full test suite: `npx vitest run` from `web-ui/` — all green.
+- [x] 3.3 Run `npx vite build` from `web-ui/` — clean production build.

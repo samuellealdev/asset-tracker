@@ -41,10 +41,14 @@ function setupUserEvent() {
   return { user: userEvent.setup() };
 }
 
-function mockDeletedDevices(data: typeof baseEvents | null = baseEvents) {
+function mockDeletedDevices(
+  data: typeof baseEvents | null = baseEvents,
+  overrides?: { isFetching?: boolean },
+) {
   vi.mocked(useDeletedDevices).mockReturnValue({
     data,
     isLoading: false,
+    isFetching: overrides?.isFetching ?? false,
     isError: false,
     refetch: vi.fn(),
   } as unknown as ReturnType<typeof useDeletedDevices>);
@@ -126,6 +130,42 @@ describe("DeletedDevicesList", () => {
     const toggle = screen.getByRole("button", { name: /show deleted devices/i });
     expect(toggle).toBeInTheDocument();
     expect(toggle.textContent).toContain("2");
+  });
+
+  it("shows skeleton grid during isFetching with stale data", () => {
+    mockDeletedDevices(baseEvents, { isFetching: true });
+
+    const { container } = render(
+      <DeletedDevicesList showDeleted={false} onToggle={vi.fn()} />,
+    );
+
+    // Skeleton cards rendered instead of real cards
+    const skeletons = screen.getAllByRole("status");
+    expect(skeletons).toHaveLength(2);
+
+    // Toggle button visible with stale count
+    const toggle = screen.getByRole("button", { name: /show deleted devices/i });
+    expect(toggle).toBeInTheDocument();
+    expect(toggle.textContent).toContain("2");
+
+    // No SVG spinner in toggle button
+    expect(container.querySelector("svg")).toBeNull();
+
+    // Real cards NOT present
+    expect(screen.queryByText("Old Laptop")).toBeNull();
+  });
+
+  it("renders real cards instead of skeletons when not isFetching", () => {
+    mockDeletedDevices(baseEvents, { isFetching: false });
+
+    render(<DeletedDevicesList showDeleted={true} onToggle={vi.fn()} />);
+
+    // Real cards render
+    expect(screen.getByText("Old Laptop")).toBeInTheDocument();
+    expect(screen.getByText("Old Monitor")).toBeInTheDocument();
+
+    // No skeleton cards
+    expect(screen.queryAllByRole("status")).toHaveLength(0);
   });
 
   it("calls onToggle when toggle button is clicked", () => {

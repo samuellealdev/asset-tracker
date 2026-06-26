@@ -82,28 +82,6 @@ export function DeletedDevicesList({
             {showDeleted
               ? "Hide deleted devices"
               : `Show deleted devices (${events.length})`}
-            {isFetching && (
-              <svg
-                className="h-4 w-4 animate-spin text-slate-400"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                />
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                />
-              </svg>
-            )}
           </button>
         )}
 
@@ -112,15 +90,19 @@ export function DeletedDevicesList({
             showDeleted ? "max-h-[5000px] opacity-100" : "max-h-0 opacity-0"
           }`}
         >
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {events.map((event) => (
-              <DeviceGridCard
-                key={event.id}
-                device={mapEventToDevice(event)}
-                onDetails={() => setSelectedEvent(event)}
-              />
-            ))}
-          </div>
+          {isFetching ? (
+            <LoadingSkeleton variant="grid" count={events.length} />
+          ) : (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {events.map((event) => (
+                <DeviceGridCard
+                  key={event.id}
+                  device={mapEventToDevice(event)}
+                  onDetails={() => setSelectedEvent(event)}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </>
     );
