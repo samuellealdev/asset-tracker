@@ -99,7 +99,7 @@ The system MUST delete devices via DELETE /devices/:id after user confirmation.
 
 ### Requirement: Deleted Devices Section (Toggle)
 
-The system MUST display a "Deleted Devices" section below the active device grid on the Devices page, showing devices that were previously hard-deleted (event type `device.deleted`). The section MUST be hidden by default with a toggle button to show/hide it.
+The system MUST display a "Deleted Devices" section below the active device grid on the Devices page, showing devices that were previously hard-deleted (event type `device.deleted`). The section MUST be hidden by default with a toggle button to show/hide it. During data refresh (re-fetch while data already exists), the system MUST replace device cards with skeleton placeholders in the same responsive grid layout and MUST keep the toggle button visible with the stale device count.
 
 #### Scenario: Section hidden by default
 
@@ -130,10 +130,18 @@ The system MUST display a "Deleted Devices" section below the active device grid
 - THEN no toggle button is displayed
 - AND the "Deleted Devices" section shows an empty state
 
-#### Scenario: Loading state
+#### Scenario: Initial load
 
-- GIVEN the deleted devices query is loading
+- GIVEN the deleted devices query is loading for the first time (no cached data)
 - THEN a loading skeleton is displayed in the deleted devices section
+
+#### Scenario: Refresh loading
+
+- GIVEN deleted devices data already exists and is displayed
+- WHEN the query re-fetches (data is being refreshed)
+- THEN skeleton cards matching the responsive grid layout replace the device cards in the grid area
+- AND the toggle button remains visible showing the stale device count
+- AND no spinner or loading indicator appears inside the toggle button
 
 #### Scenario: Error state
 

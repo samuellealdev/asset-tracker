@@ -15,6 +15,7 @@
 | 6 | Business Events — manual event tracking with GET /events | ✅ Complete | 2026-06-15 |
 | 7 | JWT Authentication — login endpoint, auth middleware, protected write endpoints | ✅ Complete | 2026-06-18 |
 | 8 | Frontend — React 19 SPA, 8 routes, 223+ tests, Docker/K8s | ✅ Complete | 2026-06-20 |
+| 9 | Professional Loading State — skeleton grid on deleted devices refresh, 337 tests | ✅ Complete | 2026-06-26 |
 
 ## Architecture
 
@@ -65,6 +66,9 @@ Inter-service communication is **event-driven via Apache Kafka** in KRaft mode (
 | **TanStack Query** for server state | Cache invalidation on mutations, stale-while-revalidate, zero reducers |
 | **React Context** for auth state | Single token value — no global state library needed |
 | **SPA with nginx** | Multi-stage Docker build; nginx serves static assets and proxies API calls |
+| **`LoadingSkeleton` grid variant** | Single component handles both row and grid skeletons via `variant` prop — backward-compatible, single source of animation/pulse |
+| **Refresh skeleton over inline spinner** | Dual indicators (spinner + skeleton) create cognitive noise; full-grid skeleton is unambiguous, professional feedback |
+| **Skeleton cards mirror card container classes** | Identical `rounded-lg border border-slate-700 bg-slate-800 p-5 shadow-sm` classes prevent layout shift during skeleton-to-card transition |
 
 > Detailed architecture decisions, including deferred production patterns (circuit breaker, outbox, rate limiting, idempotent consumer, Kafka multi-node, testcontainers), are documented in [`docs/adr/`](docs/adr/).
 
