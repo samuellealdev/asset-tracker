@@ -120,7 +120,7 @@ export function EventTimeline({
         {events.map((event) => (
           <div key={event.id} className="relative flex items-start gap-4">
             {/* Timeline dot */}
-            <div className="relative z-10 mt-1.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-800 ring-2 ring-slate-700">
+            <div className="relative z-10 mt-1.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-800 ring-2 ring-inset ring-slate-700">
               <div
                 className={`h-3 w-3 rounded-full ${
                   event.type === "device.created"
