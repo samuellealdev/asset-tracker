@@ -67,6 +67,9 @@ export function useDeleteDevice() {
     mutationFn: (id: string) => deleteDevice(id, token!),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["devices"] });
+      queryClient.invalidateQueries({
+        queryKey: ["events", "device.deleted"],
+      });
     },
   });
 }
