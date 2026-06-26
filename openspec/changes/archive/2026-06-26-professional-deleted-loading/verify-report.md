@@ -93,3 +93,44 @@ $ npx tsc --noEmit
 - `npx tsc --noEmit` — zero errors
 
 **Commit**: `d761a47 fix(web-ui): remove immediate deleted devices invalidation to prevent stale skeleton flash`
+
+---
+
+## Post-Archive Fix — 2026-06-26 (Skeleton not visible during 5s Kafka wait)
+
+**Symptom**: After deleting a device, there was a 5-second "dead zone" where nothing happened in the Deleted Devices section. The skeleton grid only appeared briefly at the end when the delayed refetch fired. Users saw no loading feedback during the Kafka propagation window.
+
+**Root cause**: The `setTimeout` + `invalidateQueries` lived inside `useDeleteDevice().onSuccess`. The hook had no access to React state, so it couldn't signal "we're waiting." TanStack Query's `isFetching` only becomes true during an actual network request (~300ms), not during the 5-second `setTimeout` wait. The skeleton was tied exclusively to `isFetching`, leaving a 5-second gap with no visual feedback.
+
+**Fix**:
+- Moved the Kafka delay + `invalidateQueries` logic from `useDeleteDevice` hook into `DevicesPage` component
+- Added `isRefreshingDeleted` state flag in `DevicesPage`
+- Created `handleDeleteDevice` async function that:
+  1. Sets `isRefreshingDeleted = true` immediately on delete confirmation
+  2. Sets `showDeleted = true` to expand the section
+  3. Calls `deleteDevice.mutateAsync(id)` to execute the DELETE
+  4. Waits 5 seconds via `new Promise(resolve => setTimeout(resolve, 5000))`
+  5. Calls `invalidateQueries({ queryKey: ["events", "device.deleted"] })` and awaits completion
+  6. In `finally`, sets `isRefreshingDeleted = false`
+- `DeletedDevicesList` accepts new `isRefreshing` prop — shows skeleton when `isRefreshing || isFetching`
+- `useDeleteDevice` simplified: only invalidates `["devices"]` (PostgreSQL is synchronous)
+
+**New flow**:
+1. User confirms delete → `isRefreshingDeleted = true` → section expands → skeleton grid visible **immediately**
+2. DELETE request executes (~100ms) → active device list refreshes
+3. **5-second wait** → skeleton grid stays visible the ENTIRE time
+4. `invalidateQueries` fires → `isFetching = true` → refetch → fresh data arrives
+5. `finally`: `isRefreshingDeleted = false` → skeleton disappears → updated cards shown
+
+No dead zone. No stale data flash. Continuous loading feedback from confirmation to fresh data.
+
+**Files changed**:
+- `web-ui/src/hooks/use-devices.ts` — removed `setTimeout` + `invalidateQueries(["events", "device.deleted"])` from hook
+- `web-ui/src/routes/devices.tsx` — added `isRefreshingDeleted` state, `handleDeleteDevice` function, `useQueryClient`
+- `web-ui/src/components/devices/DeletedDevicesList.tsx` — added `isRefreshing` prop, condition extended to `isRefreshing || isFetching`
+
+**Verification**:
+- `npx vitest run` — 47 files, 337/337 tests passed
+- `npx tsc --noEmit` — zero errors
+
+**Commit**: `1a01542 fix(web-ui): show skeleton grid continuously from delete confirmation until fresh data arrives`
