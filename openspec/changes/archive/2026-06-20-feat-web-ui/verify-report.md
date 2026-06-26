@@ -483,3 +483,61 @@ f6dff7b fix(web-ui): add Outlet to devices route, fix E2E selectors, mock useLoc
 - `go-service/internal/infrastructure/kafka_event_publisher.go` — retry with backoff
 
 **Commit**: `9f7a818 fix: pre-create Kafka topic and add retry logic to prevent lost device.deleted events`
+
+---
+
+## Post-Archive Fix — 2026-06-26 (Deleted Devices section not updating after deleting a device)
+
+**Symptom**: After deleting a device via `DeleteDialog`, the Deleted Devices section (on the Dashboard) still showed the old list. The `device.deleted` event was published correctly (verified in MongoDB), but the UI never refetched.
+
+**Root cause**: `useDeleteDevice()` in `use-devices.ts` only invalidated `["devices"]` in its `onSuccess` callback. The Deleted Devices section uses `useDeletedDevices()` which queries with key `["events", "device.deleted"]` — a completely separate query key. TanStack Query treats `["events"]` and `["events", "device.deleted"]` as different keys, so invalidating `["devices"]` has no effect on the deleted devices list.
+
+**Fix**:
+- Added `queryClient.invalidateQueries({ queryKey: ["events", "device.deleted"] })` to the `onSuccess` callback of `useDeleteDevice()`
+- The existing `["devices"]` invalidation is preserved — both caches now refresh after a delete
+
+**Files changed**: `web-ui/src/hooks/use-devices.ts`
+
+**Verification**:
+- `npx vitest run` — 47 files, 332/332 tests passed
+- `npx tsc --noEmit` — zero errors
+
+**Commit**: `82a46c9 fix(web-ui): refresh deleted devices section after deleting a device`
+
+---
+
+## Post-Archive Fix — 2026-06-26 (Kafka propagation delay — count still stale after immediate refetch)
+
+**Symptom**: After adding `invalidateQueries`, the Deleted Devices count still didn't update. The `useDeletedDevices` query was refetching, but returning the same count because the `device.deleted` event hadn't propagated through Kafka to MongoDB yet.
+
+**Root cause (actual)**: The Go service publishes `device.deleted` events to Kafka **asynchronously**. The Node.js consumer needs ~1 second to process the event and persist it to MongoDB. TanStack Query's `invalidateQueries` fires immediately after the DELETE returns 204, which is ~20ms later — way before the Kafka event arrives. The refetch succeeds but returns stale data.
+
+**Fix**:
+- Added a **delayed `invalidateQueries`** call with `setTimeout(2000)` after the immediate one
+- The immediate call covers the fast path (when the consumer is already caught up)
+- The 2-second delay covers the typical Kafka propagation window
+- The `["devices"]` invalidation was already instantaneous (PostgreSQL is synchronous)
+
+**Why not other approaches**:
+- CSS visibility hide vs conditional rendering: Not applicable — `DeletedDevicesList` already always mounts
+- `refetchType: 'all'` or `refetchOnMount`: The query was already active; the refetch WAS happening
+- Polling (`refetchInterval`): Would work but adds unnecessary network traffic
+- Backend sync fix: Would require major architectural change to Go delete endpoint (wait for Kafka ack)
+
+**Test evidence** (Playwright network trace):
+```
+[VERIFY] Network requests to /api/node/events:
+  1. type=device.deleted at +0ms   (immediate refetch — stale data)
+  2. type=device.deleted at +2001ms (delayed refetch — fresh data)
+[VERIFY] Initial: 3, Updated: 4
+[VERIFY] ✅ PASS: Count updated from 3 to 4 without page refresh
+```
+
+**Files changed**: `web-ui/src/hooks/use-devices.ts`
+
+**Verification**:
+- `npx vitest run` — 47 files, 332/332 tests passed
+- `npx tsc --noEmit` — zero errors
+- Playwright E2E: deleted device count updates without page refresh
+
+**Commit**: (current — see git log for hash)
