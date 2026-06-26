@@ -329,6 +329,68 @@ describe("DeletedDevicesList", () => {
     expect(screen.getAllByText("Decommissioned")).toHaveLength(2);
   });
 
+  it("shows pulse dot on toggle when isRefreshing with section closed", () => {
+    mockDeletedDevices(baseEvents, { isFetching: false });
+
+    render(
+      <DeletedDevicesList
+        showDeleted={false}
+        onToggle={vi.fn()}
+        isRefreshing={true}
+      />,
+    );
+
+    const toggle = screen.getByRole("button", { name: /show deleted devices/i });
+    expect(toggle).toBeInTheDocument();
+
+    // Pulse dot present inside toggle
+    const pulseDot = toggle.querySelector(".animate-pulse");
+    expect(pulseDot).toBeInTheDocument();
+
+    // Counter shows stale count
+    expect(toggle.textContent).toContain("2");
+  });
+
+  it("shows normal counter without pulse dot when not isRefreshing", () => {
+    mockDeletedDevices(baseEvents, { isFetching: false });
+
+    render(
+      <DeletedDevicesList
+        showDeleted={false}
+        onToggle={vi.fn()}
+        isRefreshing={false}
+      />,
+    );
+
+    const toggle = screen.getByRole("button", { name: /show deleted devices/i });
+    expect(toggle).toBeInTheDocument();
+
+    // No pulse dot
+    expect(toggle.querySelector(".animate-pulse")).toBeNull();
+
+    // Counter shows stale count
+    expect(toggle.textContent).toContain("2");
+  });
+
+  it("shows skeleton grid when isRefreshing with section open", () => {
+    mockDeletedDevices(baseEvents, { isFetching: false });
+
+    render(
+      <DeletedDevicesList
+        showDeleted={true}
+        onToggle={vi.fn()}
+        isRefreshing={true}
+      />,
+    );
+
+    // Skeleton cards rendered instead of real cards
+    const skeletons = screen.getAllByRole("status");
+    expect(skeletons).toHaveLength(2);
+
+    // Real cards NOT present
+    expect(screen.queryByText("Old Laptop")).toBeNull();
+  });
+
   it("closes modal and hides timeline when close is clicked", async () => {
     mockDeletedDevices();
     mockDeviceEvents();

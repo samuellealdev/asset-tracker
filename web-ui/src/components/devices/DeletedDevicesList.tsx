@@ -81,9 +81,21 @@ export function DeletedDevicesList({
             onClick={onToggle}
             className="mb-4 inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-300 transition-all duration-200 hover:bg-slate-700"
           >
-            {showDeleted
-              ? "Hide deleted devices"
-              : `Show deleted devices (${events.length})`}
+          {showDeleted
+            ? "Hide deleted devices"
+            : (
+              <>
+                Show deleted devices
+                {isRefreshing ? (
+                  <span className="ml-1 inline-flex items-center gap-1.5">
+                    <span className="inline-block h-2 w-2 rounded-full bg-indigo-400 animate-pulse" />
+                    <span className="tabular-nums">({events.length})</span>
+                  </span>
+                ) : (
+                  <span className="tabular-nums"> ({events.length})</span>
+                )}
+              </>
+            )}
           </button>
         )}
 

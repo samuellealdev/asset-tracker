@@ -47,7 +47,6 @@ export function DevicesPage() {
 
   const handleDeleteDevice = async (id: string) => {
     setIsRefreshingDeleted(true);
-    setShowDeleted(true);
     try {
       await deleteDevice.mutateAsync(id);
       setDeleteTarget(null);
