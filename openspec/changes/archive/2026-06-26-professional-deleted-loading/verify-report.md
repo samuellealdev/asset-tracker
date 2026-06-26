@@ -65,3 +65,31 @@ $ npx tsc --noEmit
 
 ### Verdict
 **PASS** — all verification gates green, 8/8 spec scenarios covered by passing tests, all 4 design decisions confirmed, 7/7 tasks complete, no regressions.
+
+---
+
+## Post-Archive Fix — 2026-06-26 (Stale skeleton flash on immediate refetch)
+
+**Symptom**: After deleting a device, the skeleton grid appeared immediately and then disappeared showing the old card list (stale data). A few seconds later, the cards updated correctly with the newly deleted device. The skeleton was flashing at the wrong time.
+
+**Root cause**: `useDeleteDevice().onSuccess` had TWO `invalidateQueries` for `["events", "device.deleted"]`: one immediate and one delayed (5s). The immediate invalidation triggered a TanStack Query refetch ~20ms after the DELETE returned. At that point, the `device.deleted` event hadn't propagated through Kafka to MongoDB yet, so the refetch returned stale data. The skeleton appeared and disappeared for a refetch that accomplished nothing. The 5-second delayed invalidation was the only one that actually got fresh data.
+
+**Fix**:
+- Removed the immediate `invalidateQueries({ queryKey: ["events", "device.deleted"] })` from `useDeleteDevice().onSuccess`
+- Kept only the 5-second `setTimeout`-based delayed invalidation
+- Updated the comment to explain why immediate invalidation is counterproductive
+
+**Why no immediate invalidation**: The Go backend publishes `device.deleted` events to Kafka **asynchronously**. The Kafka → Node consumer → MongoDB pipeline takes ~1 second. An immediate refetch will ALWAYS return stale data because the event hasn't been persisted yet. The delayed refetch at 5 seconds covers the worst-case propagation window.
+
+**New flow**:
+1. Delete device → active list invalidates instantly (PostgreSQL is synchronous)
+2. t=0 to t=5s: No visible change in Deleted Devices section
+3. t=5s: Skeleton grid appears → refetch fires → fresh data arrives → skeleton replaced by updated cards
+
+**Files changed**: `web-ui/src/hooks/use-devices.ts` — removed immediate invalidation (lines 70-73)
+
+**Verification**:
+- `npx vitest run` — 47 files, 337/337 tests passed
+- `npx tsc --noEmit` — zero errors
+
+**Commit**: `d761a47 fix(web-ui): remove immediate deleted devices invalidation to prevent stale skeleton flash`
