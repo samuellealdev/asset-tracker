@@ -67,14 +67,12 @@ export function useDeleteDevice() {
     mutationFn: (id: string) => deleteDevice(id, token!),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["devices"] });
-      // Immediate invalidation for the fast path (event already in MongoDB)
-      queryClient.invalidateQueries({
-        queryKey: ["events", "device.deleted"],
-      });
-      // Delayed invalidation to account for Kafka propagation delay (~1s).
+      // Delayed invalidation to account for Kafka propagation delay.
       // The Go backend publishes device.deleted to Kafka asynchronously;
       // the Node consumer needs time to persist it to MongoDB before
-      // the deleted-devices query can return fresh data.
+      // the deleted-devices query can return fresh data. An immediate
+      // invalidation would trigger a refetch with stale data, causing
+      // the skeleton to flash and disappear without any update.
       setTimeout(() => {
         queryClient.invalidateQueries({
           queryKey: ["events", "device.deleted"],
