@@ -180,6 +180,31 @@ cd web-ui && npm test
 cd web-ui && npx playwright test
 ```
 
+## Seed Script
+
+Reset and populate databases with demo data:
+
+```bash
+# Prerequisites: services running via `docker compose up -d`
+./seed.sh
+```
+
+The script performs:
+
+1. **Cleans** PostgreSQL (`DELETE FROM devices`) and MongoDB (`db.events.deleteMany({})`)
+2. **Logs in** to obtain a JWT token
+3. **Creates** 10 devices across 6 types (server, network, laptop, tablet, phone, storage, iot)
+4. **Logs** 160 manual events (~16 per device) with realistic types, actors, and descriptions
+5. **Deletes** 3 devices (Cisco Catalyst 9300, iPad Pro 12.9, Raspberry Pi 5) — they remain visible in the Deleted Devices section via `device.deleted` events
+
+Output:
+
+```
+✅ 10 devices created
+✅ 160 events logged
+🗑️  3 devices deleted
+```
+
 Tests run automatically on every push via [GitHub Actions](.github/workflows/ci.yml).
 
 
