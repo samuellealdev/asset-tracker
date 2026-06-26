@@ -4,6 +4,7 @@ import { DeviceGrid } from "@/components/devices/DeviceGrid";
 import { DeletedDevicesList } from "@/components/devices/DeletedDevicesList";
 import { DeviceFormModal } from "@/components/devices/DeviceFormModal";
 import { DeleteDialog } from "@/components/devices/DeleteDialog";
+import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
 interface SelectedDevice {
@@ -17,7 +18,9 @@ export function DevicesPage() {
   const createDevice = useCreateDevice();
   const updateDevice = useUpdateDevice();
   const deleteDevice = useDeleteDevice();
+  const queryClient = useQueryClient();
   const [showDeleted, setShowDeleted] = useState(false);
+  const [isRefreshingDeleted, setIsRefreshingDeleted] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingDevice, setEditingDevice] = useState<SelectedDevice | null>(null);
@@ -39,6 +42,27 @@ export function DevicesPage() {
     const device = devices?.find((d) => d.id === deviceId);
     if (device) {
       setEditingDevice({ id: device.id, name: device.name });
+    }
+  };
+
+  const handleDeleteDevice = async (id: string) => {
+    setIsRefreshingDeleted(true);
+    setShowDeleted(true);
+    try {
+      await deleteDevice.mutateAsync(id);
+      setDeleteTarget(null);
+      // Wait for Kafka propagation delay before refreshing deleted-devices data.
+      // The Go backend publishes device.deleted to Kafka asynchronously;
+      // the Node consumer needs time to persist it to MongoDB before
+      // the deleted-devices query can return fresh data.
+      await new Promise((resolve) => setTimeout(resolve, 5_000));
+      await queryClient.invalidateQueries({
+        queryKey: ["events", "device.deleted"],
+      });
+    } catch {
+      setDeleteTarget(null);
+    } finally {
+      setIsRefreshingDeleted(false);
     }
   };
 
@@ -69,6 +93,7 @@ export function DevicesPage() {
       <DeletedDevicesList
         showDeleted={showDeleted}
         onToggle={() => setShowDeleted(!showDeleted)}
+        isRefreshing={isRefreshingDeleted}
       />
 
       <DeleteDialog
@@ -77,8 +102,7 @@ export function DevicesPage() {
         isPending={deleteDevice.isPending}
         onConfirm={async () => {
           if (deleteTarget) {
-            await deleteDevice.mutateAsync(deleteTarget);
-            setDeleteTarget(null);
+            await handleDeleteDevice(deleteTarget);
           }
         }}
         onCancel={() => setDeleteTarget(null)}

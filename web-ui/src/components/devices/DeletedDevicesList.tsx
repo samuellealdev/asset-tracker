@@ -10,6 +10,7 @@ import type { Event } from "@/lib/schemas/event";
 interface DeletedDevicesListProps {
   showDeleted: boolean;
   onToggle: () => void;
+  isRefreshing?: boolean;
 }
 
 function mapEventToDevice(event: {
@@ -28,6 +29,7 @@ function mapEventToDevice(event: {
 export function DeletedDevicesList({
   showDeleted,
   onToggle,
+  isRefreshing = false,
 }: DeletedDevicesListProps) {
   const {
     data: events,
@@ -90,7 +92,7 @@ export function DeletedDevicesList({
             showDeleted ? "max-h-[5000px] opacity-100" : "max-h-0 opacity-0"
           }`}
         >
-          {isFetching ? (
+          {isRefreshing || isFetching ? (
             <LoadingSkeleton variant="grid" count={events.length} />
           ) : (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
