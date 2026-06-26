@@ -541,3 +541,23 @@ f6dff7b fix(web-ui): add Outlet to devices route, fix E2E selectors, mock useLoc
 - Playwright E2E: deleted device count updates without page refresh
 
 **Commit**: (current — see git log for hash)
+
+---
+
+## Post-Archive Fix — 2026-06-26 (Loading indicator for Deleted Devices refresh)
+
+**Symptom**: After deleting a device, the Deleted Devices section refreshed (via `invalidateQueries` with 2s delay) but there was no visual feedback — the count just updated silently.
+
+**Fix**:
+- Destructured `isFetching` from `useDeletedDevices()` (TanStack Query's `isFetching` fires on every background refetch, unlike `isLoading` which only fires on initial mount)
+- Added an SVG spinner with `animate-spin` next to the count in the toggle button when `isFetching` is `true`
+- Added `transition-opacity duration-300` to the `<section>` wrapper for smooth appearance/disappearance
+
+**Files changed**:
+- `web-ui/src/components/devices/DeletedDevicesList.tsx` — added `isFetching` destructure, spinner SVG, transition class
+
+**Verification**:
+- `npx vitest run` — 47 files, 332/332 tests passed
+- `npx tsc --noEmit` — zero errors
+
+**Commit**: `2d860d4 feat(web-ui): add loading indicator to deleted devices refresh`
