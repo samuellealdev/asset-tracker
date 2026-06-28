@@ -23,7 +23,7 @@ export function DeviceGridCard({
     <div
       className={`group rounded-lg border border-slate-700 p-5 shadow-sm transition-all duration-200 ${
         deleted
-          ? "opacity-70 bg-slate-800/80 border-l-red-700/30 hover:opacity-85"
+          ? "opacity-70 bg-slate-800/80 hover:opacity-85"
           : "bg-slate-800 hover:scale-[1.02] hover:shadow-md"
       }`}
     >

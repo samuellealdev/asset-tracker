@@ -58,3 +58,17 @@
 ## Verdict
 
 **PASS** — All gates green, spec scenarios compliant with covering tests, design decisions confirmed. The additional hover fix improves UX beyond original spec (which didn't specify hover), without breaking any behavior.
+
+---
+
+## Post-Archive Fix — 2026-06-28 (Removed red left border from deleted cards)
+
+**Symptom**: The deleted device cards had a red left border accent (`border-l-red-700/30`) that looked inconsistent with the rest of the card borders (`border-slate-700`). The user preferred uniform borders.
+
+**Fix**: Removed `border-l-red-700/30` from the deleted card variant classes in `DeviceGridCard.tsx`. The left border now inherits `border-slate-700` from the base `border` class, matching the other three sides.
+
+**Files changed**: `web-ui/src/components/devices/DeviceGridCard.tsx` — removed `border-l-red-700/30` from deleted card classes
+
+**Verification**:
+- `npx vitest run` — 47 files, 348/348 tests passed
+- `npx tsc --noEmit` — zero errors
