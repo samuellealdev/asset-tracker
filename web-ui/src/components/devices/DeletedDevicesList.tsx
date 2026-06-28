@@ -194,7 +194,16 @@ export function DeletedDevicesList({
               <h3 className="mb-3 text-sm font-semibold text-slate-300">
                 Event Timeline
               </h3>
-              <div className="max-h-[60vh] overflow-y-auto scrollbar-thin">
+              <div
+                className="max-h-[60vh] overflow-y-auto timeline-scroll"
+                style={{ scrollbarWidth: "thin", scrollbarColor: "rgb(71 85 105) rgb(30 41 59)" }}
+              >
+                <style>{`
+                  .timeline-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+                  .timeline-scroll::-webkit-scrollbar-track { background: rgb(30 41 59); border-radius: 9999px; }
+                  .timeline-scroll::-webkit-scrollbar-thumb { background: rgb(71 85 105); border-radius: 9999px; }
+                  .timeline-scroll::-webkit-scrollbar-thumb:hover { background: rgb(100 116 139); }
+                `}</style>
                 <EventTimeline
                   events={deviceEvents ?? []}
                   isLoading={eventsLoading}
