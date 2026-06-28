@@ -404,4 +404,41 @@ describe("DeletedDevicesList", () => {
     await user.click(screen.getByLabelText("Close"));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
+
+  describe("deleted section visual styling", () => {
+    it("section wrapper has red left-border accent and red-tinted gradient", () => {
+      mockDeletedDevices();
+
+      const { container } = render(
+        <DeletedDevicesList showDeleted={true} onToggle={vi.fn()} />,
+      );
+
+      const section = container.querySelector("section");
+      expect(section?.className).toContain("border-l-rose-600/40");
+      expect(section?.className).toContain("from-red-950/15");
+      expect(section?.className).toContain("border-l-2");
+    });
+
+    it("skeleton grid container receives tint className during isFetching", () => {
+      mockDeletedDevices(baseEvents, { isFetching: true });
+
+      const { container } = render(
+        <DeletedDevicesList showDeleted={false} onToggle={vi.fn()} />,
+      );
+
+      // Skeleton grid container should have the red-tinted className
+      const gridContainer = container.querySelector(".grid");
+      expect(gridContainer?.className).toContain("bg-red-950/10");
+    });
+
+    it("device cards show red 'Deleted' badge when section is visible", () => {
+      mockDeletedDevices();
+
+      render(<DeletedDevicesList showDeleted={true} onToggle={vi.fn()} />);
+
+      // Cards render with "Deleted" badge
+      const deletedBadges = screen.getAllByText("Deleted");
+      expect(deletedBadges).toHaveLength(2);
+    });
+  });
 });

@@ -4,6 +4,7 @@ import type { Device } from "@/lib/schemas/device";
 
 interface DeviceGridCardProps {
   device: Device;
+  deleted?: boolean;
   onDelete?: (id: string) => void;
   onEdit?: (deviceId: string) => void;
   onDetails?: (deviceId: string) => void;
@@ -11,6 +12,7 @@ interface DeviceGridCardProps {
 
 export function DeviceGridCard({
   device,
+  deleted = false,
   onDelete,
   onEdit,
   onDetails,
@@ -18,17 +20,30 @@ export function DeviceGridCard({
   const navigate = useNavigate();
 
   return (
-    <div className="group rounded-lg border border-slate-700 bg-slate-800 p-5 shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md">
+    <div
+      className={`group rounded-lg border border-slate-700 p-5 shadow-sm transition-all duration-200 ${
+        deleted
+          ? "opacity-70 bg-slate-800/80 border-l-red-700/30 hover:opacity-85"
+          : "bg-slate-800 hover:scale-[1.02] hover:shadow-md"
+      }`}
+    >
       <h3 className="truncate text-lg font-semibold text-slate-100">{device.name}</h3>
 
       <div className="mt-2 flex items-center gap-2">
-        <span className="inline-flex items-center rounded-full bg-indigo-900/30 px-2.5 py-0.5 text-xs font-medium text-indigo-300">
-          {device.type}
-        </span>
+        {deleted ? (
+          <span className="inline-flex items-center gap-1 rounded-full bg-red-950/40 px-2.5 py-0.5 text-xs font-medium text-red-400 ring-1 ring-red-700/30">
+            <Trash2 className="h-3 w-3" />
+            Deleted
+          </span>
+        ) : (
+          <span className="inline-flex items-center rounded-full bg-indigo-900/30 px-2.5 py-0.5 text-xs font-medium text-indigo-300">
+            {device.type}
+          </span>
+        )}
       </div>
 
-      <p className="mt-3 text-xs text-slate-500">
-        Created: {new Date(device.createdAt).toLocaleDateString()}
+      <p className={`mt-3 text-xs ${deleted ? "text-red-400/60" : "text-slate-500"}`}>
+        {deleted ? "Deleted" : "Created"}: {new Date(device.createdAt).toLocaleDateString()}
       </p>
 
       <div className="mt-4 flex items-center gap-1 border-t border-slate-700 pt-3">
@@ -46,7 +61,7 @@ export function DeviceGridCard({
           <Info className="h-3.5 w-3.5" />
           Details
         </button>
-        {onEdit && (
+        {!deleted && onEdit && (
           <button
             onClick={() => onEdit(device.id)}
             className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-slate-300 transition-all duration-200 hover:bg-slate-700"
@@ -56,7 +71,7 @@ export function DeviceGridCard({
             Edit
           </button>
         )}
-        {onDelete && (
+        {!deleted && onDelete && (
           <button
             onClick={() => onDelete(device.id)}
             className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-red-400 transition-all duration-200 hover:bg-red-900/30"

@@ -174,4 +174,63 @@ describe("DeviceGridCard", () => {
     expect(screen.getByText("server")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Server-Prod-01" })).toBeInTheDocument();
   });
+
+  describe("deleted=true", () => {
+    const deletedDevice: Device = {
+      id: "dev-del-1",
+      name: "Old Device",
+      type: "server",
+      createdAt: "2024-01-15T10:00:00Z",
+    };
+
+    it("renders red badge with Trash2 icon and 'Deleted' text", () => {
+      render(<DeviceGridCard device={deletedDevice} deleted={true} />);
+
+      const badge = screen.getByText("Deleted");
+      expect(badge).toBeInTheDocument();
+      expect(badge.className).toContain("bg-red-950/40");
+      expect(badge.className).toContain("text-red-400");
+    });
+
+    it("renders 'Deleted:' label instead of 'Created:'", () => {
+      render(<DeviceGridCard device={deletedDevice} deleted={true} />);
+
+      const label = screen.getByText(/deleted:/i);
+      expect(label).toBeInTheDocument();
+      expect(label.className).toContain("text-red-400/60");
+      expect(screen.queryByText(/created:/i)).not.toBeInTheDocument();
+    });
+
+    it("applies muted card styles when deleted", () => {
+      const { container } = render(
+        <DeviceGridCard device={deletedDevice} deleted={true} />,
+      );
+
+      const card = container.querySelector(".rounded-lg");
+      expect(card?.className).toContain("opacity-70");
+    });
+
+    it("shows only Details button, suppresses Edit and Delete", () => {
+      render(
+        <DeviceGridCard
+          device={deletedDevice}
+          deleted={true}
+          onDelete={vi.fn()}
+          onEdit={vi.fn()}
+        />,
+      );
+
+      expect(screen.getByRole("button", { name: /details/i })).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /^edit$/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /delete/i })).not.toBeInTheDocument();
+    });
+
+    it("renders device name and deleted badge, hiding type badge", () => {
+      render(<DeviceGridCard device={deletedDevice} deleted={true} />);
+
+      expect(screen.getByRole("heading", { name: "Old Device" })).toBeInTheDocument();
+      expect(screen.getByText("Deleted")).toBeInTheDocument();
+      expect(screen.queryByText("server")).not.toBeInTheDocument();
+    });
+  });
 });

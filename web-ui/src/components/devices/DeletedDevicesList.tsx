@@ -105,13 +105,18 @@ export function DeletedDevicesList({
           }`}
         >
           {isRefreshing || isFetching ? (
-            <LoadingSkeleton variant="grid" count={events.length} />
+            <LoadingSkeleton
+              variant="grid"
+              count={events.length}
+              className="[&>div]:bg-red-950/10 [&>div]:border-red-900/20 [&>div]:opacity-60"
+            />
           ) : (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {events.map((event) => (
                 <DeviceGridCard
                   key={event.id}
                   device={mapEventToDevice(event)}
+                  deleted={true}
                   onDetails={() => setSelectedEvent(event)}
                 />
               ))}
@@ -124,7 +129,7 @@ export function DeletedDevicesList({
 
   return (
     <>
-      <section className="rounded-lg border border-slate-700 bg-slate-800 p-6 shadow-sm transition-opacity duration-300">
+      <section className="rounded-lg border border-rose-700/20 bg-gradient-to-br from-red-950/15 via-transparent to-transparent border-l-2 border-l-rose-600/40 p-6 shadow-sm transition-opacity duration-300">
         <h2 className="mb-3 text-lg font-semibold text-slate-300">
           Deleted Devices
         </h2>
