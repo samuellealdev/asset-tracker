@@ -194,7 +194,7 @@ export function DeletedDevicesList({
               <h3 className="mb-3 text-sm font-semibold text-slate-300">
                 Event Timeline
               </h3>
-              <div className="max-h-[60vh] overflow-y-auto">
+              <div className="max-h-[60vh] overflow-y-auto scrollbar-thin">
                 <EventTimeline
                   events={deviceEvents ?? []}
                   isLoading={eventsLoading}
