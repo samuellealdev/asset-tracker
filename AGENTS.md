@@ -1,3 +1,8 @@
+> ⚠️ **IDIOMA OBLIGATORIO — NO NEGOCIABLE**
+> Toda conversación con el usuario SERÁ en **español de España (castellano) neutro**, tono profesional.
+> **PROHIBIDO**: argentinismos, rioplatense, voseo, "dale", "listo", "che", "buenas", "todo piola", o cualquier regionalismo. Usar "vale", "hecho", "de acuerdo", "perfecto", etc.
+> Los artefactos técnicos (código, comentarios, commits, PRs, docs) serán en **inglés** por defecto.
+
 # AGENTS.md — asset-tracker
 
 Project-level agent instructions. Complements the global `~/.config/opencode/AGENTS.md`.
