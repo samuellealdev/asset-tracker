@@ -15,25 +15,21 @@
   animation: fade-in 0.2s ease-out;
 }
 
-@utility scrollbar-thin {
+.scrollbar-thin {
   scrollbar-width: thin;
-
-  &::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: rgb(30 41 59);
-    border-radius: 9999px;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: rgb(71 85 105);
-    border-radius: 9999px;
-  }
-
-  &::-webkit-scrollbar-thumb:hover {
-    background: rgb(100 116 139);
-  }
+}
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: rgb(30 41 59);
+  border-radius: 9999px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgb(71 85 105);
+  border-radius: 9999px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: rgb(100 116 139);
 }

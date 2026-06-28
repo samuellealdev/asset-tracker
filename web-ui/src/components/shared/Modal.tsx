@@ -15,6 +15,24 @@ const FOCUSABLE_SELECTOR =
 const INPUT_SELECTOR =
   'input:not([disabled]):not([type="hidden"]), textarea:not([disabled]), select:not([disabled])';
 
+const SCROLLBAR_STYLES = `
+.modal-scroll-area::-webkit-scrollbar {
+  width: 8px !important;
+  height: 8px !important;
+}
+.modal-scroll-area::-webkit-scrollbar-track {
+  background: rgb(30 41 59) !important;
+  border-radius: 9999px !important;
+}
+.modal-scroll-area::-webkit-scrollbar-thumb {
+  background: rgb(100 116 139) !important;
+  border-radius: 9999px !important;
+}
+.modal-scroll-area::-webkit-scrollbar-thumb:hover {
+  background: rgb(148 163 184) !important;
+}
+`;
+
 export function Modal({ isOpen, onClose, children, title }: ModalProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const previousActiveElement = useRef<HTMLElement | null>(null);
@@ -95,6 +113,7 @@ export function Modal({ isOpen, onClose, children, title }: ModalProps) {
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <style>{SCROLLBAR_STYLES}</style>
       <div
         data-testid="modal-backdrop"
         className="absolute inset-0 bg-black/60 transition-opacity duration-200"
@@ -141,7 +160,15 @@ export function Modal({ isOpen, onClose, children, title }: ModalProps) {
             </svg>
           </button>
         </div>
-        {children}
+        <div
+          className="min-h-0 flex-1 overflow-y-auto scrollbar-thin modal-scroll-area pr-2 pb-6"
+          style={{
+            scrollbarWidth: "thin",
+            scrollbarColor: "rgb(100 116 139) rgb(30 41 59)",
+          }}
+        >
+          {children}
+        </div>
       </div>
     </div>,
     document.body,

@@ -194,26 +194,12 @@ export function DeletedDevicesList({
               <h3 className="mb-3 text-sm font-semibold text-slate-300">
                 Event Timeline
               </h3>
-              <div
-                className="max-h-[60vh] overflow-y-auto timeline-scroll pr-3 pb-6"
-                style={{ scrollbarWidth: "thin", scrollbarColor: "rgb(71 85 105) rgb(30 41 59)" }}
-              >
-                <style>{`
-                  .timeline-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
-                  .timeline-scroll::-webkit-scrollbar-track { background: rgb(30 41 59); border-radius: 9999px; margin-block-end: 24px; }
-                  .timeline-scroll::-webkit-scrollbar-thumb { background: rgb(71 85 105); border-radius: 9999px; }
-                  .timeline-scroll::-webkit-scrollbar-thumb:hover { background: rgb(100 116 139); }
-                  /* Firefox: scrollbar-color/size don't support track margins, so the thumb
-                     may still reach the bottom edge in Firefox. The pb-6 on the container
-                     provides content breathing room regardless. */
-                `}</style>
-                <EventTimeline
-                  events={deviceEvents ?? []}
-                  isLoading={eventsLoading}
-                  isError={eventsError}
-                  onRetry={() => refetchEvents()}
-                />
-              </div>
+              <EventTimeline
+                events={deviceEvents ?? []}
+                isLoading={eventsLoading}
+                isError={eventsError}
+                onRetry={() => refetchEvents()}
+              />
             </div>
           </div>
         )}
