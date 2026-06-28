@@ -17,6 +17,7 @@
 | 8 | Frontend — React 19 SPA, 8 routes, 223+ tests, Docker/K8s | ✅ Complete | 2026-06-20 |
 | 9 | Professional Loading State — skeleton grid on deleted devices refresh, 337 tests | ✅ Complete | 2026-06-26 |
 | 10 | Deleted Devices Redesign — "Red Ledger" visual distinction for archived cards, 348 tests | ✅ Complete | 2026-06-28 |
+| 11 | Modal Timeline Layout Fix — scrollbar CSS (Tailwind v4 `@utility` bugfix) + modal overflow fix (`min-h-0` flex contract) | ✅ Complete | 2026-06-29 |
 
 ## Architecture
 
