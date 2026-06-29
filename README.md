@@ -18,6 +18,7 @@
 | 9 | Professional Loading State — skeleton grid on deleted devices refresh, 337 tests | ✅ Complete | 2026-06-26 |
 | 10 | Deleted Devices Redesign — "Red Ledger" visual distinction for archived cards, 348 tests | ✅ Complete | 2026-06-28 |
 | 11 | Modal Timeline Layout Fix — scrollbar CSS (Tailwind v4 `@utility` bugfix) + modal overflow fix (`min-h-0` flex contract) | ✅ Complete | 2026-06-29 |
+| 12 | Live Metrics Offline State — four-state health classification (healthy/offline/unhealthy/stale), priority badge, 359 tests | ✅ Complete | 2026-06-29 |
 
 ## Architecture
 
@@ -72,6 +73,9 @@ Inter-service communication is **event-driven via Apache Kafka** in KRaft mode (
 | **Refresh skeleton over inline spinner** | Dual indicators (spinner + skeleton) create cognitive noise; full-grid skeleton is unambiguous, professional feedback |
 | **Skeleton cards mirror card container classes** | Identical `rounded-lg border border-slate-700 bg-slate-800 p-5 shadow-sm` classes prevent layout shift during skeleton-to-card transition |
 | **"Red Ledger" aesthetic for deleted devices** | Deleted section uses `border-l-rose-600/40` red accent + red-tinted gradient; cards get `opacity-70`, red badge with Trash2, and archived hover feel (`hover:opacity-85`, no scale) — visually distinct from active cards without structural changes |
+| **Four-state health classification** | Replaced binary `healthy: boolean` with `status: HealthStatus` — distinguishes offline (network error), unhealthy (HTTP errors), stale (cached), and healthy (green); `classifyHealth()` is a pure function with zero framework deps |
+| **Priority-based badge chain** | Single top-bar badge shows worst-case status: Offline > Unhealthy > Stale > none; prevents badge stacking and reduces cognitive load at a glance |
+| **TypeError detection with cross-realm fallback** | `instanceof TypeError` OR `error?.message?.includes('fetch')` — safe cross-realm detection for iframe/bundler scenarios where `instanceof` may fail |
 
 > Detailed architecture decisions, including deferred production patterns (circuit breaker, outbox, rate limiting, idempotent consumer, Kafka multi-node, testcontainers), are documented in [`docs/adr/`](docs/adr/).
 
