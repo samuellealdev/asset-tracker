@@ -263,6 +263,225 @@ func TestRingBuffer(t *testing.T) {
 	})
 }
 
+func TestHandleRequests(t *testing.T) {
+	t.Run("default limit of 50 with 60 traces returns 50 newest and counters", func(t *testing.T) {
+		handler := interfaces.NewMetricsHandler()
+		handler.IncrementRequests()
+		handler.IncrementRequests()
+		handler.IncrementErrors()
+
+		for i := 0; i < 60; i++ {
+			handler.PushTrace(interfaces.RequestTrace{
+				Method: "GET", Path: "/test", Status: 200,
+				DurationMs: float64(i), Timestamp: "t",
+			})
+		}
+
+		req := httptest.NewRequest(http.MethodGet, "/metrics/requests", nil)
+		w := httptest.NewRecorder()
+		handler.HandleRequests(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Fatalf("expected status 200, got %d", w.Code)
+		}
+
+		var resp map[string]interface{}
+		if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
+			t.Fatalf("failed to decode response: %v", err)
+		}
+
+		if resp["requests_total"] != float64(2) {
+			t.Errorf("expected requests_total 2, got %v", resp["requests_total"])
+		}
+		if resp["errors_total"] != float64(1) {
+			t.Errorf("expected errors_total 1, got %v", resp["errors_total"])
+		}
+
+		recent, ok := resp["recent"].([]interface{})
+		if !ok {
+			t.Fatalf("expected recent to be an array, got %T", resp["recent"])
+		}
+		if len(recent) != 50 {
+			t.Fatalf("expected 50 recent traces, got %d", len(recent))
+		}
+	})
+
+	t.Run("custom limit with ?limit=10 returns 10 traces", func(t *testing.T) {
+		handler := interfaces.NewMetricsHandler()
+		for i := 0; i < 60; i++ {
+			handler.PushTrace(interfaces.RequestTrace{
+				Method: "POST", Path: "/item", Status: 201,
+				DurationMs: float64(i), Timestamp: "t",
+			})
+		}
+
+		req := httptest.NewRequest(http.MethodGet, "/metrics/requests?limit=10", nil)
+		w := httptest.NewRecorder()
+		handler.HandleRequests(w, req)
+
+		var resp map[string]interface{}
+		if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
+			t.Fatalf("failed to decode response: %v", err)
+		}
+
+		recent, ok := resp["recent"].([]interface{})
+		if !ok {
+			t.Fatalf("expected recent to be an array, got %T", resp["recent"])
+		}
+		if len(recent) != 10 {
+			t.Fatalf("expected 10 recent traces, got %d", len(recent))
+		}
+	})
+
+	t.Run("limit 500 capped at 200", func(t *testing.T) {
+		handler := interfaces.NewMetricsHandler()
+		for i := 0; i < 200; i++ {
+			handler.PushTrace(interfaces.RequestTrace{
+				Method: "GET", Path: "/a", Status: 200,
+				DurationMs: float64(i), Timestamp: "t",
+			})
+		}
+
+		req := httptest.NewRequest(http.MethodGet, "/metrics/requests?limit=500", nil)
+		w := httptest.NewRecorder()
+		handler.HandleRequests(w, req)
+
+		var resp map[string]interface{}
+		if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
+			t.Fatalf("failed to decode response: %v", err)
+		}
+
+		recent, ok := resp["recent"].([]interface{})
+		if !ok {
+			t.Fatalf("expected recent to be an array, got %T", resp["recent"])
+		}
+		if len(recent) != 200 {
+			t.Fatalf("expected 200 recent traces (capped), got %d", len(recent))
+		}
+	})
+
+	t.Run("limit 0 returns 1 trace (clamped to minimum)", func(t *testing.T) {
+		handler := interfaces.NewMetricsHandler()
+		for i := 0; i < 10; i++ {
+			handler.PushTrace(interfaces.RequestTrace{
+				Method: "GET", Path: "/a", Status: 200,
+				DurationMs: float64(i), Timestamp: "t",
+			})
+		}
+
+		req := httptest.NewRequest(http.MethodGet, "/metrics/requests?limit=0", nil)
+		w := httptest.NewRecorder()
+		handler.HandleRequests(w, req)
+
+		var resp map[string]interface{}
+		if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
+			t.Fatalf("failed to decode response: %v", err)
+		}
+
+		recent, ok := resp["recent"].([]interface{})
+		if !ok {
+			t.Fatalf("expected recent to be an array, got %T", resp["recent"])
+		}
+		if len(recent) != 1 {
+			t.Fatalf("expected 1 recent trace (clamped to 1), got %d", len(recent))
+		}
+	})
+
+	t.Run("non-numeric limit defaults to 50", func(t *testing.T) {
+		handler := interfaces.NewMetricsHandler()
+		for i := 0; i < 60; i++ {
+			handler.PushTrace(interfaces.RequestTrace{
+				Method: "GET", Path: "/a", Status: 200,
+				DurationMs: float64(i), Timestamp: "t",
+			})
+		}
+
+		req := httptest.NewRequest(http.MethodGet, "/metrics/requests?limit=abc", nil)
+		w := httptest.NewRecorder()
+		handler.HandleRequests(w, req)
+
+		var resp map[string]interface{}
+		if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
+			t.Fatalf("failed to decode response: %v", err)
+		}
+
+		recent, ok := resp["recent"].([]interface{})
+		if !ok {
+			t.Fatalf("expected recent to be an array, got %T", resp["recent"])
+		}
+		if len(recent) != 50 {
+			t.Fatalf("expected 50 recent traces (default), got %d", len(recent))
+		}
+	})
+
+	t.Run("empty buffer returns recent: [] with current counters", func(t *testing.T) {
+		handler := interfaces.NewMetricsHandler()
+		handler.IncrementRequests()
+
+		req := httptest.NewRequest(http.MethodGet, "/metrics/requests", nil)
+		w := httptest.NewRecorder()
+		handler.HandleRequests(w, req)
+
+		var resp map[string]interface{}
+		if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
+			t.Fatalf("failed to decode response: %v", err)
+		}
+
+		if resp["requests_total"] != float64(1) {
+			t.Errorf("expected requests_total 1, got %v", resp["requests_total"])
+		}
+		if resp["errors_total"] != float64(0) {
+			t.Errorf("expected errors_total 0, got %v", resp["errors_total"])
+		}
+
+		recent, ok := resp["recent"].([]interface{})
+		if !ok {
+			t.Fatalf("expected recent to be an array, got %T", resp["recent"])
+		}
+		if len(recent) != 0 {
+			t.Fatalf("expected empty recent, got %d entries", len(recent))
+		}
+	})
+
+	t.Run("Content-Type is application/json", func(t *testing.T) {
+		handler := interfaces.NewMetricsHandler()
+		req := httptest.NewRequest(http.MethodGet, "/metrics/requests", nil)
+		w := httptest.NewRecorder()
+		handler.HandleRequests(w, req)
+
+		ct := w.Header().Get("Content-Type")
+		if ct != "application/json" {
+			t.Errorf("expected Content-Type application/json, got %q", ct)
+		}
+	})
+
+	t.Run("response shape includes required keys", func(t *testing.T) {
+		handler := interfaces.NewMetricsHandler()
+		handler.PushTrace(interfaces.RequestTrace{
+			Method: "GET", Path: "/a", Status: 200, DurationMs: 1.0, Timestamp: "t",
+		})
+
+		req := httptest.NewRequest(http.MethodGet, "/metrics/requests", nil)
+		w := httptest.NewRecorder()
+		handler.HandleRequests(w, req)
+
+		var resp map[string]interface{}
+		if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
+			t.Fatalf("failed to decode response: %v", err)
+		}
+
+		if _, ok := resp["requests_total"]; !ok {
+			t.Error("expected requests_total key in response")
+		}
+		if _, ok := resp["errors_total"]; !ok {
+			t.Error("expected errors_total key in response")
+		}
+		if _, ok := resp["recent"]; !ok {
+			t.Error("expected recent key in response")
+		}
+	})
+}
+
 func TestMetricsMiddleware(t *testing.T) {
 	t.Run("increments requests for every request", func(t *testing.T) {
 		handler := interfaces.NewMetricsHandler()

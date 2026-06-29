@@ -1,6 +1,7 @@
 package interfaces
 
 import (
+	"fmt"
 	"net/http"
 	"sync"
 	"sync/atomic"
@@ -81,6 +82,39 @@ func (m *MetricsHandler) TraceCount() int64 {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	return m.traceCount
+}
+
+// parseLimit parses the "limit" query parameter, returning the default value if
+// the parameter is missing or not a valid positive integer.
+func parseLimit(r *http.Request, defaultLimit int) int {
+	limitStr := r.URL.Query().Get("limit")
+	if limitStr == "" {
+		return defaultLimit
+	}
+	var limit int
+	if _, err := fmt.Sscanf(limitStr, "%d", &limit); err != nil {
+		return defaultLimit
+	}
+	if limit < 1 {
+		return 1
+	}
+	if limit > 200 {
+		return 200
+	}
+	return limit
+}
+
+// HandleRequests handles GET /metrics/requests requests, returning JSON with
+// requests_total, errors_total, and recent traces (newest-first, clamped by limit).
+func (m *MetricsHandler) HandleRequests(w http.ResponseWriter, r *http.Request) {
+	limit := parseLimit(r, 50)
+	traces := m.GetTraces(limit)
+
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"requests_total": m.requestsTotal.Load(),
+		"errors_total":   m.errorsTotal.Load(),
+		"recent":         traces,
+	})
 }
 
 // ServeHTTP handles GET /metrics requests and returns JSON with counter values.
