@@ -6,6 +6,7 @@ export function useGoHealth(refetchInterval: number = 30_000) {
     queryKey: ["health", "go"],
     queryFn: () => getHealth("go"),
     refetchInterval,
+    retry: false,
   });
 }
 
@@ -14,5 +15,6 @@ export function useNodeHealth(refetchInterval: number = 30_000) {
     queryKey: ["health", "node"],
     queryFn: () => getHealth("node"),
     refetchInterval,
+    retry: false,
   });
 }

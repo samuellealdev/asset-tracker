@@ -30,6 +30,8 @@
 ## Additional Fix Applied During Archive
 
 - **Proxy error misclassification**: `getHealth()` in `health.ts` called `response.json()` before checking `response.ok`. When Vite proxy returned a 502 HTML error page (backend down), `response.json()` threw `SyntaxError` instead of the expected `TypeError`, causing `classifyHealth` to misclassify the state as "unhealthy" (new window) or "stale" (cached window) instead of "offline". Fixed by wrapping both `fetch` and `response.json()` in try/catch, normalizing transport errors to `TypeError` so `classifyHealth` correctly returns "offline". Also added 2 new tests for network error and non-JSON response scenarios (361 tests total). See `web-ui/src/lib/api/health.ts` and `health.test.ts`.
+- **React Query retry oscillation**: Health queries (`useGoHealth`, `useNodeHealth`) had default `retry: 3` which caused `isError` to toggle during retries. When `isError=false` and `data=undefined`, `classifyHealth` had no matching condition and fell through to `"unhealthy"`, causing oscillation between offline/unhealthy every retry cycle. Fixed by adding `retry: false` — the `refetchInterval` already handles retries. See `web-ui/src/hooks/use-health.ts`.
+- **Metrics transport error normalization**: `getMetrics()` in `metrics.ts` had the same `response.json()`-before-`!response.ok` bug that `getHealth` previously had. Applied identical try/catch normalization so transport errors become `TypeError`. Added 2 tests. See `web-ui/src/lib/api/metrics.ts` and `metrics.test.ts`.
 
 ## SDD Cycle Complete
 

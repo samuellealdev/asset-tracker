@@ -9,9 +9,20 @@ export async function getMetrics(
   service: "go" | "node",
 ): Promise<MetricsData> {
   const url = SERVICE_MAP[service];
-  const response = await fetch(url, { method: "GET" });
 
-  const body = await response.json();
+  let response: Response;
+  try {
+    response = await fetch(url, { method: "GET" });
+  } catch {
+    throw new TypeError(`Failed to fetch ${service} metrics`);
+  }
+
+  let body: unknown;
+  try {
+    body = await response.json();
+  } catch {
+    throw new TypeError(`Failed to fetch ${service} metrics`);
+  }
 
   if (!response.ok) {
     throw { status: response.status, body };
