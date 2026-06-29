@@ -60,8 +60,19 @@ async function main() {
 
   const server = http.createServer((req, res) => {
     metricsHandler.incrementRequest();
+    const start = Date.now();
 
     res.on('finish', () => {
+      const durationMs = Date.now() - start;
+      const parsedUrl = new URL(req.url, 'http://localhost');
+      metricsHandler.pushTrace({
+        method: req.method,
+        path: parsedUrl.pathname,
+        status: res.statusCode,
+        durationMs,
+        timestamp: new Date().toISOString(),
+      });
+
       if (res.statusCode >= 400) {
         metricsHandler.incrementError();
       }
@@ -106,6 +117,10 @@ async function main() {
       }
 
       const url = new URL(req.url, 'http://localhost');
+      if (url.pathname === '/metrics/requests' && req.method === 'GET') {
+        metricsHandler.handleRequests(req, res);
+        return;
+      }
       if (url.pathname === '/events' && req.method === 'GET') {
         eventHandler.handleGet(req, res);
         return;

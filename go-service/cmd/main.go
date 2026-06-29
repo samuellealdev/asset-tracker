@@ -152,6 +152,7 @@ func main() {
 	mux.Handle("GET /health/live", healthHandler)
 	mux.Handle("GET /health/ready", healthHandler)
 	mux.Handle("GET /metrics", metricsHandler)
+	mux.HandleFunc("GET /metrics/requests", metricsHandler.HandleRequests)
 	mux.Handle("/", deviceHandler)
 
 	// --- Metrics middleware counts requests and errors through the pipeline ---

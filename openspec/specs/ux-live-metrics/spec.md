@@ -94,3 +94,76 @@ The LiveMetrics bar MUST be visible on all authenticated pages.
 | Dashboards page | user on /dashboards | page renders | metrics bar visible |
 | Login page | user on /login | — | metrics bar NOT visible |
 | Error page | 404/error renders | — | metrics bar visible if authenticated |
+
+### Requirement: Ring Buffer Request Trace Storage
+Each backend MUST maintain a thread-safe in-memory ring buffer (cap 200) of `RequestTrace` entries. When full, oldest MUST be overwritten. Zero-allocation push after warmup.
+
+| Scenario | GIVEN | WHEN | THEN |
+|---|---|---|---|
+| Normal push | buffer < 200 | new trace pushed | entry appended |
+| Overflow wrap | buffer at 200 | new trace pushed | oldest overwritten, count stays 200 |
+| Empty buffer | buffer empty | queried | returns empty array |
+| Concurrent writes | two goroutines push | mutex arbitrates | no data races |
+| Go integration | HTTP request completes | `ServeHTTP` returns | `PushTrace(method, path, status, duration, timestamp)` called |
+| Node integration | response finishes | `res.finish` fires | `pushTrace({method, path, status, duration_ms, timestamp})` called |
+
+### Requirement: Metrics Detail Endpoint
+Each backend MUST expose `GET /metrics/requests?limit=N` returning `{requests_total, errors_total, recent: RequestTrace[]}`. `recent` MUST be newest-first. `limit` defaults to 50, caps at 200. Empty buffer returns `recent: []`.
+
+| Scenario | GIVEN | WHEN | THEN |
+|---|---|---|---|
+| Default limit | 100 traces | `GET /metrics/requests` | 50 newest with counters |
+| Custom limit | 100 traces | `?limit=10` | 10 newest |
+| Limit capped | 200 traces | `?limit=500` | 200 newest |
+| Empty buffer | buffer empty | endpoint called | `recent: []` with current counters |
+
+### Requirement: Ring Buffer Integration Point
+Go `MetricsMiddleware` MUST call `PushTrace(method, path, status, duration, timestamp)` after `ServeHTTP`. Node handler MUST call `pushTrace({method, path, status, duration_ms, timestamp})` on `res.finish`. No existing behavior removed.
+
+(Previously: counters-only; no per-request trace.)
+
+| Scenario | GIVEN | WHEN | THEN |
+|---|---|---|---|
+| Go success | 200 in 42ms | `ServeHTTP` done | `PushTrace({GET, /api/assets, 200, 42, <ISO>})` |
+| Go error | 500 response | `ServeHTTP` done | `PushTrace` with error status |
+| Node trace | response finished | `res.finish` | `pushTrace` with all fields |
+| Counters retained | push added | counter increments | counters unaffected |
+
+### Requirement: RequestTrace Type
+Frontend MUST define TypeScript: `RequestTrace {method: string, path: string, status: number, duration_ms: number, timestamp: string}`.
+
+| Scenario | GIVEN | WHEN | THEN |
+|---|---|---|---|
+| Type-safe parse | valid trace JSON | parsed as `RequestTrace` | all fields type-check |
+
+### Requirement: getMetricsDetail API Function
+MUST provide `getMetricsDetail(serviceUrl, opts?)` fetching `/metrics/requests`. Transport errors normalized (same pattern as `getMetrics`, `getHealth`).
+
+| Scenario | GIVEN | WHEN | THEN |
+|---|---|---|---|
+| Success | backend returns JSON | called | typed `{requests_total, errors_total, recent}` |
+| Network error | backend unreachable | called | normalized error thrown |
+| Custom limit | `opts.limit = 10` | called | `?limit=10` in URL |
+| Abort | signal aborted | fetch in flight | request cancelled |
+
+### Requirement: useMetricsDetail Hook
+MUST provide `useMetricsDetail(serviceUrl, limit?)` via TanStack Query: `retry: false`, `staleTime: 10_000`, own query key.
+
+| Scenario | GIVEN | WHEN | THEN |
+|---|---|---|---|
+| Initial load | hook mounted | query resolves | detail data returned |
+| Error | fetch fails | query settles | error surfaced, no retry |
+| Stale refetch | 10s elapsed | next focus/mount | query refetches |
+| Key isolation | both metrics queries active | — | distinct cache entries |
+
+### Requirement: ServiceDetailCard Trace Table
+`ServiceDetailCard` modal MUST render scrollable trace table (`max-h-48 overflow-y-auto`) below health/counters. Columns: Method (colored badge), Path, Status (green <400, red ≥400), Duration (ms), Timestamp. Error rows (≥400) MUST have `border-l-2 border-red-500`. Empty state: "No recent requests".
+
+| Scenario | GIVEN | WHEN | THEN |
+|---|---|---|---|
+| Table renders | 15 traces | modal opens | newest-first, all columns |
+| Method badges | GET/POST/DELETE/PUT | table renders | blue/green/red/orange badges |
+| Status colors | 200 vs 500 | table renders | green for 200, red for 500 |
+| Error row border | status ≥ 400 | row renders | red left-border applied |
+| Scroll overflow | 50+ traces | modal renders | container scrolls, header fixed |
+| Empty state | zero traces | modal opens | "No recent requests" shown |
