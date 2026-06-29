@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 
 	"github.com/samuellealdev/asset-tracker/go-service/internal/interfaces"
@@ -106,6 +107,158 @@ func TestMetricsHandler(t *testing.T) {
 		ct := w.Header().Get("Content-Type")
 		if ct != "application/json" {
 			t.Errorf("expected Content-Type application/json, got %q", ct)
+		}
+	})
+}
+
+func TestRequestTraceJSON(t *testing.T) {
+	t.Run("JSON serialization matches expected field names", func(t *testing.T) {
+		trace := interfaces.RequestTrace{
+			Method: "GET", Path: "/api/devices", Status: 200, DurationMs: 42.5, Timestamp: "2026-06-29T14:30:00Z",
+		}
+		data, err := json.Marshal(trace)
+		if err != nil {
+			t.Fatalf("failed to marshal RequestTrace: %v", err)
+		}
+
+		var raw map[string]interface{}
+		if err := json.Unmarshal(data, &raw); err != nil {
+			t.Fatalf("failed to unmarshal JSON: %v", err)
+		}
+
+		if raw["method"] != "GET" {
+			t.Errorf("expected method 'GET', got %v", raw["method"])
+		}
+		if raw["path"] != "/api/devices" {
+			t.Errorf("expected path '/api/devices', got %v", raw["path"])
+		}
+		if raw["status"] != float64(200) {
+			t.Errorf("expected status 200, got %v", raw["status"])
+		}
+		if raw["duration_ms"] != 42.5 {
+			t.Errorf("expected duration_ms 42.5, got %v", raw["duration_ms"])
+		}
+		if raw["timestamp"] != "2026-06-29T14:30:00Z" {
+			t.Errorf("expected timestamp '2026-06-29T14:30:00Z', got %v", raw["timestamp"])
+		}
+	})
+}
+
+func TestRingBuffer(t *testing.T) {
+	t.Run("PushTrace appends when buffer below capacity", func(t *testing.T) {
+		handler := interfaces.NewMetricsHandler()
+		handler.PushTrace(interfaces.RequestTrace{Method: "GET", Path: "/a", Status: 200, DurationMs: 1.0, Timestamp: "t1"})
+		handler.PushTrace(interfaces.RequestTrace{Method: "GET", Path: "/b", Status: 200, DurationMs: 2.0, Timestamp: "t2"})
+		handler.PushTrace(interfaces.RequestTrace{Method: "GET", Path: "/c", Status: 200, DurationMs: 3.0, Timestamp: "t3"})
+
+		traces := handler.GetTraces(200)
+		if len(traces) != 3 {
+			t.Fatalf("expected 3 traces, got %d", len(traces))
+		}
+		if traces[0].Path != "/c" {
+			t.Errorf("expected newest first: /c, got %s", traces[0].Path)
+		}
+		if traces[2].Path != "/a" {
+			t.Errorf("expected oldest last: /a, got %s", traces[2].Path)
+		}
+	})
+
+	t.Run("PushTrace overwrites oldest when buffer at capacity 200", func(t *testing.T) {
+		handler := interfaces.NewMetricsHandler()
+
+		// Fill buffer with 200 traces
+		for i := 0; i < 200; i++ {
+			handler.PushTrace(interfaces.RequestTrace{
+				Method:     "GET",
+				Path:       "/original",
+				Status:     200,
+				DurationMs: float64(i),
+				Timestamp:  "t",
+			})
+		}
+
+		// Push one more — should overwrite the oldest (index 0)
+		handler.PushTrace(interfaces.RequestTrace{
+			Method:     "POST",
+			Path:       "/new",
+			Status:     201,
+			DurationMs: 99.0,
+			Timestamp:  "t-new",
+		})
+
+		traces := handler.GetTraces(200)
+		if len(traces) != 200 {
+			t.Fatalf("expected 200 traces, got %d", len(traces))
+		}
+
+		// Newest should be the newly pushed trace
+		if traces[0].Path != "/new" {
+			t.Errorf("expected newest to be '/new', got %s", traces[0].Path)
+		}
+
+		// The oldest remaining should be 1 (original at index 1 was oldest after wrap)
+		oldest := traces[199]
+		if oldest.Path != "/original" || oldest.DurationMs != 1.0 {
+			t.Errorf("expected oldest to be /original with DurationMs 1.0, got %s/%f", oldest.Path, oldest.DurationMs)
+		}
+	})
+
+	t.Run("GetTraces returns empty slice when buffer has zero entries", func(t *testing.T) {
+		handler := interfaces.NewMetricsHandler()
+		traces := handler.GetTraces(10)
+		if len(traces) != 0 {
+			t.Errorf("expected empty slice, got %d entries", len(traces))
+		}
+	})
+
+	t.Run("GetTraces limit returns at most limit entries newest-first", func(t *testing.T) {
+		handler := interfaces.NewMetricsHandler()
+		for i := 0; i < 10; i++ {
+			handler.PushTrace(interfaces.RequestTrace{
+				Method: "GET", Path: "/a", Status: 200, DurationMs: float64(i), Timestamp: "t",
+			})
+		}
+
+		traces := handler.GetTraces(4)
+		if len(traces) != 4 {
+			t.Fatalf("expected 4 traces, got %d", len(traces))
+		}
+		if traces[0].DurationMs != 9.0 {
+			t.Errorf("expected newest (DurationMs=9) first, got %f", traces[0].DurationMs)
+		}
+		if traces[3].DurationMs != 6.0 {
+			t.Errorf("expected 4th newest (DurationMs=6), got %f", traces[3].DurationMs)
+		}
+	})
+
+	t.Run("concurrent writes are safe under -race", func(t *testing.T) {
+		handler := interfaces.NewMetricsHandler()
+		var wg sync.WaitGroup
+		const goroutines = 10
+		const pushesPerGoroutine = 30
+
+		for g := 0; g < goroutines; g++ {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				for i := 0; i < pushesPerGoroutine; i++ {
+					handler.PushTrace(interfaces.RequestTrace{
+						Method: "POST", Path: "/concurrent", Status: 200, DurationMs: 1.0, Timestamp: "t",
+					})
+				}
+			}()
+		}
+		wg.Wait()
+
+		// traceCount should equal total pushes
+		if count := handler.TraceCount(); count != int64(goroutines*pushesPerGoroutine) {
+			t.Errorf("expected traceCount %d, got %d", goroutines*pushesPerGoroutine, count)
+		}
+
+		// Buffer should be at capacity (200) since total pushes > cap
+		traces := handler.GetTraces(200)
+		if len(traces) != 200 {
+			t.Errorf("expected buffer to contain 200 traces, got %d", len(traces))
 		}
 	})
 }

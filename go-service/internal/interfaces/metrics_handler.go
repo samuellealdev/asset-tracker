@@ -2,18 +2,85 @@ package interfaces
 
 import (
 	"net/http"
+	"sync"
 	"sync/atomic"
 )
 
-// MetricsHandler tracks request and error counters using thread-safe atomic values.
+// RequestTrace represents a single HTTP request trace captured by the middleware.
+type RequestTrace struct {
+	Method     string  `json:"method"`
+	Path       string  `json:"path"`
+	Status     int     `json:"status"`
+	DurationMs float64 `json:"duration_ms"`
+	Timestamp  string  `json:"timestamp"`
+}
+
+// MetricsHandler tracks request and error counters using thread-safe atomic values,
+// and maintains a ring buffer of recent request traces.
 type MetricsHandler struct {
 	requestsTotal atomic.Int64
 	errorsTotal   atomic.Int64
+	traces        []RequestTrace
+	traceWriteIdx int
+	traceCount    int64
+	mu            sync.Mutex
 }
 
-// NewMetricsHandler creates a new MetricsHandler with zero-initialized counters.
+// NewMetricsHandler creates a new MetricsHandler with zero-initialized counters
+// and a pre-allocated ring buffer of capacity 200.
 func NewMetricsHandler() *MetricsHandler {
-	return &MetricsHandler{}
+	return &MetricsHandler{
+		traces: make([]RequestTrace, 200),
+	}
+}
+
+// PushTrace inserts a trace into the ring buffer. If the buffer is full, the oldest
+// trace is overwritten. This method is thread-safe.
+func (m *MetricsHandler) PushTrace(trace RequestTrace) {
+	m.mu.Lock()
+	m.traces[m.traceWriteIdx] = trace
+	m.traceWriteIdx = (m.traceWriteIdx + 1) % 200
+	m.traceCount++
+	m.mu.Unlock()
+}
+
+// GetTraces returns up to `limit` traces from the ring buffer, newest-first.
+// If fewer traces exist than `limit`, all available traces are returned.
+// This method is thread-safe.
+func (m *MetricsHandler) GetTraces(limit int) []RequestTrace {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	stored := m.traceCount
+	if stored > 200 {
+		stored = 200
+	}
+	if stored == 0 {
+		return []RequestTrace{}
+	}
+
+	n := min(limit, int(stored))
+	if n < 0 {
+		n = 0
+	}
+
+	result := make([]RequestTrace, n)
+	for i := 0; i < n; i++ {
+		// Walk backwards from the write pointer (newest written entry is at traceWriteIdx-1)
+		idx := (m.traceWriteIdx - 1 - i) % 200
+		if idx < 0 {
+			idx += 200
+		}
+		result[i] = m.traces[idx]
+	}
+	return result
+}
+
+// TraceCount returns the total number of traces pushed since startup.
+func (m *MetricsHandler) TraceCount() int64 {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.traceCount
 }
 
 // ServeHTTP handles GET /metrics requests and returns JSON with counter values.
