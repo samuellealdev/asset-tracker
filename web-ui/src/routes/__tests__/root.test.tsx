@@ -29,7 +29,9 @@ describe("checkAuth", () => {
   });
 
   it("does not throw for protected routes when token exists", () => {
-    localStorage.setItem("auth_token", "valid-jwt");
+    const header = btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }));
+    const payload = btoa(JSON.stringify({ sub: "123", exp: 9999999999 }));
+    localStorage.setItem("auth_token", `${header}.${payload}.fakesig`);
 
     expect(() =>
       checkAuth({ location: { pathname: "/devices" } }),

@@ -7,12 +7,29 @@ import {
 import { AppLayout } from "@/components/layout/AppLayout";
 import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
 
+function isTokenExpired(token: string): boolean {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return true;
+    const payloadStr = parts[1];
+    if (!payloadStr) return true;
+    const payload = JSON.parse(atob(payloadStr));
+    return payload.exp * 1000 < Date.now();
+  } catch {
+    return true;
+  }
+}
+
 export function checkAuth({
   location,
 }: {
   location: { pathname: string };
 }): void {
   const token = localStorage.getItem("auth_token");
+  if (token && isTokenExpired(token)) {
+    localStorage.removeItem("auth_token");
+    throw redirect({ to: "/login" });
+  }
   if (!token && location.pathname !== "/login") {
     throw redirect({ to: "/login" });
   }
