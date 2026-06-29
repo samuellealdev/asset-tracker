@@ -7,6 +7,7 @@ export function useGoMetrics(refetchInterval: number = 30_000) {
     queryFn: () => getMetrics("go"),
     staleTime: 60_000,
     refetchInterval,
+    retry: false,
   });
 }
 
@@ -16,5 +17,6 @@ export function useNodeMetrics(refetchInterval: number = 30_000) {
     queryFn: () => getMetrics("node"),
     staleTime: 60_000,
     refetchInterval,
+    retry: false,
   });
 }
