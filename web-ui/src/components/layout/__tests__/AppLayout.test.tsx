@@ -26,6 +26,8 @@ vi.mock("@/hooks/use-health", () => ({
 vi.mock("@/hooks/use-metrics", () => ({
   useGoMetrics: () => ({ data: {}, isError: false, isLoading: false }),
   useNodeMetrics: () => ({ data: {}, isError: false, isLoading: false }),
+  useGoMetricsDetail: () => ({ data: { recent: [] }, isError: false, isLoading: false }),
+  useNodeMetricsDetail: () => ({ data: { recent: [] }, isError: false, isLoading: false }),
 }));
 
 import { AppLayout } from "../AppLayout";

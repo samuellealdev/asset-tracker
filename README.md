@@ -19,6 +19,7 @@
 | 10 | Deleted Devices Redesign — "Red Ledger" visual distinction for archived cards, 348 tests | ✅ Complete | 2026-06-28 |
 | 11 | Modal Timeline Layout Fix — scrollbar CSS (Tailwind v4 `@utility` bugfix) + modal overflow fix (`min-h-0` flex contract) | ✅ Complete | 2026-06-29 |
 | 12 | Live Metrics Offline State — four-state health classification (healthy/offline/unhealthy/stale), priority badge, 359 tests | ✅ Complete | 2026-06-29 |
+| 13 | Request Tracing Metrics — ring buffer (cap 200) per backend, `GET /metrics/requests?limit=N` endpoint, frontend trace table in ServiceDetailCard modal, 500+ tests | ✅ Complete | 2026-06-29 |
 
 ## Architecture
 
@@ -76,6 +77,7 @@ Inter-service communication is **event-driven via Apache Kafka** in KRaft mode (
 | **Four-state health classification** | Replaced binary `healthy: boolean` with `status: HealthStatus` — distinguishes offline (network error), unhealthy (HTTP errors), stale (cached), and healthy (green); `classifyHealth()` is a pure function with zero framework deps |
 | **Priority-based badge chain** | Single top-bar badge shows worst-case status: Offline > Unhealthy > Stale > none; prevents badge stacking and reduces cognitive load at a glance |
 | **TypeError detection with cross-realm fallback** | `instanceof TypeError` OR `error?.message?.includes('fetch')` — safe cross-realm detection for iframe/bundler scenarios where `instanceof` may fail |
+| **Ring buffer for request tracing (cap 200)** | In-memory ring buffer per backend avoids allocation per push (pre-allocated slice/array). Mutex (Go) shared-nothing (Node) for thread safety. `count` tracked separately from `len(traces)` since slice stays at cap after first wrap. No external persistence — additive, no migration risk |
 
 > Detailed architecture decisions, including deferred production patterns (circuit breaker, outbox, rate limiting, idempotent consumer, Kafka multi-node, testcontainers), are documented in [`docs/adr/`](docs/adr/).
 
@@ -139,6 +141,8 @@ curl localhost:3000/health        # → {"status":"ok","database":"connected"}
 curl localhost:3000/health/live   # → {"status":"ok"} (liveness)
 curl localhost:3000/health/ready  # → {"status":"ok","database":"connected"} (readiness)
 curl localhost:3000/metrics       # → {"requests_total":0,"errors_total":0}
+curl localhost:8080/metrics/requests?limit=5  # → {"requests_total":0,"errors_total":0,"recent":[...]}
+curl localhost:3000/metrics/requests?limit=5  # → {"requests_total":0,"errors_total":0,"recent":[...]}
 
 # Login and get a JWT token (POST/PUT/DELETE /devices require JWT; GET is public)
 curl -X POST localhost:8080/auth/login \

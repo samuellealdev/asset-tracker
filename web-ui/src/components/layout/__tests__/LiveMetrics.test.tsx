@@ -7,6 +7,8 @@ const mockUseGoHealth = vi.fn();
 const mockUseNodeHealth = vi.fn();
 const mockUseGoMetrics = vi.fn();
 const mockUseNodeMetrics = vi.fn();
+const mockUseGoMetricsDetail = vi.fn();
+const mockUseNodeMetricsDetail = vi.fn();
 
 vi.mock("@/hooks/use-health", () => ({
   useGoHealth: (...args: unknown[]) => mockUseGoHealth(...args),
@@ -16,6 +18,8 @@ vi.mock("@/hooks/use-health", () => ({
 vi.mock("@/hooks/use-metrics", () => ({
   useGoMetrics: (...args: unknown[]) => mockUseGoMetrics(...args),
   useNodeMetrics: (...args: unknown[]) => mockUseNodeMetrics(...args),
+  useGoMetricsDetail: (...args: unknown[]) => mockUseGoMetricsDetail(...args),
+  useNodeMetricsDetail: (...args: unknown[]) => mockUseNodeMetricsDetail(...args),
 }));
 
 import { LiveMetrics } from "../LiveMetrics";
@@ -46,11 +50,52 @@ function mockMetricsOk() {
   });
 }
 
+const sampleTrace = (overrides = {}) => ({
+  method: "GET",
+  path: "/api/devices",
+  status: 200,
+  duration_ms: 42.3,
+  timestamp: "2026-06-29T14:30:00Z",
+  ...overrides,
+});
+
+const sampleTraces = [
+  sampleTrace({ method: "GET", path: "/api/devices", status: 200, duration_ms: 10.1 }),
+  sampleTrace({ method: "POST", path: "/api/devices", status: 201, duration_ms: 23.4 }),
+  sampleTrace({ method: "DELETE", path: "/api/devices/1", status: 204, duration_ms: 5.0 }),
+  sampleTrace({ method: "PUT", path: "/api/devices/1", status: 400, duration_ms: 15.2 }),
+  sampleTrace({ method: "GET", path: "/api/events", status: 500, duration_ms: 100.7 }),
+  sampleTrace({ method: "POST", path: "/api/auth/login", status: 200, duration_ms: 3.2 }),
+  sampleTrace({ method: "GET", path: "/api/health", status: 200, duration_ms: 1.1 }),
+  sampleTrace({ method: "PUT", path: "/api/devices/2", status: 200, duration_ms: 8.9 }),
+  sampleTrace({ method: "DELETE", path: "/api/events/99", status: 404, duration_ms: 2.3 }),
+  sampleTrace({ method: "GET", path: "/api/metrics", status: 200, duration_ms: 0.8 }),
+  sampleTrace({ method: "POST", path: "/api/events", status: 500, duration_ms: 55.0 }),
+  sampleTrace({ method: "GET", path: "/api/settings", status: 403, duration_ms: 4.1 }),
+  sampleTrace({ method: "PATCH", path: "/api/devices/3", status: 200, duration_ms: 7.7 }),
+  sampleTrace({ method: "GET", path: "/api/users", status: 200, duration_ms: 12.5 }),
+  sampleTrace({ method: "POST", path: "/api/users", status: 409, duration_ms: 1.9 }),
+];
+
+function mockDetailOk(traces = sampleTraces) {
+  mockUseGoMetricsDetail.mockReturnValue({
+    data: { requests_total: 42, errors_total: 3, recent: traces },
+    isError: false,
+    isLoading: false,
+  });
+  mockUseNodeMetricsDetail.mockReturnValue({
+    data: { requests_total: 18, errors_total: 1, recent: traces },
+    isError: false,
+    isLoading: false,
+  });
+}
+
 describe("LiveMetrics", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     mockHealthOk();
     mockMetricsOk();
+    mockDetailOk();
   });
 
   it("renders health dots for Go and Node services when healthy", () => {
@@ -280,8 +325,9 @@ describe("LiveMetrics", () => {
     const user = userEvent.setup();
     await user.click(screen.getByRole("button", { name: /go metrics detail/i }));
 
+    const modalPanel = screen.getByTestId("modal-panel");
     expect(screen.getByText("Go API Metrics")).toBeInTheDocument();
-    expect(screen.getByText(/requests/i)).toBeInTheDocument();
+    expect(within(modalPanel).getByText(/^requests$/i)).toBeInTheDocument();
 
     // Requests value appears both in the counter bar and in the modal
     const countValues = screen.getAllByText("42");
@@ -362,5 +408,213 @@ describe("LiveMetrics", () => {
 
     const modalPanel = screen.getByTestId("modal-panel");
     expect(within(modalPanel).getByText("Unhealthy")).toBeInTheDocument();
+  });
+
+  describe("trace table", () => {
+    it("renders trace table with 15 traces when detail modal is open", async () => {
+      render(<LiveMetrics />);
+
+      const user = userEvent.setup();
+      await user.click(screen.getByRole("button", { name: /go metrics detail/i }));
+
+      const modalPanel = screen.getByTestId("modal-panel");
+      expect(within(modalPanel).getByText("Recent Requests")).toBeInTheDocument();
+      // 15 trace rows should be rendered (within the table body)
+      const rows = within(modalPanel).getAllByRole("row");
+      // 1 header row + 15 data rows = 16 rows
+      expect(rows.length).toBe(16);
+    });
+
+    it("shows column headers: Method, Path, Status, Duration, Timestamp", async () => {
+      render(<LiveMetrics />);
+
+      const user = userEvent.setup();
+      await user.click(screen.getByRole("button", { name: /go metrics detail/i }));
+
+      const modalPanel = screen.getByTestId("modal-panel");
+      expect(within(modalPanel).getByText("Method")).toBeInTheDocument();
+      expect(within(modalPanel).getByText("Path")).toBeInTheDocument();
+      expect(within(modalPanel).getByText("Status")).toBeInTheDocument();
+      expect(within(modalPanel).getByText("Duration")).toBeInTheDocument();
+      expect(within(modalPanel).getByText("Timestamp")).toBeInTheDocument();
+    });
+
+    it("renders method badge with correct color for GET (blue)", async () => {
+      render(<LiveMetrics />);
+
+      const user = userEvent.setup();
+      await user.click(screen.getByRole("button", { name: /go metrics detail/i }));
+
+      const modalPanel = screen.getByTestId("modal-panel");
+      const getBadges = within(modalPanel).getAllByText("GET");
+      expect(getBadges.length).toBeGreaterThanOrEqual(1);
+      expect(getBadges[0]!.className).toContain("text-blue-400");
+    });
+
+    it("renders method badge with correct color for POST (green)", async () => {
+      mockDetailOk([
+        sampleTrace({ method: "POST", path: "/test", status: 201, duration_ms: 10 }),
+      ]);
+
+      render(<LiveMetrics />);
+
+      const user = userEvent.setup();
+      await user.click(screen.getByRole("button", { name: /go metrics detail/i }));
+
+      const modalPanel = screen.getByTestId("modal-panel");
+      const postBadge = within(modalPanel).getByText("POST");
+      expect(postBadge.className).toContain("text-green-400");
+    });
+
+    it("renders method badge with correct color for DELETE (red)", async () => {
+      mockDetailOk([
+        sampleTrace({ method: "DELETE", path: "/test", status: 204, duration_ms: 5 }),
+      ]);
+
+      render(<LiveMetrics />);
+
+      const user = userEvent.setup();
+      await user.click(screen.getByRole("button", { name: /go metrics detail/i }));
+
+      const modalPanel = screen.getByTestId("modal-panel");
+      const deleteBadge = within(modalPanel).getByText("DELETE");
+      expect(deleteBadge.className).toContain("text-red-400");
+    });
+
+    it("renders method badge with correct color for PUT (amber)", async () => {
+      mockDetailOk([
+        sampleTrace({ method: "PUT", path: "/test", status: 200, duration_ms: 8 }),
+      ]);
+
+      render(<LiveMetrics />);
+
+      const user = userEvent.setup();
+      await user.click(screen.getByRole("button", { name: /go metrics detail/i }));
+
+      const modalPanel = screen.getByTestId("modal-panel");
+      const putBadge = within(modalPanel).getByText("PUT");
+      expect(putBadge.className).toContain("text-amber-400");
+    });
+
+    it("shows status 200 in green text color", async () => {
+      render(<LiveMetrics />);
+
+      const user = userEvent.setup();
+      await user.click(screen.getByRole("button", { name: /go metrics detail/i }));
+
+      const modalPanel = screen.getByTestId("modal-panel");
+      const status200s = within(modalPanel).getAllByText("200");
+      expect(status200s.length).toBeGreaterThanOrEqual(1);
+      expect(status200s[0]!.className).toContain("text-green-400");
+    });
+
+    it("shows status 500 in red text color", async () => {
+      render(<LiveMetrics />);
+
+      const user = userEvent.setup();
+      await user.click(screen.getByRole("button", { name: /go metrics detail/i }));
+
+      const modalPanel = screen.getByTestId("modal-panel");
+      const status500s = within(modalPanel).getAllByText("500");
+      expect(status500s.length).toBeGreaterThanOrEqual(1);
+      expect(status500s[0]!.className).toContain("text-red-400");
+    });
+
+    it("applies red left border to error rows (status >= 400)", async () => {
+      render(<LiveMetrics />);
+
+      const user = userEvent.setup();
+      await user.click(screen.getByRole("button", { name: /go metrics detail/i }));
+
+      const modalPanel = screen.getByTestId("modal-panel");
+
+      // Row with status 500 should have the error border class
+      const errorRows = within(modalPanel).getAllByText(/^[45]\d{2}$/);
+      for (const cell of errorRows) {
+        const row = cell.closest("tr");
+        expect(row?.className).toContain("border-l-2");
+        expect(row?.className).toContain("border-red-500");
+      }
+    });
+
+    it("wraps table in a scroll container with max-h-48 overflow-y-auto", async () => {
+      render(<LiveMetrics />);
+
+      const user = userEvent.setup();
+      await user.click(screen.getByRole("button", { name: /go metrics detail/i }));
+
+      const modalPanel = screen.getByTestId("modal-panel");
+      const scrollContainer = within(modalPanel).getByTestId("trace-scroll-container");
+      expect(scrollContainer.className).toContain("max-h-48");
+      expect(scrollContainer.className).toContain("overflow-y-auto");
+    });
+
+    it("shows 'No recent requests' when there are no traces", async () => {
+      mockDetailOk([]);
+
+      render(<LiveMetrics />);
+
+      const user = userEvent.setup();
+      await user.click(screen.getByRole("button", { name: /go metrics detail/i }));
+
+      const modalPanel = screen.getByTestId("modal-panel");
+      expect(within(modalPanel).getByText("No recent requests")).toBeInTheDocument();
+    });
+
+    it("shows loading skeleton when detail query is loading and has no data", async () => {
+      mockUseGoMetricsDetail.mockReturnValue({
+        data: undefined,
+        isError: false,
+        isLoading: true,
+      });
+
+      render(<LiveMetrics />);
+
+      const user = userEvent.setup();
+      await user.click(screen.getByRole("button", { name: /go metrics detail/i }));
+
+      const modalPanel = screen.getByTestId("modal-panel");
+      expect(within(modalPanel).getByText("Loading traces...")).toBeInTheDocument();
+    });
+
+    it("shows error message when detail query fails with no cached data", async () => {
+      mockUseGoMetricsDetail.mockReturnValue({
+        data: undefined,
+        isError: true,
+        isLoading: false,
+        error: new Error("Failed to fetch"),
+      });
+
+      render(<LiveMetrics />);
+
+      const user = userEvent.setup();
+      await user.click(screen.getByRole("button", { name: /go metrics detail/i }));
+
+      const modalPanel = screen.getByTestId("modal-panel");
+      expect(within(modalPanel).getByText("Failed to load trace details")).toBeInTheDocument();
+    });
+
+    it("shows duration formatted as X.Xms", async () => {
+      render(<LiveMetrics />);
+
+      const user = userEvent.setup();
+      await user.click(screen.getByRole("button", { name: /go metrics detail/i }));
+
+      const modalPanel = screen.getByTestId("modal-panel");
+      expect(within(modalPanel).getByText("10.1ms")).toBeInTheDocument();
+      expect(within(modalPanel).getByText("100.7ms")).toBeInTheDocument();
+    });
+
+    it("shows trace table for Node service when Node modal is opened", async () => {
+      render(<LiveMetrics />);
+
+      const user = userEvent.setup();
+      await user.click(screen.getByRole("button", { name: /node metrics detail/i }));
+
+      const modalPanel = screen.getByTestId("modal-panel");
+      expect(within(modalPanel).getByText("Recent Requests")).toBeInTheDocument();
+      const rows = within(modalPanel).getAllByRole("row");
+      expect(rows.length).toBe(16);
+    });
   });
 });
