@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"sync"
 	"sync/atomic"
+	"time"
 )
 
 // RequestTrace represents a single HTTP request trace captured by the middleware.
@@ -136,12 +137,15 @@ func (m *MetricsHandler) IncrementErrors() {
 }
 
 // MetricsMiddleware returns an HTTP middleware that counts every request through
-// the requests counter and counts errors (status >= 400) through the errors counter.
+// the requests counter, counts errors (status >= 400) through the errors counter,
+// and captures a RequestTrace for each request into the ring buffer.
 // The returned factory matches the existing middleware pattern in this package:
 // it takes an http.Handler and returns the wrapped handler.
 func MetricsMiddleware(m *MetricsHandler) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			start := time.Now()
+
 			m.IncrementRequests()
 
 			rw := &responseWriter{ResponseWriter: w, statusCode: http.StatusOK}
@@ -150,6 +154,14 @@ func MetricsMiddleware(m *MetricsHandler) func(http.Handler) http.Handler {
 			if rw.statusCode >= 400 {
 				m.IncrementErrors()
 			}
+
+			m.PushTrace(RequestTrace{
+				Method:     r.Method,
+				Path:       r.URL.Path,
+				Status:     rw.statusCode,
+				DurationMs: time.Since(start).Seconds() * 1000,
+				Timestamp:  time.Now().UTC().Format(time.RFC3339),
+			})
 		})
 	}
 }

@@ -610,4 +610,98 @@ func TestMetricsMiddleware(t *testing.T) {
 			t.Error("expected next handler to be called")
 		}
 	})
+
+	t.Run("trace captured for 200 response with correct fields", func(t *testing.T) {
+		handler := interfaces.NewMetricsHandler()
+		middleware := interfaces.MetricsMiddleware(handler)
+
+		next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte("ok"))
+		})
+
+		middleware(next).ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/api/devices", nil))
+
+		traces := handler.GetTraces(10)
+		if len(traces) != 1 {
+			t.Fatalf("expected 1 trace, got %d", len(traces))
+		}
+
+		trace := traces[0]
+		if trace.Method != "GET" {
+			t.Errorf("expected method GET, got %s", trace.Method)
+		}
+		if trace.Path != "/api/devices" {
+			t.Errorf("expected path /api/devices, got %s", trace.Path)
+		}
+		if trace.Status != http.StatusOK {
+			t.Errorf("expected status 200, got %d", trace.Status)
+		}
+		if trace.DurationMs <= 0 {
+			t.Errorf("expected positive duration, got %f", trace.DurationMs)
+		}
+		if trace.Timestamp == "" {
+			t.Error("expected non-empty timestamp")
+		}
+	})
+
+	t.Run("trace captured for 500 response with status 500", func(t *testing.T) {
+		handler := interfaces.NewMetricsHandler()
+		middleware := interfaces.MetricsMiddleware(handler)
+
+		next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusInternalServerError)
+		})
+
+		middleware(next).ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodPost, "/api/error", nil))
+
+		traces := handler.GetTraces(10)
+		if len(traces) != 1 {
+			t.Fatalf("expected 1 trace, got %d", len(traces))
+		}
+
+		trace := traces[0]
+		if trace.Method != "POST" {
+			t.Errorf("expected method POST, got %s", trace.Method)
+		}
+		if trace.Path != "/api/error" {
+			t.Errorf("expected path /api/error, got %s", trace.Path)
+		}
+		if trace.Status != http.StatusInternalServerError {
+			t.Errorf("expected status 500, got %d", trace.Status)
+		}
+	})
+
+	t.Run("counters still increment independently when trace captured", func(t *testing.T) {
+		handler := interfaces.NewMetricsHandler()
+		middleware := interfaces.MetricsMiddleware(handler)
+
+		next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		})
+
+		middleware(next).ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/a", nil))
+		middleware(next).ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/b", nil))
+
+		req := httptest.NewRequest(http.MethodGet, "/metrics", nil)
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+
+		var resp map[string]interface{}
+		if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
+			t.Fatalf("failed to decode response: %v", err)
+		}
+
+		if resp["requests_total"] != float64(2) {
+			t.Errorf("expected requests_total 2, got %v", resp["requests_total"])
+		}
+		if resp["errors_total"] != float64(0) {
+			t.Errorf("expected errors_total 0, got %v", resp["errors_total"])
+		}
+
+		traces := handler.GetTraces(10)
+		if len(traces) != 2 {
+			t.Errorf("expected 2 traces, got %d", len(traces))
+		}
+	})
 }
