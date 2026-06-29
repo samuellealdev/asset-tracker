@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 // Mock the hooks BEFORE imports
@@ -153,9 +153,9 @@ describe("LiveMetrics", () => {
     expect(container.className).toContain("flex");
   });
 
-  it("displays amber stale indicator when any query has error", () => {
+  it("displays stale badge when health has cached data despite error", () => {
     mockUseGoHealth.mockReturnValue({
-      data: undefined,
+      data: { status: "ok" },
       isError: true,
       isLoading: false,
       error: new Error("Timeout"),
@@ -163,7 +163,115 @@ describe("LiveMetrics", () => {
 
     render(<LiveMetrics />);
 
-    expect(screen.getByText(/stale/i)).toBeInTheDocument();
+    expect(screen.getByText("Stale")).toBeInTheDocument();
+  });
+
+  it("shows no priority badge when all services are healthy", () => {
+    render(<LiveMetrics />);
+
+    expect(screen.queryByText(/offline|unhealthy|stale/i)).not.toBeInTheDocument();
+  });
+
+  it("renders correct aria-label for offline health dot", () => {
+    mockUseGoHealth.mockReturnValue({
+      data: undefined,
+      isError: true,
+      isLoading: false,
+      error: new TypeError("NetworkError"),
+    });
+
+    render(<LiveMetrics />);
+
+    const dot = screen.getByRole("img", { name: /go api offline/i });
+    expect(dot).toBeInTheDocument();
+  });
+
+  it("renders correct aria-label for stale health dot", () => {
+    mockUseGoHealth.mockReturnValue({
+      data: { status: "ok" },
+      isError: true,
+      isLoading: false,
+      error: new Error("timeout"),
+    });
+
+    render(<LiveMetrics />);
+
+    const dot = screen.getByRole("img", { name: /go api stale/i });
+    expect(dot).toBeInTheDocument();
+  });
+
+  it("shows priority offline badge over unhealthy", () => {
+    mockUseGoHealth.mockReturnValue({
+      data: undefined,
+      isError: true,
+      isLoading: false,
+      error: new TypeError("NetworkError"),
+    });
+    mockUseNodeHealth.mockReturnValue({
+      data: undefined,
+      isError: true,
+      isLoading: false,
+      error: { status: 503 },
+    });
+
+    render(<LiveMetrics />);
+
+    expect(screen.getByText("Offline")).toBeInTheDocument();
+    expect(screen.queryByText("Unhealthy")).not.toBeInTheDocument();
+  });
+
+  it("shows priority unhealthy badge over stale", () => {
+    mockUseGoHealth.mockReturnValue({
+      data: undefined,
+      isError: true,
+      isLoading: false,
+      error: { status: 500 },
+    });
+    mockUseNodeHealth.mockReturnValue({
+      data: { status: "ok" },
+      isError: true,
+      isLoading: false,
+      error: new Error("timeout"),
+    });
+
+    render(<LiveMetrics />);
+
+    expect(screen.getByText("Unhealthy")).toBeInTheDocument();
+    expect(screen.queryByText("Stale")).not.toBeInTheDocument();
+  });
+
+  it("shows offline status label in detail modal when service is offline", async () => {
+    mockUseGoHealth.mockReturnValue({
+      data: undefined,
+      isError: true,
+      isLoading: false,
+      error: new TypeError("NetworkError"),
+    });
+
+    render(<LiveMetrics />);
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /go metrics detail/i }));
+
+    const modalPanel = screen.getByTestId("modal-panel");
+    expect(within(modalPanel).getByText("Offline")).toBeInTheDocument();
+  });
+
+  it("shows stale status label in detail modal when service has stale data", async () => {
+    mockUseGoHealth.mockReturnValue({
+      data: { status: "ok" },
+      isError: true,
+      isLoading: false,
+      error: new Error("timeout"),
+    });
+
+    render(<LiveMetrics />);
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /go metrics detail/i }));
+
+    const modalPanel = screen.getByTestId("modal-panel");
+    expect(within(modalPanel).getByText("Stale")).toBeInTheDocument();
   });
 
   it("opens detail modal when Go metrics are clicked", async () => {
@@ -235,7 +343,8 @@ describe("LiveMetrics", () => {
     const user = userEvent.setup();
     await user.click(screen.getByRole("button", { name: /go metrics detail/i }));
 
-    expect(screen.getByText("Healthy")).toBeInTheDocument();
+    const modalPanel = screen.getByTestId("modal-panel");
+    expect(within(modalPanel).getByText("Healthy")).toBeInTheDocument();
   });
 
   it("shows Unhealthy status when health fails", async () => {
@@ -251,6 +360,7 @@ describe("LiveMetrics", () => {
     const user = userEvent.setup();
     await user.click(screen.getByRole("button", { name: /go metrics detail/i }));
 
-    expect(screen.getByText("Unhealthy")).toBeInTheDocument();
+    const modalPanel = screen.getByTestId("modal-panel");
+    expect(within(modalPanel).getByText("Unhealthy")).toBeInTheDocument();
   });
 });

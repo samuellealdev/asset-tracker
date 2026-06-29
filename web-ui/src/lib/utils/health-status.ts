@@ -1,12 +1,11 @@
 export type HealthStatus = "healthy" | "offline" | "unhealthy" | "stale";
 
 function isFetchErrorMessage(error: unknown): boolean {
+  if (typeof error !== "object" || error === null) return false;
+  const obj = error as Record<string, unknown>;
   return (
-    typeof error === "object" &&
-    error !== null &&
-    "message" in error &&
-    typeof (error as Record<string, unknown>).message === "string" &&
-    (error as Record<string, unknown>).message.toLowerCase().includes("fetch")
+    typeof obj.message === "string" &&
+    obj.message.toLowerCase().includes("fetch")
   );
 }
 

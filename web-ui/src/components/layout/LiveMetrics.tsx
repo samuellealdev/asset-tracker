@@ -4,17 +4,38 @@ import { useGoMetrics, useNodeMetrics } from "@/hooks/use-metrics";
 import { useSettings } from "@/hooks/use-settings";
 import { Modal } from "@/components/shared/Modal";
 import { cn } from "@/lib/utils/cn";
+import { classifyHealth, type HealthStatus } from "@/lib/utils/health-status";
 
-function HealthDot({ healthy, label }: { healthy: boolean; label: string }) {
+const STATUS_COLORS: Record<HealthStatus, string> = {
+  healthy: "bg-green-500",
+  stale: "bg-amber-400",
+  unhealthy: "bg-red-500",
+  offline: "bg-gray-400",
+};
+
+const STATUS_TITLES: Record<HealthStatus, string> = {
+  healthy: "Healthy",
+  stale: "Stale",
+  unhealthy: "Unhealthy",
+  offline: "Offline",
+};
+
+const STATUS_TEXT_CLASSES: Record<HealthStatus, string> = {
+  healthy: "text-green-400",
+  stale: "text-amber-400",
+  unhealthy: "text-red-400",
+  offline: "text-gray-400",
+};
+
+const PRIORITY_ORDER: HealthStatus[] = ["offline", "unhealthy", "stale", "healthy"];
+
+function HealthDot({ status, label }: { status: HealthStatus; label: string }) {
   return (
-    <div className="group relative flex items-center gap-1.5" title={healthy ? "Healthy" : "Unhealthy"}>
+    <div className="group relative flex items-center gap-1.5" title={STATUS_TITLES[status]}>
       <span
-        className={cn(
-          "h-2.5 w-2.5 rounded-full",
-          healthy ? "bg-green-500" : "bg-red-500",
-        )}
+        className={cn("h-2.5 w-2.5 rounded-full", STATUS_COLORS[status])}
         role="img"
-        aria-label={healthy ? `${label} healthy` : `${label} unhealthy`}
+        aria-label={`${label} ${status}`}
       />
       <span className="text-xs font-medium text-slate-400">{label}</span>
     </div>
@@ -38,14 +59,14 @@ function Counter({
 }
 
 interface ServiceDetailProps {
-  healthy: boolean;
+  status: HealthStatus;
   requests: number | undefined;
   errors: number | undefined;
   lastRefresh: string;
 }
 
 function ServiceDetailCard({
-  healthy,
+  status,
   requests,
   errors,
   lastRefresh,
@@ -60,13 +81,10 @@ function ServiceDetailCard({
       {/* Health badge */}
       <div className="flex items-center gap-2">
         <span
-          className={cn(
-            "h-3 w-3 rounded-full",
-            healthy ? "bg-green-500" : "bg-red-500",
-          )}
+          className={cn("h-3 w-3 rounded-full", STATUS_COLORS[status])}
         />
         <span className="text-sm font-medium text-slate-200">
-          {healthy ? "Healthy" : "Unhealthy"}
+          {STATUS_TITLES[status]}
         </span>
       </div>
 
@@ -111,10 +129,8 @@ export function LiveMetrics() {
   const goMetrics = useGoMetrics(metricsInterval);
   const nodeMetrics = useNodeMetrics(metricsInterval);
 
-  const goHealthy =
-    !goHealth.isError && goHealth.data?.status === "ok";
-  const nodeHealthy =
-    !nodeHealth.isError && nodeHealth.data?.status === "ok";
+  const goStatus = classifyHealth(goHealth.isError, goHealth.data, goHealth.error);
+  const nodeStatus = classifyHealth(nodeHealth.isError, nodeHealth.data, nodeHealth.error);
 
   const goReq: number | undefined =
     !goMetrics.isError && goMetrics.data
@@ -133,8 +149,8 @@ export function LiveMetrics() {
       ? (nodeMetrics.data as Record<string, unknown>).errors_total as number
       : undefined;
 
-  const hasError =
-    goHealth.isError || nodeHealth.isError || goMetrics.isError || nodeMetrics.isError;
+  const worstStatus =
+    PRIORITY_ORDER.find((s) => goStatus === s || nodeStatus === s) ?? "healthy";
 
   const [detailService, setDetailService] = useState<"go" | "node" | null>(null);
 
@@ -148,11 +164,13 @@ export function LiveMetrics() {
         "overflow-x-auto whitespace-nowrap",
       )}
     >
-      {/* Stale indicator */}
-      {hasError && (
-        <span className="flex items-center gap-1 text-xs text-amber-400">
-          <span className="h-2 w-2 rounded-full bg-amber-400" />
-          Stale
+      {/* Priority badge — worst health status across services */}
+      {worstStatus !== "healthy" && (
+        <span
+          className={cn("flex items-center gap-1 text-xs", STATUS_TEXT_CLASSES[worstStatus])}
+        >
+          <span className={cn("h-2 w-2 rounded-full", STATUS_COLORS[worstStatus])} />
+          {STATUS_TITLES[worstStatus]}
         </span>
       )}
 
@@ -163,7 +181,7 @@ export function LiveMetrics() {
         className="flex items-center gap-3 transition-opacity hover:opacity-80"
         aria-label="Go metrics detail"
       >
-        <HealthDot healthy={goHealthy} label="Go API" />
+        <HealthDot status={goStatus} label="Go API" />
         <Counter label="req" value={goReq ?? "—"} testId="go-req" />
         <Counter label="err" value={goErr ?? "—"} testId="go-err" />
       </button>
@@ -178,7 +196,7 @@ export function LiveMetrics() {
         className="flex items-center gap-3 transition-opacity hover:opacity-80"
         aria-label="Node metrics detail"
       >
-        <HealthDot healthy={nodeHealthy} label="Node API" />
+        <HealthDot status={nodeStatus} label="Node API" />
         <Counter label="req" value={nodeReq ?? "—"} testId="node-req" />
         <Counter label="err" value={nodeErr ?? "—"} testId="node-err" />
       </button>
@@ -191,7 +209,7 @@ export function LiveMetrics() {
       >
         {detailService === "go" && (
           <ServiceDetailCard
-            healthy={goHealthy}
+            status={goStatus}
             requests={goReq}
             errors={goErr}
             lastRefresh={lastRefresh}
@@ -199,7 +217,7 @@ export function LiveMetrics() {
         )}
         {detailService === "node" && (
           <ServiceDetailCard
-            healthy={nodeHealthy}
+            status={nodeStatus}
             requests={nodeReq}
             errors={nodeErr}
             lastRefresh={lastRefresh}
