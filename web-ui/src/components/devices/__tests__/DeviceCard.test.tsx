@@ -36,10 +36,11 @@ describe("DeviceCard", () => {
     expect(mockNavigate).toHaveBeenCalledWith({ to: "/devices/$id", params: { id: "abc-123-def-456" } });
   });
 
-  it("displays truncated id", () => {
+  it("displays full device id in monospace font", () => {
     render(<DeviceCard device={mockDevice} />);
 
-    const idElement = screen.getByText(/abc-123/);
+    const idElement = screen.getByText("abc-123-def-456");
     expect(idElement).toBeInTheDocument();
+    expect(idElement.className).toContain("font-mono");
   });
 });

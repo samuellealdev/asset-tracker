@@ -162,23 +162,7 @@ export function DeviceDetailPage() {
         &larr; Back to devices
       </button>
 
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-100">Device Detail</h1>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setIsEditing(true)}
-            className="rounded-lg px-4 py-2 text-sm font-medium text-indigo-400 transition-all duration-200 hover:bg-indigo-900/30"
-          >
-            Edit
-          </button>
-          <button
-            onClick={() => setShowDeleteDialog(true)}
-            className="rounded-lg px-4 py-2 text-sm font-medium text-red-400 transition-all duration-200 hover:bg-red-900/30"
-          >
-            Delete
-          </button>
-        </div>
-      </div>
+      <h1 className="text-2xl font-bold text-slate-100">Device Detail</h1>
 
       <DeviceCard device={device} />
 

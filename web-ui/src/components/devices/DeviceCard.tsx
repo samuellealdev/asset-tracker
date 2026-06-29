@@ -61,7 +61,7 @@ export function DeviceCard({ device, isLoading, isError, onRetry }: DeviceCardPr
             {device.name}
           </h3>
           <p className="mt-1 text-sm text-slate-400">
-            ID: {device.id.length > 8 ? `${device.id.slice(0, 8)}...` : device.id}
+            ID: <span className="font-mono">{device.id}</span>
           </p>
         </div>
         <span className="inline-flex items-center rounded-full bg-indigo-900/30 px-3 py-1 text-xs font-medium text-indigo-300">

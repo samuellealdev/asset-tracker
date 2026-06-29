@@ -130,29 +130,6 @@ describe("DeviceDetailPage", () => {
     expect(mockNavigate).toHaveBeenCalledWith({ to: "/devices" });
   });
 
-  it("shows delete dialog and confirms deletion", async () => {
-    render(<DeviceDetailPage />, { wrapper: createWrapper() });
-
-    // Click the page-level delete button (first one)
-    const user = userEvent.setup();
-    const deleteButtons = screen.getAllByRole("button", { name: /delete/i });
-    await user.click(deleteButtons[0]!);
-
-    // Confirmation dialog should appear
-    await waitFor(() => {
-      expect(screen.getByText(/are you sure/i)).toBeInTheDocument();
-    });
-
-    // The dialog's confirm button is the second "Delete"
-    const dialogDeleteButtons = screen.getAllByRole("button", { name: /delete/i });
-    await user.click(dialogDeleteButtons[1]!);
-
-    // The component navigates to /devices on success
-    await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith({ to: "/devices" });
-    });
-  });
-
   it("shows event timeline section when device is loaded", () => {
     render(<DeviceDetailPage />, { wrapper: createWrapper() });
 
@@ -260,24 +237,4 @@ describe("DeviceDetailPage", () => {
     expect(deviceIndicator?.textContent).toMatch(/Device:\s*Device 1/);
   });
 
-  it("cancels deletion when cancel is clicked", async () => {
-    render(<DeviceDetailPage />, { wrapper: createWrapper() });
-
-    const user = userEvent.setup();
-    const deleteButtons = screen.getAllByRole("button", { name: /delete/i });
-    await user.click(deleteButtons[0]!);
-
-    // Dialog should appear
-    await waitFor(() => {
-      expect(screen.getByText(/are you sure/i)).toBeInTheDocument();
-    });
-
-    // Click cancel
-    await user.click(screen.getByText(/cancel/i));
-
-    // Dialog should close
-    await waitFor(() => {
-      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    });
-  });
 });
