@@ -1,10 +1,17 @@
 import { useState } from "react";
 import { useGoHealth, useNodeHealth } from "@/hooks/use-health";
-import { useGoMetrics, useNodeMetrics } from "@/hooks/use-metrics";
+import {
+  useGoMetrics,
+  useNodeMetrics,
+  useGoMetricsDetail,
+  useNodeMetricsDetail,
+} from "@/hooks/use-metrics";
 import { useSettings } from "@/hooks/use-settings";
 import { Modal } from "@/components/shared/Modal";
 import { cn } from "@/lib/utils/cn";
 import { classifyHealth, type HealthStatus } from "@/lib/utils/health-status";
+import type { RequestTrace } from "@/lib/api/metrics";
+import { TraceTable } from "./TraceTable";
 
 const STATUS_COLORS: Record<HealthStatus, string> = {
   healthy: "bg-green-500",
@@ -63,6 +70,7 @@ interface ServiceDetailProps {
   requests: number | undefined;
   errors: number | undefined;
   lastRefresh: string;
+  traces?: RequestTrace[];
 }
 
 function ServiceDetailCard({
@@ -70,6 +78,7 @@ function ServiceDetailCard({
   requests,
   errors,
   lastRefresh,
+  traces,
 }: ServiceDetailProps) {
   const errRate =
     requests !== undefined && requests > 0 && errors !== undefined
@@ -117,6 +126,14 @@ function ServiceDetailCard({
       ) : (
         <p className="text-sm text-slate-400">No requests yet</p>
       )}
+
+      {/* Recent Requests */}
+      {traces !== undefined && (
+        <>
+          <div className="border-t border-slate-700" />
+          <TraceTable traces={traces} />
+        </>
+      )}
     </div>
   );
 }
@@ -128,6 +145,8 @@ export function LiveMetrics() {
   const nodeHealth = useNodeHealth(healthInterval);
   const goMetrics = useGoMetrics(metricsInterval);
   const nodeMetrics = useNodeMetrics(metricsInterval);
+  const goDetail = useGoMetricsDetail(metricsInterval);
+  const nodeDetail = useNodeMetricsDetail(metricsInterval);
 
   const goStatus = classifyHealth(goHealth.isError, goHealth.data, goHealth.error);
   const nodeStatus = classifyHealth(nodeHealth.isError, nodeHealth.data, nodeHealth.error);
@@ -208,20 +227,48 @@ export function LiveMetrics() {
         title={detailService === "go" ? "Go API Metrics" : "Node.js API Metrics"}
       >
         {detailService === "go" && (
-          <ServiceDetailCard
-            status={goStatus}
-            requests={goReq}
-            errors={goErr}
-            lastRefresh={lastRefresh}
-          />
+          <>
+            {goDetail.isLoading && !goDetail.data ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-500 border-t-blue-400" />
+                <span className="ml-3 text-sm text-slate-400">Loading traces...</span>
+              </div>
+            ) : goDetail.isError && !goDetail.data ? (
+              <div className="rounded border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-400">
+                Failed to load trace details
+              </div>
+            ) : (
+              <ServiceDetailCard
+                status={goStatus}
+                requests={goReq}
+                errors={goErr}
+                lastRefresh={lastRefresh}
+                traces={goDetail.data?.recent ?? []}
+              />
+            )}
+          </>
         )}
         {detailService === "node" && (
-          <ServiceDetailCard
-            status={nodeStatus}
-            requests={nodeReq}
-            errors={nodeErr}
-            lastRefresh={lastRefresh}
-          />
+          <>
+            {nodeDetail.isLoading && !nodeDetail.data ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-500 border-t-blue-400" />
+                <span className="ml-3 text-sm text-slate-400">Loading traces...</span>
+              </div>
+            ) : nodeDetail.isError && !nodeDetail.data ? (
+              <div className="rounded border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-400">
+                Failed to load trace details
+              </div>
+            ) : (
+              <ServiceDetailCard
+                status={nodeStatus}
+                requests={nodeReq}
+                errors={nodeErr}
+                lastRefresh={lastRefresh}
+                traces={nodeDetail.data?.recent ?? []}
+              />
+            )}
+          </>
         )}
       </Modal>
     </div>
