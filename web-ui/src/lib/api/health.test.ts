@@ -50,4 +50,22 @@ describe("getHealth", () => {
       status: 503,
     });
   });
+
+  it("throws TypeError when fetch itself fails (network error)", async () => {
+    const mockFetch = vi.fn().mockRejectedValue(
+      new TypeError("Failed to fetch"),
+    );
+    vi.stubGlobal("fetch", mockFetch);
+
+    await expect(getHealth("go")).rejects.toThrow(TypeError);
+  });
+
+  it("throws TypeError when response body is not JSON (proxy error page)", async () => {
+    const mockFetch = vi.fn().mockResolvedValue(
+      new Response("<html>502 Bad Gateway</html>", { status: 502 }),
+    );
+    vi.stubGlobal("fetch", mockFetch);
+
+    await expect(getHealth("go")).rejects.toThrow(TypeError);
+  });
 });
