@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Modal } from "../Modal";
 
@@ -146,15 +146,15 @@ describe("Modal", () => {
     // Close button is first focusable; Tab should move to "First"
     closeButton.focus();
     await user.tab();
-    expect(firstButton).toHaveFocus();
+    await waitFor(() => expect(firstButton).toHaveFocus());
 
     // Tab again should go to "Second"
     await user.tab();
-    expect(secondButton).toHaveFocus();
+    await waitFor(() => expect(secondButton).toHaveFocus());
 
     // Tab again should cycle back to close button
     await user.tab();
-    expect(closeButton).toHaveFocus();
+    await waitFor(() => expect(closeButton).toHaveFocus());
   });
 
   it("renders without a title when title is not provided", () => {
