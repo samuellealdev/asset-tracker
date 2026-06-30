@@ -59,12 +59,20 @@ async function main() {
   }
 
   const server = http.createServer((req, res) => {
-    metricsHandler.incrementRequest();
+    const parsedUrl = new URL(req.url, 'http://localhost');
+    const isInfraPath = parsedUrl.pathname.startsWith('/health') || parsedUrl.pathname.startsWith('/metrics');
+
+    // Only count business traffic — skip health/metrics probes
+    if (!isInfraPath) {
+      metricsHandler.incrementRequest();
+    }
+
     const start = Date.now();
 
     res.on('finish', () => {
+      if (isInfraPath) return;
+
       const durationMs = Date.now() - start;
-      const parsedUrl = new URL(req.url, 'http://localhost');
       metricsHandler.pushTrace({
         method: req.method,
         path: parsedUrl.pathname,

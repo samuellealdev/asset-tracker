@@ -42,6 +42,10 @@ Added to README Key Architecture Decisions table:
 
 > **Client-side filtering for trace table** — Pure functions `applyFilters`/`countActiveFilters` above the component with no framework deps. `useState` co-located inside `TraceTable` (single consumer, SRP). React unmount destroys state automatically. React 19 compiler handles memoization.
 
+## Additional Fix Applied After Archive
+
+- **Health/metrics endpoints excluded from counters and ring buffer**: `/health*` and `/metrics*` paths were inflating request counters and burying business traffic in the trace table (9/10 traces were infrastructure noise). Both backends now skip these paths in `MetricsMiddleware` (Go) and request handler (Node). Counters and ring buffer now reflect business traffic only. See `go-service/internal/interfaces/metrics_handler.go` and `node-service/src/index.js`.
+
 ## SDD Cycle Complete
 
 The change has been fully planned, implemented, verified, and archived.

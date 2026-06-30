@@ -483,7 +483,7 @@ func TestHandleRequests(t *testing.T) {
 }
 
 func TestMetricsMiddleware(t *testing.T) {
-	t.Run("increments requests for every request", func(t *testing.T) {
+	t.Run("counts business requests but skips health/metrics paths", func(t *testing.T) {
 		handler := interfaces.NewMetricsHandler()
 		middleware := interfaces.MetricsMiddleware(handler)
 
@@ -504,8 +504,9 @@ func TestMetricsMiddleware(t *testing.T) {
 			t.Fatalf("failed to decode response: %v", err)
 		}
 
-		if resp["requests_total"] != float64(3) {
-			t.Errorf("expected requests_total 3, got %v", resp["requests_total"])
+		// /health should NOT be counted — only the 2 business requests
+		if resp["requests_total"] != float64(2) {
+			t.Errorf("expected requests_total 2 (business traffic only), got %v", resp["requests_total"])
 		}
 		if resp["errors_total"] != float64(0) {
 			t.Errorf("expected errors_total 0, got %v", resp["errors_total"])

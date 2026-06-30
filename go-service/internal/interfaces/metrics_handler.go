@@ -3,6 +3,7 @@ package interfaces
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -144,6 +145,12 @@ func (m *MetricsHandler) IncrementErrors() {
 func MetricsMiddleware(m *MetricsHandler) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Skip health and metrics endpoints — they're infrastructure noise, not business traffic
+			if strings.HasPrefix(r.URL.Path, "/health") || strings.HasPrefix(r.URL.Path, "/metrics") {
+				next.ServeHTTP(w, r)
+				return
+			}
+
 			start := time.Now()
 
 			m.IncrementRequests()
