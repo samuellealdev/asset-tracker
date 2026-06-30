@@ -359,7 +359,7 @@ describe('MetricsHandler', () => {
       assert.strictEqual(traces[2].method, 'GET');
     });
 
-    it('pushTrace appends without overwriting when buffer exceeds previous cap 200', () => {
+    it('pushTrace appends without overwriting beyond any capacity', () => {
       const handler = new MetricsHandler();
       // Fill the buffer
       for (let i = 0; i < 200; i++) {

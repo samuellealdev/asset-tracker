@@ -163,7 +163,7 @@ func TestTraces(t *testing.T) {
 		}
 	})
 
-	t.Run("PushTrace appends without overwriting when buffer exceeds previous cap 200", func(t *testing.T) {
+	t.Run("PushTrace appends without overwriting beyond any capacity", func(t *testing.T) {
 		handler := interfaces.NewMetricsHandler()
 
 		// Fill with 200 traces

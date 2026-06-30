@@ -120,7 +120,7 @@ func (m *MetricsHandler) IncrementErrors() {
 
 // MetricsMiddleware returns an HTTP middleware that counts every request through
 // the requests counter, counts errors (status >= 400) through the errors counter,
-// and captures a RequestTrace for each request into the ring buffer.
+// and captures a RequestTrace for each request into the append-only slice.
 // The returned factory matches the existing middleware pattern in this package:
 // it takes an http.Handler and returns the wrapped handler.
 func MetricsMiddleware(m *MetricsHandler) func(http.Handler) http.Handler {
