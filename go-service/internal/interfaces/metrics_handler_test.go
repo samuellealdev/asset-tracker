@@ -144,7 +144,7 @@ func TestRequestTraceJSON(t *testing.T) {
 	})
 }
 
-func TestRingBuffer(t *testing.T) {
+func TestTraces(t *testing.T) {
 	t.Run("PushTrace appends when buffer below capacity", func(t *testing.T) {
 		handler := interfaces.NewMetricsHandler()
 		handler.PushTrace(interfaces.RequestTrace{Method: "GET", Path: "/a", Status: 200, DurationMs: 1.0, Timestamp: "t1"})
@@ -163,10 +163,10 @@ func TestRingBuffer(t *testing.T) {
 		}
 	})
 
-	t.Run("PushTrace overwrites oldest when buffer at capacity 200", func(t *testing.T) {
+	t.Run("PushTrace appends without overwriting when buffer exceeds previous cap 200", func(t *testing.T) {
 		handler := interfaces.NewMetricsHandler()
 
-		// Fill buffer with 200 traces
+		// Fill with 200 traces
 		for i := 0; i < 200; i++ {
 			handler.PushTrace(interfaces.RequestTrace{
 				Method:     "GET",
@@ -177,7 +177,7 @@ func TestRingBuffer(t *testing.T) {
 			})
 		}
 
-		// Push one more — should overwrite the oldest (index 0)
+		// Push one more — should NOT overwrite, all 201 should exist
 		handler.PushTrace(interfaces.RequestTrace{
 			Method:     "POST",
 			Path:       "/new",
@@ -186,9 +186,9 @@ func TestRingBuffer(t *testing.T) {
 			Timestamp:  "t-new",
 		})
 
-		traces := handler.GetTraces(200)
-		if len(traces) != 200 {
-			t.Fatalf("expected 200 traces, got %d", len(traces))
+		traces := handler.GetTraces(300)
+		if len(traces) != 201 {
+			t.Fatalf("expected 201 traces, got %d", len(traces))
 		}
 
 		// Newest should be the newly pushed trace
@@ -196,10 +196,10 @@ func TestRingBuffer(t *testing.T) {
 			t.Errorf("expected newest to be '/new', got %s", traces[0].Path)
 		}
 
-		// The oldest remaining should be 1 (original at index 1 was oldest after wrap)
-		oldest := traces[199]
-		if oldest.Path != "/original" || oldest.DurationMs != 1.0 {
-			t.Errorf("expected oldest to be /original with DurationMs 1.0, got %s/%f", oldest.Path, oldest.DurationMs)
+		// The oldest should still be /original with DurationMs 0
+		oldest := traces[200]
+		if oldest.Path != "/original" || oldest.DurationMs != 0.0 {
+			t.Errorf("expected oldest to be /original with DurationMs 0.0, got %s/%f", oldest.Path, oldest.DurationMs)
 		}
 	})
 
@@ -250,15 +250,11 @@ func TestRingBuffer(t *testing.T) {
 		}
 		wg.Wait()
 
-		// traceCount should equal total pushes
-		if count := handler.TraceCount(); count != int64(goroutines*pushesPerGoroutine) {
-			t.Errorf("expected traceCount %d, got %d", goroutines*pushesPerGoroutine, count)
-		}
-
-		// Buffer should be at capacity (200) since total pushes > cap
-		traces := handler.GetTraces(200)
-		if len(traces) != 200 {
-			t.Errorf("expected buffer to contain 200 traces, got %d", len(traces))
+		// All traces should be present (no cap)
+		const totalPushes = goroutines * pushesPerGoroutine
+		traces := handler.GetTraces(totalPushes + 10)
+		if len(traces) != totalPushes {
+			t.Errorf("expected %d traces, got %d", totalPushes, len(traces))
 		}
 	})
 }
@@ -333,9 +329,9 @@ func TestHandleRequests(t *testing.T) {
 		}
 	})
 
-	t.Run("limit 500 capped at 200", func(t *testing.T) {
+	t.Run("limit 500 returns available traces without hard cap", func(t *testing.T) {
 		handler := interfaces.NewMetricsHandler()
-		for i := 0; i < 200; i++ {
+		for i := 0; i < 300; i++ {
 			handler.PushTrace(interfaces.RequestTrace{
 				Method: "GET", Path: "/a", Status: 200,
 				DurationMs: float64(i), Timestamp: "t",
@@ -355,8 +351,8 @@ func TestHandleRequests(t *testing.T) {
 		if !ok {
 			t.Fatalf("expected recent to be an array, got %T", resp["recent"])
 		}
-		if len(recent) != 200 {
-			t.Fatalf("expected 200 recent traces (capped), got %d", len(recent))
+		if len(recent) != 300 {
+			t.Fatalf("expected 300 recent traces (all available), got %d", len(recent))
 		}
 	})
 

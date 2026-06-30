@@ -19,71 +19,52 @@ type RequestTrace struct {
 }
 
 // MetricsHandler tracks request and error counters using thread-safe atomic values,
-// and maintains a ring buffer of recent request traces.
+// and maintains an append-only slice of request traces.
 type MetricsHandler struct {
 	requestsTotal atomic.Int64
 	errorsTotal   atomic.Int64
 	traces        []RequestTrace
-	traceWriteIdx int
-	traceCount    int64
 	mu            sync.Mutex
 }
 
 // NewMetricsHandler creates a new MetricsHandler with zero-initialized counters
-// and a pre-allocated ring buffer of capacity 200.
+// and an empty append-only slice for traces.
 func NewMetricsHandler() *MetricsHandler {
 	return &MetricsHandler{
-		traces: make([]RequestTrace, 200),
+		traces: make([]RequestTrace, 0),
 	}
 }
 
-// PushTrace inserts a trace into the ring buffer. If the buffer is full, the oldest
-// trace is overwritten. This method is thread-safe.
+// PushTrace appends a trace to the append-only slice. This method is thread-safe.
 func (m *MetricsHandler) PushTrace(trace RequestTrace) {
 	m.mu.Lock()
-	m.traces[m.traceWriteIdx] = trace
-	m.traceWriteIdx = (m.traceWriteIdx + 1) % 200
-	m.traceCount++
+	m.traces = append(m.traces, trace)
 	m.mu.Unlock()
 }
 
-// GetTraces returns up to `limit` traces from the ring buffer, newest-first.
+// GetTraces returns up to `limit` traces from the append-only slice, newest-first.
 // If fewer traces exist than `limit`, all available traces are returned.
 // This method is thread-safe.
 func (m *MetricsHandler) GetTraces(limit int) []RequestTrace {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	stored := m.traceCount
-	if stored > 200 {
-		stored = 200
-	}
-	if stored == 0 {
+	n := len(m.traces)
+	if n == 0 {
 		return []RequestTrace{}
 	}
-
-	n := min(limit, int(stored))
-	if n < 0 {
-		n = 0
+	if limit > n {
+		limit = n
+	}
+	if limit < 0 {
+		limit = 0
 	}
 
-	result := make([]RequestTrace, n)
-	for i := 0; i < n; i++ {
-		// Walk backwards from the write pointer (newest written entry is at traceWriteIdx-1)
-		idx := (m.traceWriteIdx - 1 - i) % 200
-		if idx < 0 {
-			idx += 200
-		}
-		result[i] = m.traces[idx]
+	result := make([]RequestTrace, limit)
+	for i := 0; i < limit; i++ {
+		result[i] = m.traces[n-1-i] // newest-first
 	}
 	return result
-}
-
-// TraceCount returns the total number of traces pushed since startup.
-func (m *MetricsHandler) TraceCount() int64 {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	return m.traceCount
 }
 
 // parseLimit parses the "limit" query parameter, returning the default value if
@@ -100,8 +81,8 @@ func parseLimit(r *http.Request, defaultLimit int) int {
 	if limit < 1 {
 		return 1
 	}
-	if limit > 200 {
-		return 200
+	if limit > 10000 {
+		return 10000
 	}
 	return limit
 }

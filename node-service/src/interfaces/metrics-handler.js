@@ -9,26 +9,17 @@ export class MetricsHandler {
     this.requests = 0;
     /** @type {number} */
     this.errors = 0;
-    /** Ring buffer capacity. */
-    this.cap = 200;
     /** @type {Array<{method: string, path: string, status: number, duration_ms: number, timestamp: string}>} */
-    this.traces = new Array(this.cap);
-    /** @type {number} */
-    this.writeIdx = 0;
-    /** @type {number} */
-    this.count = 0;
+    this.traces = [];
   }
 
   /**
-   * Push a request trace into the ring buffer.
-   * Overwrites oldest entry when at capacity.
+   * Push a request trace into the append-only array.
    *
    * @param {{method: string, path: string, status: number, durationMs: number, timestamp: string}} trace
    */
   pushTrace({ method, path, status, durationMs, timestamp }) {
-    this.traces[this.writeIdx] = { method, path, status, duration_ms: durationMs, timestamp };
-    this.writeIdx = (this.writeIdx + 1) % this.cap;
-    this.count++;
+    this.traces.push({ method, path, status, duration_ms: durationMs, timestamp });
   }
 
   /**
@@ -38,14 +29,12 @@ export class MetricsHandler {
    * @returns {Array<{method: string, path: string, status: number, duration_ms: number, timestamp: string}>}
    */
   getTraces(limit) {
-    const stored = Math.min(this.count, this.cap);
-    if (stored === 0) return [];
-    const clamped = Math.max(1, Math.min(limit, this.cap));
-    const resultSize = Math.min(clamped, stored);
-    const result = new Array(resultSize);
-    for (let i = 0; i < resultSize; i++) {
-      const idx = (this.writeIdx - 1 - i + this.cap) % this.cap;
-      result[i] = { ...this.traces[idx] };
+    const n = this.traces.length;
+    if (n === 0) return [];
+    const clamped = Math.max(1, Math.min(limit, n));
+    const result = [];
+    for (let i = 0; i < clamped; i++) {
+      result.push({ ...this.traces[n - 1 - i] });
     }
     return result;
   }
@@ -61,7 +50,7 @@ export class MetricsHandler {
   }
 
   /**
-   * Parse limit from query string, clamped to [1, cap].
+   * Parse limit from query string, clamped to a reasonable safety cap.
    *
    * @param {string} urlStr
    * @returns {number}
@@ -71,7 +60,7 @@ export class MetricsHandler {
     const raw = params.get('limit');
     const limit = raw !== null ? parseInt(raw, 10) : 50;
     if (Number.isNaN(limit) || limit < 1) return 1;
-    return Math.min(limit, this.cap);
+    return Math.min(limit, 10000);
   }
 
   /**

@@ -139,15 +139,15 @@ describe('MetricsHandler', () => {
       assert.strictEqual(body.recent[9].path, '/item/50');
     });
 
-    it('limit capped at 200 when ?limit=500', () => {
-      const handler = setupHandler(200);
+    it('returns all available traces when limit exceeds buffer size', () => {
+      const handler = setupHandler(300);
       const req = mockReq('/metrics/requests?limit=500');
       const res = mockRes();
 
       handler.handleRequests(req, res);
 
       const body = JSON.parse(res.end.mock.calls[0].arguments[0]);
-      assert.strictEqual(body.recent.length, 200);
+      assert.strictEqual(body.recent.length, 300);
     });
 
     it('limit=0 returns 1 trace (clamped to minimum 1)', () => {
@@ -340,9 +340,9 @@ describe('MetricsHandler', () => {
     });
   });
 
-  // --- Ring buffer (T2.1) ---
+  // --- Trace storage (T2.1) ---
 
-  describe('ring buffer', () => {
+  describe('trace storage', () => {
     it('pushTrace appends when buffer below capacity', () => {
       const handler = new MetricsHandler();
       handler.pushTrace({ method: 'GET', path: '/a', status: 200, durationMs: 10, timestamp: 't1' });
@@ -359,23 +359,23 @@ describe('MetricsHandler', () => {
       assert.strictEqual(traces[2].method, 'GET');
     });
 
-    it('pushTrace overwrites oldest when buffer at capacity 200', () => {
+    it('pushTrace appends without overwriting when buffer exceeds previous cap 200', () => {
       const handler = new MetricsHandler();
       // Fill the buffer
       for (let i = 0; i < 200; i++) {
         handler.pushTrace({ method: 'GET', path: `/item/${i}`, status: 200, durationMs: i, timestamp: `t${i}` });
       }
-      // First trace pushed
+      // Last pushed should be newest
       assert.strictEqual(handler.getTraces(1)[0].path, '/item/199');
 
-      // Push one more — should overwrite oldest (item/0)
+      // Push one more — should NOT overwrite, all 201 should exist
       handler.pushTrace({ method: 'POST', path: '/new', status: 201, durationMs: 99, timestamp: 't200' });
 
-      const traces = handler.getTraces(200);
-      assert.strictEqual(traces.length, 200);
-      // Oldest (/item/0) should be gone; /new is newest
+      const traces = handler.getTraces(300);
+      assert.strictEqual(traces.length, 201);
+      // /new is newest; /item/0 is still oldest
       assert.strictEqual(traces[0].path, '/new');
-      assert.strictEqual(traces[199].path, '/item/1');
+      assert.strictEqual(traces[200].path, '/item/0');
     });
 
     it('getTraces returns empty array when buffer has zero entries', () => {
