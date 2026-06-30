@@ -56,7 +56,6 @@ services:
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
-      KAFKA_CREATE_TOPICS: "device-events:1:1"
       # Allow auto-creation of topics (dev only; production should pre-create topics)
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
       # Static cluster ID for deterministic startup
@@ -71,6 +70,23 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
+
+  kafka-setup:
+    image: apache/kafka:3.9.2
+    entrypoint: ["/opt/kafka/bin/kafka-topics.sh"]
+    command:
+      - --bootstrap-server=kafka:9092
+      - --create
+      - --if-not-exists
+      - --topic=device-events
+      - --partitions=1
+      - --replication-factor=1
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks:
+      - app-network
+    restart: "no"
 
   go-service:
     build:
@@ -91,6 +107,8 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
+      kafka-setup:
+        condition: service_completed_successfully
     networks:
       - app-network
     healthcheck:
@@ -116,6 +134,8 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
+      kafka-setup:
+        condition: service_completed_successfully
     networks:
       - app-network
     healthcheck:
@@ -124,6 +144,28 @@ services:
       timeout: 5s
       retries: 5
       start_period: 15s
+
+  web-ui:
+    build:
+      context: ./web-ui
+    ports:
+      - "${WEB_UI_PORT:-80}:80"
+    environment:
+      API_GO_URL: http://go-service:8080
+      API_NODE_URL: http://node-service:3000
+    depends_on:
+      go-service:
+        condition: service_healthy
+      node-service:
+        condition: service_healthy
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:80/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
 networks:
   app-network:

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/segmentio/kafka-go"
@@ -50,6 +51,7 @@ func (p *KafkaEventPublisher) PublishDeviceDeleted(ctx context.Context, deviceID
 
 // publish serializes the event and writes it to the Kafka topic.
 // The message is keyed by deviceID to ensure partition ordering per device.
+// Retries transient Kafka errors (e.g., topic auto-creation race) with backoff.
 func (p *KafkaEventPublisher) publish(ctx context.Context, eventType, deviceID, deviceName string, timestamp time.Time) error {
 	payload := eventPayload{
 		Type:      eventType,
@@ -68,11 +70,35 @@ func (p *KafkaEventPublisher) publish(ctx context.Context, eventType, deviceID, 
 		Value: data,
 	}
 
-	if err := p.writer.WriteMessages(ctx, msg); err != nil {
-		return fmt.Errorf("write message: %w", err)
+	const maxRetries = 3
+	var lastErr error
+	for range maxRetries {
+		if err := p.writer.WriteMessages(ctx, msg); err != nil {
+			lastErr = err
+			if isRetriable(err) {
+				delay := 100 * time.Millisecond
+				time.Sleep(delay)
+				continue
+			}
+			return fmt.Errorf("write message: %w", err)
+		}
+		return nil
 	}
+	return fmt.Errorf("write message after %d retries: %w", maxRetries, lastErr)
+}
 
-	return nil
+// isRetriable returns true for transient Kafka errors that may succeed on retry.
+// This covers topic auto-creation races, leader elections, and network timeouts.
+func isRetriable(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := err.Error()
+	return strings.Contains(msg, "Unknown Topic Or Partition") ||
+		strings.Contains(msg, "Leader Not Available") ||
+		strings.Contains(msg, "Not Leader") ||
+		strings.Contains(msg, "timed out") ||
+		strings.Contains(msg, "network")
 }
 
 // Close gracefully shuts down the underlying Kafka writer.

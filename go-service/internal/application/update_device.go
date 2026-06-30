@@ -3,6 +3,7 @@ package application
 import (
 	"context"
 	"log/slog"
+	"time"
 
 	"github.com/samuellealdev/asset-tracker/go-service/internal/domain"
 )
@@ -45,7 +46,7 @@ func (uc *UpdateDeviceUseCase) Execute(ctx context.Context, id, name, deviceType
 			}
 		}()
 		// Use context.Background() so Kafka write survives HTTP response lifecycle.
-		if err := uc.eventPublisher.PublishDeviceUpdated(context.Background(), device.ID, device.Name, device.CreatedAt); err != nil {
+		if err := uc.eventPublisher.PublishDeviceUpdated(context.Background(), device.ID, device.Name, time.Now().UTC()); err != nil {
 			slog.Error("failed to publish device.updated", "deviceId", device.ID, "error", err)
 		}
 	}()

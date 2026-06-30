@@ -3,6 +3,7 @@ package application
 import (
 	"context"
 	"log/slog"
+	"time"
 )
 
 // DeleteDeviceUseCase handles deleting a device by ID.
@@ -39,7 +40,7 @@ func (uc *DeleteDeviceUseCase) Execute(ctx context.Context, id string) error {
 			}
 		}()
 		// Use context.Background() so Kafka write survives HTTP response lifecycle.
-		if err := uc.eventPublisher.PublishDeviceDeleted(context.Background(), id, device.Name, device.CreatedAt); err != nil {
+		if err := uc.eventPublisher.PublishDeviceDeleted(context.Background(), id, device.Name, time.Now().UTC()); err != nil {
 			slog.Error("failed to publish device.deleted", "deviceId", id, "error", err)
 		}
 	}()

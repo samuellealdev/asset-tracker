@@ -270,7 +270,7 @@ describe('EventHandler', () => {
 
   it('GET returns 400 when deviceId query param is missing', async () => {
     const mockLogUseCase = { execute: mock.fn() };
-    const mockListUseCase = { execute: mock.fn() };
+    const mockListUseCase = { execute: mock.fn(), executeByType: mock.fn() };
     const handler = new EventHandler(mockLogUseCase, mockListUseCase);
     const server = createTestServer(handler);
 
@@ -279,7 +279,7 @@ describe('EventHandler', () => {
       const res = await getEvents(server, '/events');
 
       assert.strictEqual(res.status, 400);
-      assert.strictEqual(res.body, JSON.stringify({ error: 'deviceId is required' }));
+      assert.strictEqual(res.body, JSON.stringify({ error: 'deviceId or type is required' }));
       assert.strictEqual(mockListUseCase.execute.mock.callCount(), 0);
     } finally {
       server.close();
@@ -318,6 +318,75 @@ describe('EventHandler', () => {
 
       assert.strictEqual(res.status, 200);
       assert.strictEqual(res.body, '[]');
+    } finally {
+      server.close();
+    }
+  });
+
+  // --- GET /events by type ---
+
+  it('GET returns 200 with events for a valid type query', async () => {
+    const events = [
+      { id: '1', type: 'device.deleted', deviceId: '550e8400-e29b-41d4-a716-446655440000', name: 'laptop', timestamp: '2025-01-01T00:00:00.000Z', actor: 'admin', description: 'Removed' },
+    ];
+    const mockLogUseCase = { execute: mock.fn() };
+    const mockListUseCase = {
+      execute: mock.fn(),
+      executeByType: mock.fn(async () => events),
+    };
+    const handler = new EventHandler(mockLogUseCase, mockListUseCase);
+    const server = createTestServer(handler);
+
+    await new Promise((r) => server.listen(0, r));
+    try {
+      const res = await getEvents(server, '/events?type=device.deleted');
+
+      assert.strictEqual(res.status, 200);
+      assert.strictEqual(res.body, JSON.stringify(events));
+      assert.strictEqual(mockListUseCase.executeByType.mock.callCount(), 1);
+      assert.strictEqual(
+        mockListUseCase.executeByType.mock.calls[0].arguments[0],
+        'device.deleted',
+      );
+    } finally {
+      server.close();
+    }
+  });
+
+  it('GET returns 200 with empty array when no events match type', async () => {
+    const mockLogUseCase = { execute: mock.fn() };
+    const mockListUseCase = {
+      execute: mock.fn(),
+      executeByType: mock.fn(async () => []),
+    };
+    const handler = new EventHandler(mockLogUseCase, mockListUseCase);
+    const server = createTestServer(handler);
+
+    await new Promise((r) => server.listen(0, r));
+    try {
+      const res = await getEvents(server, '/events?type=nonexistent');
+
+      assert.strictEqual(res.status, 200);
+      assert.strictEqual(res.body, '[]');
+    } finally {
+      server.close();
+    }
+  });
+
+  it('GET returns 500 when executeByType throws unexpected error', async () => {
+    const mockLogUseCase = { execute: mock.fn() };
+    const mockListUseCase = {
+      execute: mock.fn(),
+      executeByType: mock.fn(async () => { throw new Error('DB exploded'); }),
+    };
+    const handler = new EventHandler(mockLogUseCase, mockListUseCase);
+    const server = createTestServer(handler);
+
+    await new Promise((r) => server.listen(0, r));
+    try {
+      const res = await getEvents(server, '/events?type=device.deleted');
+
+      assert.strictEqual(res.status, 500);
     } finally {
       server.close();
     }

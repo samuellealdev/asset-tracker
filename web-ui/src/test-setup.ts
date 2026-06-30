@@ -1,0 +1,22 @@
+import "@testing-library/jest-dom";
+
+// Node 26 requires --localstorage-file for built-in localStorage;
+// provide a mock for jsdom test environment.
+if (typeof globalThis.localStorage === "undefined") {
+  const store = new Map<string, string>();
+
+  Object.defineProperty(globalThis, "localStorage", {
+    value: {
+      getItem: (key: string) => store.get(key) ?? null,
+      setItem: (key: string, value: string) => store.set(key, value),
+      removeItem: (key: string) => store.delete(key),
+      clear: () => store.clear(),
+      get length() {
+        return store.size;
+      },
+      key: (index: number) => [...store.keys()][index] ?? null,
+    },
+    writable: true,
+    configurable: true,
+  });
+}

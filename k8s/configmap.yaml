@@ -11,3 +11,5 @@ data:
   POSTGRES_DB: "asset_tracker"
   MONGO_DB: "asset_tracker"
   JWT_EXPIRATION: "1h"
+  API_GO_URL: "http://go-service:8080"
+  API_NODE_URL: "http://node-service:3000"

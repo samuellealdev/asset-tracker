@@ -52,4 +52,27 @@ export class MongoEventRepository {
       description: doc.description ?? null,
     }));
   }
+
+  /**
+   * Find all events of a given type, ordered by timestamp descending.
+   *
+   * @param {string} type
+   * @returns {Promise<import('../domain/event.js').Event[]>}
+   */
+  async findByType(type) {
+    const docs = await this.collection
+      .find({ type })
+      .sort({ timestamp: -1 })
+      .toArray();
+
+    return docs.map((doc) => ({
+      id: doc.id,
+      type: doc.type,
+      deviceId: doc.deviceId,
+      name: doc.name,
+      timestamp: doc.timestamp,
+      actor: doc.actor ?? null,
+      description: doc.description ?? null,
+    }));
+  }
 }

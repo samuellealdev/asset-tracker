@@ -69,4 +69,73 @@ describe('ListEventsUseCase', () => {
       dbError,
     );
   });
+
+  describe('executeByType', () => {
+    it('returns events for a valid type', async () => {
+      const events = [
+        { id: '1', type: 'device.deleted', deviceId: '550e8400-e29b-41d4-a716-446655440000', name: 'laptop', timestamp: '2025-01-01T00:00:00.000Z', actor: 'admin', description: 'Removed' },
+      ];
+      const mockRepo = {
+        findByType: mock.fn(async () => events),
+      };
+      const useCase = new ListEventsUseCase(mockRepo);
+
+      const result = await useCase.executeByType('device.deleted');
+
+      assert.deepStrictEqual(result, events);
+      assert.strictEqual(mockRepo.findByType.mock.callCount(), 1);
+      assert.strictEqual(
+        mockRepo.findByType.mock.calls[0].arguments[0],
+        'device.deleted',
+      );
+    });
+
+    it('throws ValidationError when type is missing', async () => {
+      const mockRepo = { findByType: mock.fn() };
+      const useCase = new ListEventsUseCase(mockRepo);
+
+      await assert.rejects(
+        () => useCase.executeByType(''),
+        ValidationError,
+      );
+      assert.strictEqual(mockRepo.findByType.mock.callCount(), 0);
+    });
+
+    it('throws ValidationError when type is not a string', async () => {
+      const mockRepo = { findByType: mock.fn() };
+      const useCase = new ListEventsUseCase(mockRepo);
+
+      await assert.rejects(
+        // @ts-ignore — testing invalid input
+        () => useCase.executeByType(null),
+        ValidationError,
+      );
+      assert.strictEqual(mockRepo.findByType.mock.callCount(), 0);
+    });
+
+    it('returns empty array when no events match type', async () => {
+      const mockRepo = {
+        findByType: mock.fn(async () => []),
+      };
+      const useCase = new ListEventsUseCase(mockRepo);
+
+      const result = await useCase.executeByType('device.deleted');
+
+      assert.deepStrictEqual(result, []);
+      assert.strictEqual(mockRepo.findByType.mock.callCount(), 1);
+    });
+
+    it('propagates repository error', async () => {
+      const dbError = new Error('DB connection failed');
+      const mockRepo = {
+        findByType: mock.fn(async () => { throw dbError; }),
+      };
+      const useCase = new ListEventsUseCase(mockRepo);
+
+      await assert.rejects(
+        () => useCase.executeByType('device.deleted'),
+        dbError,
+      );
+    });
+  });
 });

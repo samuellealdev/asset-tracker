@@ -11,4 +11,7 @@
  * @property {(deviceId: string) => Promise<import('./event.js').Event[]>} findByDeviceId
  *   Find all events for a device, ordered by timestamp descending.
  *   Returns an empty array if no events exist. Rejects with an error if the query fails.
+ * @property {(type: string) => Promise<import('./event.js').Event[]>} findByType
+ *   Find all events of a given type, ordered by timestamp descending.
+ *   Returns an empty array if no events match. Rejects with an error if the query fails.
  */

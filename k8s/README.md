@@ -40,6 +40,7 @@ Build the service images before applying manifests:
 # From the repository root
 docker build -t asset-tracker-go-service:latest ./go-service
 docker build -t asset-tracker-node-service:latest ./node-service
+docker build -t asset-tracker-web-ui:latest ./web-ui
 ```
 
 Load images into Kind (skip for Minikube if using `minikube docker-env`):
@@ -47,6 +48,7 @@ Load images into Kind (skip for Minikube if using `minikube docker-env`):
 ```bash
 kind load docker-image asset-tracker-go-service:latest --name asset-tracker
 kind load docker-image asset-tracker-node-service:latest --name asset-tracker
+kind load docker-image asset-tracker-web-ui:latest --name asset-tracker
 ```
 
 ---
@@ -79,10 +81,13 @@ kubectl wait --for=condition=complete job/kafka-create-topics -n asset-tracker -
 # 6. Application services
 kubectl apply -f k8s/go-service-deployment.yaml
 kubectl apply -f k8s/node-service-deployment.yaml
+kubectl apply -f k8s/web-ui-deployment.yaml
+kubectl apply -f k8s/web-ui-service.yaml
 
 # 7. Verify application pods are ready
 kubectl wait --for=condition=ready pod -l app=go-service -n asset-tracker --timeout=120s
 kubectl wait --for=condition=ready pod -l app=node-service -n asset-tracker --timeout=120s
+kubectl wait --for=condition=ready pod -l app=web-ui -n asset-tracker --timeout=120s
 
 # 8. (Optional) Ingress — requires nginx-ingress installed first (see Ingress Setup below)
 # kubectl apply -f k8s/ingress.yaml
@@ -141,6 +146,9 @@ kubectl port-forward svc/go-service 8080:8080 -n asset-tracker
 
 # Node service (port 3000) — after Phase 5 services are deployed
 kubectl port-forward svc/node-service 3000:3000 -n asset-tracker
+
+# Web UI (port 80) — after Phase 6 services are deployed
+kubectl port-forward svc/web-ui 80:80 -n asset-tracker
 ```
 
 ---
@@ -151,6 +159,7 @@ The Ingress resource (`k8s/ingress.yaml`) routes external HTTP traffic to the ap
 
 | Path | Backend Service | Notes |
 |------|----------------|-------|
+| `/` | web-ui:80 | Frontend SPA — all routes serve index.html |
 | `/devices` | go-service:8080 | Device CRUD |
 | `/events` | node-service:3000 | Event logging |
 | `/go/health` | go-service:8080 | → rewritten to `/health` |
