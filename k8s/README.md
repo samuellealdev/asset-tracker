@@ -358,6 +358,28 @@ minikube delete
 
 ---
 
+## Verification Checklist (Tested)
+
+All services were successfully deployed and verified on a Kind cluster:
+
+| Service | Health | Seed Data | Notes |
+|---------|--------|-----------|-------|
+| Postgres | ✅ | ✅ | pg_isready probe works |
+| MongoDB | ✅ | ✅ | mongosh ping probe works |
+| Kafka | ✅ | ✅ | Topic auto-created by Job |
+| Go Service | ✅ | ✅ | /health, /health/live, /health/ready |
+| Node Service | ✅ | ✅ | /health, events query |
+| Web UI | ✅ | ✅ | SPA served via nginx |
+| Ingress (nginx) | ✅ | N/A | /go/health, /node/health rewrites |
+
+**Seed script**: `GO_PORT=8082 NODE_PORT=3001 ./seed.sh` (adjust ports when using port-forward with non-default ports)
+
+**Ingress routes** (with nginx-ingress controller on Kind):
+- `localhost/devices` → Go service (requires auth)
+- `localhost/events` → Node service (requires deviceId or type param)
+- `/go/health` → rewritten to Go `/health`
+- `/node/health` → rewritten to Node `/health`
+
 ## Troubleshooting
 
 | Symptom | Likely Cause | Fix |
@@ -367,3 +389,6 @@ minikube delete
 | `pg_isready` fails | PostgreSQL still initializing | Wait, or increase `initialDelaySeconds` |
 | Topic already exists error | Topic created twice | Use `--if-not-exists` flag (already included in the Job command) |
 | ImagePullBackOff | Image not found | Ensure images are built and loaded into the cluster |
+| Port-forward "address already in use" | Local port already occupied | Use a different port: `kubectl port-forward svc/go-service 8082:8080` |
+| Ingress returns 404 | nginx-ingress controller not installed | Run `kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml` |
+| Node service events endpoint returns 400 | Missing required params | Add `?type=maintenance` or `?deviceId=<id>` query parameters |
