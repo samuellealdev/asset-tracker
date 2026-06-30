@@ -46,6 +46,7 @@ Added to README Key Architecture Decisions table:
 
 - **Health/metrics endpoints excluded from counters and ring buffer**: `/health*` and `/metrics*` paths were inflating request counters and burying business traffic in the trace table (9/10 traces were infrastructure noise). Both backends now skip these paths in `MetricsMiddleware` (Go) and request handler (Node). Counters and ring buffer now reflect business traffic only. See `go-service/internal/interfaces/metrics_handler.go` and `node-service/src/index.js`.
 - **Error row styling changed from left border to subtle red background**: Replaced `border-l-2 border-red-500` with `bg-red-950/20` (red background across entire row) for error traces (status ≥ 400). Path, duration, and timestamp columns also get reddish text (`text-red-300`) on error rows. Visual impact: consistent row-level highlighting instead of a single vertical bar. See `web-ui/src/components/layout/TraceTable.tsx`.
+- **34 E2E tests added for LiveMetrics**: Comprehensive Playwright test suite covering all user-facing features: health dots & priority badge (4), modal open/close/content (9), trace table rendering & error styling (9), filter bar with method chips/error toggle/path search (10), and combined filters (2). All 34 pass. See `web-ui/e2e/live-metrics.spec.ts`.
 
 ## SDD Cycle Complete
 
