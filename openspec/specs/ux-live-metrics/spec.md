@@ -157,13 +157,76 @@ MUST provide `useMetricsDetail(serviceUrl, limit?)` via TanStack Query: `retry: 
 | Key isolation | both metrics queries active | — | distinct cache entries |
 
 ### Requirement: ServiceDetailCard Trace Table
-`ServiceDetailCard` modal MUST render scrollable trace table (`max-h-48 overflow-y-auto`) below health/counters. Columns: Method (colored badge), Path, Status (green <400, red ≥400), Duration (ms), Timestamp. Error rows (≥400) MUST have `border-l-2 border-red-500`. Empty state: "No recent requests".
+
+`ServiceDetailCard` modal MUST render a filter bar above the trace table with: method chips (All, GET, POST, PUT, DELETE), error-only toggle, path search input, clear-all link, and active-count badge. Below the filter bar, the scrollable trace table (`max-h-48 overflow-y-auto`) renders beneath health/counters. Columns: Method (colored badge), Path, Status (green for <400, red for >=400), Duration (ms), Timestamp. Error rows (status >=400) MUST have `border-l-2 border-red-500`. Empty state: "No recent requests" when zero traces returned from backend; "No matching requests" when filters are active but no traces match.
+
+(Previously: Trace table rendered without a filter bar and used a single "No recent requests" empty state for all cases.)
 
 | Scenario | GIVEN | WHEN | THEN |
 |---|---|---|---|
-| Table renders | 15 traces | modal opens | newest-first, all columns |
-| Method badges | GET/POST/DELETE/PUT | table renders | blue/green/red/orange badges |
+| Table renders | 15 traces | modal opens | filter bar visible above newest-first table, all columns rendered |
+| Method badges | GET/POST/DELETE/PUT traces | table renders | blue/green/red/orange badges |
 | Status colors | 200 vs 500 | table renders | green for 200, red for 500 |
-| Error row border | status ≥ 400 | row renders | red left-border applied |
+| Error row border | status >= 400 | row renders | red left-border applied |
 | Scroll overflow | 50+ traces | modal renders | container scrolls, header fixed |
-| Empty state | zero traces | modal opens | "No recent requests" shown |
+| Empty state — no data | zero traces returned from backend | modal opens | "No recent requests" shown |
+| Empty state — filters active | POST chip selected, no POST traces exist | modal renders | "No matching requests" shown |
+
+### Requirement: Method Filter Chips
+
+The filter bar MUST render single-select method toggle chips (All, GET, POST, PUT, DELETE). Clicking a chip selects it and deselects others. Clicking the already-selected chip deselects all, reverting to "All". Only traces matching the selected method SHALL be shown.
+
+| Scenario | GIVEN | WHEN | THEN |
+|---|---|---|---|
+| Select method chip | trace table with 10 GET and 5 POST traces | user clicks the "POST" chip | only 5 POST traces are shown; "POST" chip is highlighted |
+| Deselect chip to show all | "POST" chip is selected and highlighted | user clicks the "POST" chip again | all 15 traces shown; no chip is highlighted |
+| Switch method | "POST" chip selected, showing only POST traces | user clicks "DELETE" chip | only DELETE traces shown; "DELETE" highlighted; "POST" deselected |
+
+### Requirement: Error-Only Toggle
+
+The filter bar MUST include a toggle that filters traces to those with `status >= 400`. The toggle operates independently of other filters. When combined with a method filter, it SHALL show only errors for that method.
+
+| Scenario | GIVEN | WHEN | THEN |
+|---|---|---|---|
+| Toggle errors on | 10 traces: 3 with status >= 400, 7 with status < 400 | user enables error-only toggle | only 3 error traces shown; toggle indicates active state |
+| Toggle errors off | error-only toggle active, showing 3 error traces | user disables the toggle | all 10 traces shown; toggle indicates inactive state |
+| Combine error with method filter | 3 POST traces (1 error) and 2 GET traces (1 error) | user selects "POST" chip AND enables error-only toggle | only the 1 POST error trace is shown |
+
+### Requirement: Path Search
+
+The filter bar MUST include a text input that filters traces by case-insensitive substring match on the `path` field. Filtering SHALL apply in real-time as the user types.
+
+| Scenario | GIVEN | WHEN | THEN |
+|---|---|---|---|
+| Partial path match | traces with paths "/api/users", "/api/assets", "/health" | user types "user" in path search | only the "/api/users" trace is shown |
+| Case-insensitive match | a trace with path "/API/Users" | user types "users" | the trace is shown (case-insensitive substring match) |
+| Empty search restores full view | path search contains "user", showing filtered results | user clears the search input | all traces are shown |
+| Combine path with method filter | GET "/api/users" and POST "/api/users" traces | user selects "POST" chip AND types "users" | only the POST "/api/users" trace is shown |
+
+### Requirement: Clear All Filters
+
+The filter bar MUST include a "Clear all" control that resets every filter to its default: All methods, error-only off, empty path search. The control SHALL be visible only when at least one filter is active.
+
+| Scenario | GIVEN | WHEN | THEN |
+|---|---|---|---|
+| Clear all resets every filter | POST chip selected, error-only on, path search has "api" | user clicks "Clear all" | all traces shown; no chip selected; error toggle off; search empty |
+| Clear all hidden at defaults | no filters are active | filter bar renders | "Clear all" is not visible |
+
+### Requirement: Active Filter Count Badge
+
+The filter bar MUST display a badge showing the number of active filters. A filter is active when it deviates from its default value. The badge SHALL be hidden when zero filters are active.
+
+| Scenario | GIVEN | WHEN | THEN |
+|---|---|---|---|
+| One active filter | user selected "POST" method chip, no other filters active | filter bar renders | badge shows "1" |
+| Multiple active filters | user selected "DELETE" chip, enabled error-only, typed "api" | filter bar renders | badge shows "3" |
+| Badge hidden at defaults | all filters at their default values | filter bar renders | badge is not visible |
+
+### Requirement: Filter State Reset on Context Change
+
+Filter state MUST reset to defaults when the ServiceDetailCard modal closes or when the selected service changes.
+
+| Scenario | GIVEN | WHEN | THEN |
+|---|---|---|---|
+| Reset on modal close | user has "POST" chip selected in the Go service modal | user closes the modal AND reopens the Go service modal | all filters are at defaults |
+| Reset on service switch | Go service modal open with "POST" method selected | user opens the Node service modal | the Node modal shows all filters at defaults |

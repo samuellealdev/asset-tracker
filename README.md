@@ -20,6 +20,7 @@
 | 11 | Modal Timeline Layout Fix — scrollbar CSS (Tailwind v4 `@utility` bugfix) + modal overflow fix (`min-h-0` flex contract) | ✅ Complete | 2026-06-29 |
 | 12 | Live Metrics Offline State — four-state health classification (healthy/offline/unhealthy/stale), priority badge, 359 tests | ✅ Complete | 2026-06-29 |
 | 13 | Request Tracing Metrics — ring buffer (cap 200) per backend, `GET /metrics/requests?limit=N` endpoint, frontend trace table in ServiceDetailCard modal, 500+ tests | ✅ Complete | 2026-06-29 |
+| 14 | Trace Table Filters — method chips, error-only toggle, path search, clear-all, active count badge in ServiceDetailCard trace table, 430 tests | ✅ Complete | 2026-06-30 |
 
 ## Architecture
 
@@ -70,6 +71,7 @@ Inter-service communication is **event-driven via Apache Kafka** in KRaft mode (
 | **SPA with nginx reverse proxy** | Chose SPA over SSR for simplicity (no Node.js runtime needed in production). nginx serves static build and proxies `/api/go/*` to Go, `/api/node/*` to Node. Multi-stage Docker build: `node:22-alpine` for build, `nginx:alpine` for runtime |
 | **Four-state health classification with priority badge** | Replaced binary `healthy: boolean` with `status: HealthStatus` (healthy/offline/unhealthy/stale). Single top-bar badge shows worst-case via priority chain (Offline > Unhealthy > Stale). `classifyHealth()` is a pure function with zero framework deps |
 | **Ring buffer for request tracing (cap 200)** | In-memory ring buffer per backend — zero allocation per push after warmup (pre-allocated slice/array). `sync.Mutex` (Go) / shared-nothing (Node) for thread safety. Separate `count` tracked alongside `writeIdx` since slice stays at cap after first wrap. No external persistence — purely additive, no migration risk |
+| **Client-side filtering for trace table** | Pure functions `applyFilters`/`countActiveFilters` above the component with no framework deps — testable with plain arrays, no DOM. `useState` co-located inside `TraceTable` (single consumer, SRP). React unmount destroys state automatically on modal close/service switch — no cleanup code needed. React 19 compiler handles memoization; explicit `useMemo`/`useCallback` would be an anti-pattern |
 | **Multi-stage Docker builds** (distroless / alpine) | Go binary compiled statically (`CGO_ENABLED=0`) into `gcr.io/distroless/static:nonroot` — no shell, no package manager, minimal CVEs. Node service uses `node:22-alpine` (needs JS runtime, cannot use distroless). Build tools dropped after compilation |
 | **Graceful shutdown with connection draining** | Both services trap SIGINT/SIGTERM. Go: server shutdown with 10s context timeout, Kafka writer closed after server. Node: `server.close()` + Kafka consumer stop + MongoDB client close. Ensures in-flight requests complete and messages are flushed before exit |
 
