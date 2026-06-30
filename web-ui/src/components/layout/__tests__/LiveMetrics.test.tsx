@@ -671,12 +671,11 @@ describe("LiveMetrics", () => {
 
       const modalPanel = screen.getByTestId("modal-panel");
 
-      // Row with status 500 should have the error border class
+      // Row with status 500 should have the error background class
       const errorRows = within(modalPanel).getAllByText(/^[45]\d{2}$/);
       for (const cell of errorRows) {
         const row = cell.closest("tr");
-        expect(row?.className).toContain("border-l-2");
-        expect(row?.className).toContain("border-red-500");
+        expect(row?.className).toContain("bg-red-950/20");
       }
     });
 

@@ -190,14 +190,14 @@ export function TraceTable({ traces }: TraceTableProps) {
                 <tr
                   key={idx}
                   className={cn(
-                    "border-b border-slate-700/50 transition-colors hover:bg-slate-800/50",
-                    trace.status >= 400 && "border-l-2 border-red-500",
+                    "border-b border-slate-700/50 transition-colors",
+                    trace.status >= 400 && "bg-red-950/20 hover:bg-red-950/30",
                   )}
                 >
                   <td className="px-2 py-1">
                     <MethodBadge method={trace.method} />
                   </td>
-                  <td className="px-2 py-1 font-mono text-slate-300">
+                  <td className={cn("px-2 py-1 font-mono", trace.status >= 400 ? "text-red-300" : "text-slate-300")}>
                     {trace.path}
                   </td>
                   <td className="px-2 py-1">
@@ -205,10 +205,10 @@ export function TraceTable({ traces }: TraceTableProps) {
                       {trace.status}
                     </span>
                   </td>
-                  <td className="px-2 py-1 font-mono text-slate-300">
+                  <td className={cn("px-2 py-1 font-mono", trace.status >= 400 ? "text-red-300" : "text-slate-300")}>
                     {trace.duration_ms.toFixed(1)}ms
                   </td>
-                  <td className="px-2 py-1 text-slate-400">
+                  <td className={cn("px-2 py-1", trace.status >= 400 ? "text-red-300/80" : "text-slate-400")}>
                     {new Date(trace.timestamp).toLocaleString()}
                   </td>
                 </tr>

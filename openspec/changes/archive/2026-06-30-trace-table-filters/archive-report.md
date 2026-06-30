@@ -45,6 +45,7 @@ Added to README Key Architecture Decisions table:
 ## Additional Fix Applied After Archive
 
 - **Health/metrics endpoints excluded from counters and ring buffer**: `/health*` and `/metrics*` paths were inflating request counters and burying business traffic in the trace table (9/10 traces were infrastructure noise). Both backends now skip these paths in `MetricsMiddleware` (Go) and request handler (Node). Counters and ring buffer now reflect business traffic only. See `go-service/internal/interfaces/metrics_handler.go` and `node-service/src/index.js`.
+- **Error row styling changed from left border to subtle red background**: Replaced `border-l-2 border-red-500` with `bg-red-950/20` (red background across entire row) for error traces (status ≥ 400). Path, duration, and timestamp columns also get reddish text (`text-red-300`) on error rows. Visual impact: consistent row-level highlighting instead of a single vertical bar. See `web-ui/src/components/layout/TraceTable.tsx`.
 
 ## SDD Cycle Complete
 
