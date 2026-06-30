@@ -32,6 +32,7 @@ vi.mock("@/hooks/use-settings", () => ({
 }));
 
 import { LiveMetrics } from "../LiveMetrics";
+import { applyFilters, countActiveFilters, type FilterState } from "../TraceTable";
 
 function mockHealthOk() {
   mockUseGoHealth.mockReturnValue({
@@ -98,6 +99,135 @@ function mockDetailOk(traces = sampleTraces) {
     isLoading: false,
   });
 }
+
+// ── Phase 1: Unit tests for pure filter functions ──
+
+describe("applyFilters", () => {
+  const defaultFilters: FilterState = { method: "ALL", errorsOnly: false, pathSearch: "" };
+
+  it("returns all traces when no filters are active", () => {
+    const result = applyFilters(sampleTraces, defaultFilters);
+    expect(result).toHaveLength(15);
+  });
+
+  it("filters by method (GET only)", () => {
+    const filters: FilterState = { method: "GET", errorsOnly: false, pathSearch: "" };
+    const result = applyFilters(sampleTraces, filters);
+    expect(result).toHaveLength(6);
+    result.forEach((t) => expect(t.method).toBe("GET"));
+  });
+
+  it("switches method filter from POST to DELETE", () => {
+    const postFilters: FilterState = { method: "POST", errorsOnly: false, pathSearch: "" };
+    expect(applyFilters(sampleTraces, postFilters)).toHaveLength(4);
+
+    const deleteFilters: FilterState = { method: "DELETE", errorsOnly: false, pathSearch: "" };
+    const result = applyFilters(sampleTraces, deleteFilters);
+    expect(result).toHaveLength(2);
+    result.forEach((t) => expect(t.method).toBe("DELETE"));
+  });
+
+  it("filters errors only (status >= 400)", () => {
+    const filters: FilterState = { method: "ALL", errorsOnly: true, pathSearch: "" };
+    const result = applyFilters(sampleTraces, filters);
+    expect(result.length).toBeGreaterThan(0);
+    result.forEach((t) => expect(t.status).toBeGreaterThanOrEqual(400));
+  });
+
+  it("filters by path substring (case-insensitive)", () => {
+    const filters: FilterState = { method: "ALL", errorsOnly: false, pathSearch: "users" };
+    const result = applyFilters(sampleTraces, filters);
+    expect(result).toHaveLength(2);
+    result.forEach((t) => expect(t.path.toLowerCase()).toContain("users"));
+  });
+
+  it("combines method + errorsOnly filters", () => {
+    const filters: FilterState = { method: "POST", errorsOnly: true, pathSearch: "" };
+    const result = applyFilters(sampleTraces, filters);
+    // POST traces with status >= 400: POST /api/events (500), POST /api/users (409)
+    expect(result).toHaveLength(2);
+    result.forEach((t) => {
+      expect(t.method).toBe("POST");
+      expect(t.status).toBeGreaterThanOrEqual(400);
+    });
+  });
+
+  it("combines all three filters", () => {
+    const filters: FilterState = { method: "POST", errorsOnly: true, pathSearch: "users" };
+    const result = applyFilters(sampleTraces, filters);
+    // POST /api/users (status 409) — matches method=POST, errorsOnly, path contains "users"
+    expect(result).toHaveLength(1);
+    expect(result[0]!.path).toBe("/api/users");
+    expect(result[0]!.status).toBe(409);
+  });
+
+  it("returns empty array when no traces match", () => {
+    const filters: FilterState = { method: "DELETE", errorsOnly: true, pathSearch: "nonexistent" };
+    const result = applyFilters(sampleTraces, filters);
+    expect(result).toHaveLength(0);
+  });
+
+  it("handles empty traces array", () => {
+    const filters: FilterState = { method: "ALL", errorsOnly: false, pathSearch: "" };
+    const result = applyFilters([], filters);
+    expect(result).toHaveLength(0);
+  });
+
+  it("performs case-insensitive path match", () => {
+    const traces = [
+      { method: "GET", path: "/API/Users", status: 200, duration_ms: 1, timestamp: "2026-01-01T00:00:00Z" },
+      { method: "GET", path: "/api/users", status: 200, duration_ms: 1, timestamp: "2026-01-01T00:00:00Z" },
+    ];
+    const filters: FilterState = { method: "ALL", errorsOnly: false, pathSearch: "USERS" };
+    const result = applyFilters(traces, filters);
+    expect(result).toHaveLength(2);
+  });
+
+  it("empty path search returns all matching by other filters", () => {
+    const filters: FilterState = { method: "GET", errorsOnly: false, pathSearch: "" };
+    const result = applyFilters(sampleTraces, filters);
+    expect(result).toHaveLength(6);
+  });
+});
+
+describe("countActiveFilters", () => {
+  it("returns 0 when all filters are at defaults", () => {
+    const filters: FilterState = { method: "ALL", errorsOnly: false, pathSearch: "" };
+    expect(countActiveFilters(filters)).toBe(0);
+  });
+
+  it("returns 1 when method filter is active", () => {
+    const filters: FilterState = { method: "POST", errorsOnly: false, pathSearch: "" };
+    expect(countActiveFilters(filters)).toBe(1);
+  });
+
+  it("returns 1 when errorsOnly is active", () => {
+    const filters: FilterState = { method: "ALL", errorsOnly: true, pathSearch: "" };
+    expect(countActiveFilters(filters)).toBe(1);
+  });
+
+  it("returns 1 when pathSearch is non-empty", () => {
+    const filters: FilterState = { method: "ALL", errorsOnly: false, pathSearch: "api" };
+    expect(countActiveFilters(filters)).toBe(1);
+  });
+
+  it("returns 2 when method + errorsOnly are active", () => {
+    const filters: FilterState = { method: "POST", errorsOnly: true, pathSearch: "" };
+    expect(countActiveFilters(filters)).toBe(2);
+  });
+
+  it("returns 3 when all three filters are active", () => {
+    const filters: FilterState = { method: "DELETE", errorsOnly: true, pathSearch: "api" };
+    expect(countActiveFilters(filters)).toBe(3);
+  });
+
+  it("counts pathSearch with whitespace as active", () => {
+    const filters: FilterState = { method: "ALL", errorsOnly: false, pathSearch: " " };
+    expect(countActiveFilters(filters)).toBe(1);
+  });
+});
+
+// ── End Phase 1 unit tests ──
 
 describe("LiveMetrics", () => {
   beforeEach(() => {
@@ -456,8 +586,9 @@ describe("LiveMetrics", () => {
 
       const modalPanel = screen.getByTestId("modal-panel");
       const getBadges = within(modalPanel).getAllByText("GET");
-      expect(getBadges.length).toBeGreaterThanOrEqual(1);
-      expect(getBadges[0]!.className).toContain("text-blue-400");
+      // Filter out the filter-bar button, keep only the MethodBadge span
+      const badge = getBadges.find((b) => b.className.includes("font-mono"));
+      expect(badge?.className).toContain("text-blue-400");
     });
 
     it("renders method badge with correct color for POST (green)", async () => {
@@ -471,8 +602,9 @@ describe("LiveMetrics", () => {
       await user.click(screen.getByRole("button", { name: /go metrics detail/i }));
 
       const modalPanel = screen.getByTestId("modal-panel");
-      const postBadge = within(modalPanel).getByText("POST");
-      expect(postBadge.className).toContain("text-green-400");
+      const postBadges = within(modalPanel).getAllByText("POST");
+      const badge = postBadges.find((b) => b.className.includes("font-mono"));
+      expect(badge?.className).toContain("text-green-400");
     });
 
     it("renders method badge with correct color for DELETE (red)", async () => {
@@ -486,8 +618,9 @@ describe("LiveMetrics", () => {
       await user.click(screen.getByRole("button", { name: /go metrics detail/i }));
 
       const modalPanel = screen.getByTestId("modal-panel");
-      const deleteBadge = within(modalPanel).getByText("DELETE");
-      expect(deleteBadge.className).toContain("text-red-400");
+      const deleteBadges = within(modalPanel).getAllByText("DELETE");
+      const badge = deleteBadges.find((b) => b.className.includes("font-mono"));
+      expect(badge?.className).toContain("text-red-400");
     });
 
     it("renders method badge with correct color for PUT (amber)", async () => {
@@ -501,8 +634,9 @@ describe("LiveMetrics", () => {
       await user.click(screen.getByRole("button", { name: /go metrics detail/i }));
 
       const modalPanel = screen.getByTestId("modal-panel");
-      const putBadge = within(modalPanel).getByText("PUT");
-      expect(putBadge.className).toContain("text-amber-400");
+      const putBadges = within(modalPanel).getAllByText("PUT");
+      const badge = putBadges.find((b) => b.className.includes("font-mono"));
+      expect(badge?.className).toContain("text-amber-400");
     });
 
     it("shows status 200 in green text color", async () => {
@@ -624,6 +758,286 @@ describe("LiveMetrics", () => {
       expect(within(modalPanel).getByText("Recent Requests")).toBeInTheDocument();
       const rows = within(modalPanel).getAllByRole("row");
       expect(rows.length).toBe(16);
+    });
+
+    // ── Phase 2: Filter bar integration tests ──
+
+    it("renders filter bar with method chips, error toggle, and path input", async () => {
+      render(<LiveMetrics />);
+
+      const user = userEvent.setup();
+      await user.click(screen.getByRole("button", { name: /go metrics detail/i }));
+
+      const modalPanel = screen.getByTestId("modal-panel");
+      const filterBar = within(modalPanel).getByTestId("filter-bar");
+      expect(filterBar).toBeInTheDocument();
+
+      // All 5 method chips present
+      for (const method of ["ALL", "GET", "POST", "PUT", "DELETE"]) {
+        expect(within(filterBar).getByTestId(`method-chip-${method}`)).toBeInTheDocument();
+      }
+
+      // Error toggle and path search
+      expect(within(filterBar).getByTestId("error-toggle")).toBeInTheDocument();
+      expect(within(filterBar).getByTestId("path-search")).toBeInTheDocument();
+    });
+
+    it("filters rows when method chip is clicked", async () => {
+      render(<LiveMetrics />);
+
+      const user = userEvent.setup();
+      await user.click(screen.getByRole("button", { name: /go metrics detail/i }));
+
+      const modalPanel = screen.getByTestId("modal-panel");
+
+      // Click POST chip — should show 4 POST traces
+      await user.click(within(modalPanel).getByTestId("method-chip-POST"));
+      let rows = within(modalPanel).getAllByRole("row");
+      // 1 header + 4 data rows = 5 rows
+      expect(rows.length).toBe(5);
+
+      // Click POST again (deselect) — all 15 traces
+      await user.click(within(modalPanel).getByTestId("method-chip-POST"));
+      rows = within(modalPanel).getAllByRole("row");
+      expect(rows.length).toBe(16);
+    });
+
+    it("switches method filter when different chip is clicked", async () => {
+      render(<LiveMetrics />);
+
+      const user = userEvent.setup();
+      await user.click(screen.getByRole("button", { name: /go metrics detail/i }));
+
+      const modalPanel = screen.getByTestId("modal-panel");
+
+      // Click POST → 5 rows
+      await user.click(within(modalPanel).getByTestId("method-chip-POST"));
+      expect(within(modalPanel).getAllByRole("row").length).toBe(5);
+
+      // Click DELETE → 3 rows (header + 2 DELETE traces)
+      await user.click(within(modalPanel).getByTestId("method-chip-DELETE"));
+      expect(within(modalPanel).getAllByRole("row").length).toBe(3);
+    });
+
+    it("filters errors only when error toggle is active", async () => {
+      render(<LiveMetrics />);
+
+      const user = userEvent.setup();
+      await user.click(screen.getByRole("button", { name: /go metrics detail/i }));
+
+      const modalPanel = screen.getByTestId("modal-panel");
+
+      // Click error toggle
+      await user.click(within(modalPanel).getByTestId("error-toggle"));
+
+      // 1 header + 6 error rows (status >= 400) = 7 rows
+      const rows = within(modalPanel).getAllByRole("row");
+      expect(rows.length).toBe(7);
+    });
+
+    it("combines error toggle with method filter", async () => {
+      render(<LiveMetrics />);
+
+      const user = userEvent.setup();
+      await user.click(screen.getByRole("button", { name: /go metrics detail/i }));
+
+      const modalPanel = screen.getByTestId("modal-panel");
+
+      // Select POST + error toggle
+      await user.click(within(modalPanel).getByTestId("method-chip-POST"));
+      await user.click(within(modalPanel).getByTestId("error-toggle"));
+
+      // 1 header + 2 POST error rows = 3 rows
+      const rows = within(modalPanel).getAllByRole("row");
+      expect(rows.length).toBe(3);
+    });
+
+    it("filters by path search in real-time", async () => {
+      render(<LiveMetrics />);
+
+      const user = userEvent.setup();
+      await user.click(screen.getByRole("button", { name: /go metrics detail/i }));
+
+      const modalPanel = screen.getByTestId("modal-panel");
+      const pathInput = within(modalPanel).getByTestId("path-search");
+
+      // Type "users" — should match /api/users (GET) and /api/users (POST)
+      await user.type(pathInput, "users");
+
+      const rows = within(modalPanel).getAllByRole("row");
+      expect(rows.length).toBe(3); // 1 header + 2 data rows
+    });
+
+    it("filters by path case-insensitively", async () => {
+      render(<LiveMetrics />);
+
+      const user = userEvent.setup();
+      await user.click(screen.getByRole("button", { name: /go metrics detail/i }));
+
+      const modalPanel = screen.getByTestId("modal-panel");
+      const pathInput = within(modalPanel).getByTestId("path-search");
+
+      // Type uppercase "USERS"
+      await user.type(pathInput, "USERS");
+
+      const rows = within(modalPanel).getAllByRole("row");
+      expect(rows.length).toBe(3); // 1 header + 2 data rows
+    });
+
+    it("clearing path search restores all rows", async () => {
+      render(<LiveMetrics />);
+
+      const user = userEvent.setup();
+      await user.click(screen.getByRole("button", { name: /go metrics detail/i }));
+
+      const modalPanel = screen.getByTestId("modal-panel");
+      const pathInput = within(modalPanel).getByTestId("path-search");
+
+      await user.type(pathInput, "users");
+      expect(within(modalPanel).getAllByRole("row").length).toBe(3);
+
+      // Clear the input
+      await user.clear(pathInput);
+      expect(within(modalPanel).getAllByRole("row").length).toBe(16);
+    });
+
+    it("clears all filters when Clear all is clicked", async () => {
+      render(<LiveMetrics />);
+
+      const user = userEvent.setup();
+      await user.click(screen.getByRole("button", { name: /go metrics detail/i }));
+
+      const modalPanel = screen.getByTestId("modal-panel");
+
+      // Activate multiple filters
+      await user.click(within(modalPanel).getByTestId("method-chip-POST"));
+      await user.click(within(modalPanel).getByTestId("error-toggle"));
+      await user.type(within(modalPanel).getByTestId("path-search"), "api");
+
+      // Verify filters are active (POST errors with "api" in path: /api/events + /api/users)
+      expect(within(modalPanel).getAllByRole("row").length).toBe(3); // header + 2 data rows
+
+      // Click Clear all
+      await user.click(within(modalPanel).getByTestId("clear-all"));
+
+      // All 15 traces restored
+      expect(within(modalPanel).getAllByRole("row").length).toBe(16);
+
+      // Filter bar controls reset
+      expect(within(modalPanel).queryByTestId("clear-all")).not.toBeInTheDocument();
+      expect(within(modalPanel).queryByTestId("active-count")).not.toBeInTheDocument();
+    });
+
+    it("hides Clear all when no filters are active", async () => {
+      render(<LiveMetrics />);
+
+      const user = userEvent.setup();
+      await user.click(screen.getByRole("button", { name: /go metrics detail/i }));
+
+      const modalPanel = screen.getByTestId("modal-panel");
+      expect(within(modalPanel).queryByTestId("clear-all")).not.toBeInTheDocument();
+    });
+
+    it("shows active count badge with correct number", async () => {
+      render(<LiveMetrics />);
+
+      const user = userEvent.setup();
+      await user.click(screen.getByRole("button", { name: /go metrics detail/i }));
+
+      const modalPanel = screen.getByTestId("modal-panel");
+
+      // Start: no badge
+      expect(within(modalPanel).queryByTestId("active-count")).not.toBeInTheDocument();
+
+      // One filter active (POST chip)
+      await user.click(within(modalPanel).getByTestId("method-chip-POST"));
+      const badge1 = within(modalPanel).getByTestId("active-count");
+      expect(badge1).toHaveTextContent("1");
+
+      // Two filters active (+ error toggle)
+      await user.click(within(modalPanel).getByTestId("error-toggle"));
+      const badge2 = within(modalPanel).getByTestId("active-count");
+      expect(badge2).toHaveTextContent("2");
+
+      // Three filters active (+ path search)
+      await user.type(within(modalPanel).getByTestId("path-search"), "api");
+      const badge3 = within(modalPanel).getByTestId("active-count");
+      expect(badge3).toHaveTextContent("3");
+    });
+
+    // ── Phase 3: Empty state tests ──
+
+    it("shows 'No matching requests' when filters active but no traces match", async () => {
+      render(<LiveMetrics />);
+
+      const user = userEvent.setup();
+      await user.click(screen.getByRole("button", { name: /go metrics detail/i }));
+
+      const modalPanel = screen.getByTestId("modal-panel");
+
+      // Filter by a method that doesn't exist in sampleTraces
+      // PATCH is in sampleTraces (1 trace), so use a non-existent combination
+      await user.click(within(modalPanel).getByTestId("method-chip-POST"));
+      await user.click(within(modalPanel).getByTestId("error-toggle"));
+      await user.type(within(modalPanel).getByTestId("path-search"), "nonexistent");
+
+      expect(within(modalPanel).getByText("No matching requests")).toBeInTheDocument();
+    });
+
+    it("still shows 'No recent requests' when traces array is empty (no filters)", async () => {
+      mockDetailOk([]);
+
+      render(<LiveMetrics />);
+
+      const user = userEvent.setup();
+      await user.click(screen.getByRole("button", { name: /go metrics detail/i }));
+
+      const modalPanel = screen.getByTestId("modal-panel");
+      expect(within(modalPanel).getByText("No recent requests")).toBeInTheDocument();
+      expect(within(modalPanel).queryByText("No matching requests")).not.toBeInTheDocument();
+    });
+
+    it("resets filter state when modal closes and reopens", async () => {
+      render(<LiveMetrics />);
+
+      const user = userEvent.setup();
+
+      // Open Go modal and set filters
+      await user.click(screen.getByRole("button", { name: /go metrics detail/i }));
+      const modalPanel1 = screen.getByTestId("modal-panel");
+      await user.click(within(modalPanel1).getByTestId("method-chip-POST"));
+      expect(within(modalPanel1).getAllByRole("row").length).toBe(5);
+
+      // Close modal
+      await user.click(screen.getByTestId("modal-backdrop"));
+
+      // Reopen Go modal — filters should be reset to defaults (15 traces)
+      await user.click(screen.getByRole("button", { name: /go metrics detail/i }));
+      const modalPanel2 = screen.getByTestId("modal-panel");
+      expect(within(modalPanel2).getAllByRole("row").length).toBe(16);
+      // No active filters
+      expect(within(modalPanel2).queryByTestId("active-count")).not.toBeInTheDocument();
+    });
+
+    it("resets filter state when switching between Go and Node services", async () => {
+      render(<LiveMetrics />);
+
+      const user = userEvent.setup();
+
+      // Open Go modal and set filters
+      await user.click(screen.getByRole("button", { name: /go metrics detail/i }));
+      const goPanel = screen.getByTestId("modal-panel");
+      await user.click(within(goPanel).getByTestId("method-chip-POST"));
+      expect(within(goPanel).getAllByRole("row").length).toBe(5);
+
+      // Close Go modal
+      await user.click(screen.getByTestId("modal-backdrop"));
+
+      // Open Node modal — filters should be reset
+      await user.click(screen.getByRole("button", { name: /node metrics detail/i }));
+      const nodePanel = screen.getByTestId("modal-panel");
+      expect(within(nodePanel).getAllByRole("row").length).toBe(16);
+      expect(within(nodePanel).queryByTestId("active-count")).not.toBeInTheDocument();
     });
   });
 });
