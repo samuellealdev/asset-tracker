@@ -78,6 +78,7 @@ Inter-service communication is **event-driven via Apache Kafka** in KRaft mode (
 | **Priority-based badge chain** | Single top-bar badge shows worst-case status: Offline > Unhealthy > Stale > none; prevents badge stacking and reduces cognitive load at a glance |
 | **TypeError detection with cross-realm fallback** | `instanceof TypeError` OR `error?.message?.includes('fetch')` — safe cross-realm detection for iframe/bundler scenarios where `instanceof` may fail |
 | **Ring buffer for request tracing (cap 200)** | In-memory ring buffer per backend avoids allocation per push (pre-allocated slice/array). Mutex (Go) shared-nothing (Node) for thread safety. `count` tracked separately from `len(traces)` since slice stays at cap after first wrap. No external persistence — additive, no migration risk |
+| **Settings state via React Context** | Extracted `useSettings` from local `useState` hooks into a shared `SettingsProvider` (same pattern as `AuthContext`). Prevents stale-closure bugs where `SettingsPanel` and `LiveMetrics` held independent state copies — polling interval changes now propagate instantly without page refresh |
 
 > Detailed architecture decisions, including deferred production patterns (circuit breaker, outbox, rate limiting, idempotent consumer, Kafka multi-node, testcontainers), are documented in [`docs/adr/`](docs/adr/).
 

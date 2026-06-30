@@ -51,5 +51,9 @@ This change's artifacts are the filesystem copies in the archive folder (hybrid 
 - **W03 (cosmetic)**: Trace table scroll container lacks sticky header
 - None of these are functional issues; all verified as safe
 
+## Additional Fix Applied After Archive
+
+- **Settings polling interval required page refresh**: `useSettings()` used local `useState`, creating independent state copies per component. When the user changed polling intervals in `SettingsPanel`, only the panel's local state updated — `LiveMetrics` kept polling at the old rate until page refresh. Fixed by extracting state into a shared `SettingsProvider` (React Context), following the same pattern as `AuthContext`. Both components now share the same state, and React Query v5 picks up `refetchInterval` changes immediately. See `web-ui/src/context/SettingsContext.tsx`.
+
 ## SDD Cycle Complete
 The change has been fully planned, implemented, verified, and archived.
