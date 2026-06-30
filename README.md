@@ -55,32 +55,33 @@ Inter-service communication is **event-driven via Apache Kafka** in KRaft mode (
 
 | Decision | Rationale |
 |----------|-----------|
-| **Hexagonal architecture** (both services) | Domain logic isolated from infrastructure; testable without DB/HTTP |
-| **Kafka KRaft for event-driven communication** | Decouples services; single broker, no Zookeeper; KRaft simplifies ops |
-| **Manual dependency injection** | No DI frameworks — explicit wiring in `main.go`/`index.js` |
-| **`slog`** for Go logging | Standard library, zero dependencies, structured JSON natively |
-| **`pino`** for Node.js logging | Fastest Node.js logger, ideal for microservices |
-| **`pgx`** for PostgreSQL driver | Most idiomatic and performant Go PostgreSQL driver |
-| **`golang-jwt/jwt/v5`** for JWT | Maintained fork of the standard Go JWT library; HMAC-SHA256 signing |
-| **Native test runners** | `go test` (table-driven) + `node:test` — no test frameworks needed |
-| **TDD mandatory** for business logic | Red → green → refactor for all domain + application layers |
-| **12-Factor App** configuration | All config via environment variables; `.env` only for local dev |
-| **JWT Bearer token authentication** | JWT auth on all `/devices` endpoints; `golang-jwt/jwt/v5` library; credentials via env vars (demo scope) |
-| **React 19 + Vite** for frontend | Fast dev server with HMR, type-safe routing with TanStack Router |
-| **TanStack Query** for server state | Cache invalidation on mutations, stale-while-revalidate, zero reducers |
-| **React Context** for auth state | Single token value — no global state library needed |
-| **SPA with nginx** | Multi-stage Docker build; nginx serves static assets and proxies API calls |
-| **`LoadingSkeleton` grid variant** | Single component handles both row and grid skeletons via `variant` prop — backward-compatible, single source of animation/pulse |
-| **Refresh skeleton over inline spinner** | Dual indicators (spinner + skeleton) create cognitive noise; full-grid skeleton is unambiguous, professional feedback |
-| **Skeleton cards mirror card container classes** | Identical `rounded-lg border border-slate-700 bg-slate-800 p-5 shadow-sm` classes prevent layout shift during skeleton-to-card transition |
-| **"Red Ledger" aesthetic for deleted devices** | Deleted section uses `border-l-rose-600/40` red accent + red-tinted gradient; cards get `opacity-70`, red badge with Trash2, and archived hover feel (`hover:opacity-85`, no scale) — visually distinct from active cards without structural changes |
-| **Four-state health classification** | Replaced binary `healthy: boolean` with `status: HealthStatus` — distinguishes offline (network error), unhealthy (HTTP errors), stale (cached), and healthy (green); `classifyHealth()` is a pure function with zero framework deps |
-| **Priority-based badge chain** | Single top-bar badge shows worst-case status: Offline > Unhealthy > Stale > none; prevents badge stacking and reduces cognitive load at a glance |
-| **TypeError detection with cross-realm fallback** | `instanceof TypeError` OR `error?.message?.includes('fetch')` — safe cross-realm detection for iframe/bundler scenarios where `instanceof` may fail |
-| **Ring buffer for request tracing (cap 200)** | In-memory ring buffer per backend avoids allocation per push (pre-allocated slice/array). Mutex (Go) shared-nothing (Node) for thread safety. `count` tracked separately from `len(traces)` since slice stays at cap after first wrap. No external persistence — additive, no migration risk |
-| **Settings state via React Context** | Extracted `useSettings` from local `useState` hooks into a shared `SettingsProvider` (same pattern as `AuthContext`). Prevents stale-closure bugs where `SettingsPanel` and `LiveMetrics` held independent state copies — polling interval changes now propagate instantly without page refresh |
+| **Hexagonal architecture** (both services) | Domain logic isolated from infrastructure; testable without DB/HTTP. Domain layer has zero framework imports; application layer defines interfaces (ports); infrastructure implements them (adapters) |
+| **No HTTP framework (stdlib only)** | Go uses `net/http` with Go 1.22+ method-based routing (`"GET /health"`, `"POST /auth/login"`). Node uses `node:http` with manual routing. Frameworks add middleware magic and reflection — our handler layer is thin enough (pure functions + DTO marshalling) that a framework would add more surface area than value |
+| **Kafka KRaft for event-driven communication** | Decouples services; single-broker KRaft mode (no Zookeeper) for development. ADR-005 documents production topology (3 brokers, replication-factor 3) |
+| **Kafka library asymmetry** (Go producer, Node consumer) | Go uses `segmentio/kafka-go` (pure Go, no CGO — simplifies distroless builds). Node uses `@confluentinc/kafka-javascript` (richer consumer API). Node degrades gracefully without Kafka; Go requires it at startup |
+| **Manual dependency injection** (no DI framework) | Interfaces are small and stable (1-5 methods); a DI framework would add magic without reducing code. Wiring lives in one file per service (`cmd/main.go`, `src/index.js`) — trivially auditable |
+| **Polyglot persistence** (PostgreSQL + MongoDB) | Device CRUD goes to PostgreSQL (relational, ACID, schema-enforced). Event log goes to MongoDB (document store, schema-flexible, append-heavy workload). Each database fits its domain model |
+| **Domain errors as sentinel values** | Go domain layer uses `errors.New` sentinels (`ErrNameRequired`, `ErrNotFound`). No custom error types, no panics as control flow. Interface layer maps sentinels to HTTP status codes via `errors.Is` |
+| **Database connection pooling** (`pgxpool`) | Single pool shared across all use cases via `pgxpool.New()`. Migrations run on startup within the same pool. Pool closed on shutdown via `defer pool.Close()` |
+| **Schema-on-read for Kafka events** (no Schema Registry) | Events published as plain JSON without Avro/Protobuf schema. Producer and consumer share the event shape by convention. Acceptable for demo scope; production would add schema versioning (ADR-002) |
+| **JWT Bearer token authentication** | Stateless auth: HMAC-SHA256 signed tokens on all write endpoints (`POST/PUT/DELETE /devices`). GET is public. Token validated via middleware wrapping the HTTP handler chain. Credentials via env vars (demo scope) |
+| **12-Factor App configuration** (Factor III: Config) | All config via environment variables; `.env.example` is the contract. Secrets via env vars mapped to K8s Secrets in production. No config files committed to the repo |
+| **React Context for auth state** | Single JWT token value — no global state library (Redux/Zustand) needed. Context is sufficient for one scalar value; anything heavier would be over-engineering |
+| **SPA with nginx reverse proxy** | Chose SPA over SSR for simplicity (no Node.js runtime needed in production). nginx serves static build and proxies `/api/go/*` to Go, `/api/node/*` to Node. Multi-stage Docker build: `node:22-alpine` for build, `nginx:alpine` for runtime |
+| **Four-state health classification with priority badge** | Replaced binary `healthy: boolean` with `status: HealthStatus` (healthy/offline/unhealthy/stale). Single top-bar badge shows worst-case via priority chain (Offline > Unhealthy > Stale). `classifyHealth()` is a pure function with zero framework deps |
+| **Ring buffer for request tracing (cap 200)** | In-memory ring buffer per backend — zero allocation per push after warmup (pre-allocated slice/array). `sync.Mutex` (Go) / shared-nothing (Node) for thread safety. Separate `count` tracked alongside `writeIdx` since slice stays at cap after first wrap. No external persistence — purely additive, no migration risk |
+| **Multi-stage Docker builds** (distroless / alpine) | Go binary compiled statically (`CGO_ENABLED=0`) into `gcr.io/distroless/static:nonroot` — no shell, no package manager, minimal CVEs. Node service uses `node:22-alpine` (needs JS runtime, cannot use distroless). Build tools dropped after compilation |
+| **Graceful shutdown with connection draining** | Both services trap SIGINT/SIGTERM. Go: server shutdown with 10s context timeout, Kafka writer closed after server. Node: `server.close()` + Kafka consumer stop + MongoDB client close. Ensures in-flight requests complete and messages are flushed before exit |
 
 > Detailed architecture decisions, including deferred production patterns (circuit breaker, outbox, rate limiting, idempotent consumer, Kafka multi-node, testcontainers), are documented in [`docs/adr/`](docs/adr/).
+
+### Development Practices
+
+| Practice | Details |
+|----------|---------|
+| **TDD for domain + application layers** | Red → green → refactor for every use case and domain entity. Test files co-located with source at every layer (domain, application, interfaces, infrastructure) |
+| **Stdlib test runners** (`go test` + `node:test`) | Zero external testing framework dependencies. Go: table-driven tests with `t.Run`. Node: `node:test` with `describe`/`it` and native `mock` module |
+| **Conventional commits** | `feat:`, `fix:`, `chore:`, `docs:`, `test:`, `refactor:` — one commit per logical work unit. No AI attribution (`Co-Authored-By`) |
 
 ## Tech Stack
 
@@ -88,7 +89,7 @@ Inter-service communication is **event-driven via Apache Kafka** in KRaft mode (
 |-----------|------------|
 | Frontend | React 19, Vite 6, TanStack Router, TanStack Query, Tailwind CSS 4, Zod |
 | Go service | Go 1.23+, `slog`, `pgx`, `net/http`, `segmentio/kafka-go`, `golang-jwt/jwt/v5` |
-| Node.js service | Node.js 22+, `pino`, MongoDB native driver, `@confluentinc/kafka-javascript` |
+| Node.js service | Node.js 22+, `node:http`, `pino`, MongoDB native driver, `@confluentinc/kafka-javascript` |
 | Databases | PostgreSQL 16, MongoDB 7 |
 | Message Broker | Apache Kafka 3.9.2 (KRaft mode, apache/kafka image) |
 | Containerization | Docker multi-stage builds, Docker Compose |
