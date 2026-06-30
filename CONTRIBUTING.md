@@ -46,7 +46,32 @@ cd web-ui && npx playwright test
 
 See the [README](README.md) for an architecture overview and [`docs/adr/`](docs/adr/) for detailed architecture decision records.
 
-## Skills (for AI-assisted development)
+## AI-Assisted Development Stack
+
+This project was built using a structured AI-assisted workflow:
+
+| Tool/Agent | Role |
+|------------|------|
+| [OpenCode](https://opencode.ai) | AI coding agent runtime |
+| DeepSeek v4 | LLM backend |
+| [GentleAI](https://github.com/Gentleman-Programming/gentle-ai) SDD | Spec-Driven Development orchestrator |
+| GentleAI Orchestrator | Phase coordinator (proposal → specs → design → tasks → apply → verify → archive) |
+| [Engram](https://github.com/Gentleman-Programming/engram) | Persistent memory across sessions |
+
+### Configured Sub-Agents
+
+| Sub-agent | Purpose |
+|-----------|---------|
+| `sdd-explore` | Codebase investigation and idea exploration |
+| `sdd-propose` | Change proposals from exploration |
+| `sdd-spec` | Delta specs with requirements and scenarios |
+| `sdd-design` | Technical design and architecture |
+| `sdd-tasks` | Task breakdown with review workload forecast |
+| `sdd-apply` | TDD implementation from task definitions |
+| `sdd-verify` | Validation against specs (CRITICAL/WARNING/SUGGESTION) |
+| `sdd-archive` | Change archival and spec promotion |
+
+### Project-Specific Skills
 
 | Skill | Purpose |
 |-------|---------|
@@ -57,3 +82,5 @@ See the [README](README.md) for an architecture overview and [`docs/adr/`](docs/
 | `docker-expert` | Multi-stage builds, security hardening |
 | `nodejs-best-practices` | Node.js patterns, async, security |
 | `kubernetes-manifests` | K8s manifests with probes, resources |
+
+See [docs/ai-workflow.md](docs/ai-workflow.md) for the full AI-assisted development methodology.

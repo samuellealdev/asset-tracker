@@ -1,6 +1,7 @@
 # Asset Tracker
 
 > Demo microservices application — hexagonal architecture, Docker, Kubernetes, event-driven with Kafka.
+> 🧠 AI-assisted: [OpenCode](https://opencode.ai) + DeepSeek v4, guided by [GentleAI](https://github.com/Gentleman-Programming/gentle-ai) SDD workflow. Human-directed, AI-assisted.
 
 [![CI](https://github.com/samuellealdev/asset-tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/samuellealdev/asset-tracker/actions/workflows/ci.yml)
 
