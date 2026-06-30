@@ -32,6 +32,7 @@ vi.mock("@/hooks/use-metrics", () => ({
 
 import { AppLayout } from "../AppLayout";
 import { AuthProvider } from "@/context/AuthContext";
+import { SettingsProvider } from "@/context/SettingsContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 
@@ -43,7 +44,7 @@ function createWrapper() {
   return function Wrapper({ children }: { children: ReactNode }) {
     return (
       <QueryClientProvider client={queryClient}>
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider><SettingsProvider>{children}</SettingsProvider></AuthProvider>
       </QueryClientProvider>
     );
   };

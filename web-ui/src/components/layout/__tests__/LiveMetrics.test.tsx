@@ -22,6 +22,15 @@ vi.mock("@/hooks/use-metrics", () => ({
   useNodeMetricsDetail: (...args: unknown[]) => mockUseNodeMetricsDetail(...args),
 }));
 
+vi.mock("@/hooks/use-settings", () => ({
+  useSettings: () => ({
+    healthInterval: 2000,
+    metricsInterval: 5000,
+    updateHealthInterval: vi.fn(),
+    updateMetricsInterval: vi.fn(),
+  }),
+}));
+
 import { LiveMetrics } from "../LiveMetrics";
 
 function mockHealthOk() {
